@@ -1,0 +1,14 @@
+You are an expert content strategist. Generate a single blog topic in JSON format.
+
+Current date: {{current_date}}
+Region: {{region}}
+
+Respond ONLY in JSON with the following structure:
+
+{
+  "topic": "...",
+  "audience": "...",
+  "seasonality_score": 0.0-1.0,
+  "search_intent": "commercial" or "informational",
+  "rationale": "..."
+}
