@@ -1,6 +1,7 @@
-from pydantic import BaseModel, HttpUrl, Field
+from pydantic import HttpUrl, Field
+from schemas.base import SchemaBase
 
-class Product(BaseModel):
+class Product(SchemaBase):
     title: str = Field(..., description="Product name/title")
     url: HttpUrl = Field(..., description="Amazon referral link")
     price: str = Field(..., description="Price if available")

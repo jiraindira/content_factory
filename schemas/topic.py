@@ -1,13 +1,13 @@
-from pydantic import BaseModel
+from schemas.base import SchemaBase
 from schemas.category import Category
 
 
-class TopicInput(BaseModel):
+class TopicInput(SchemaBase):
     current_date: str
     region: str
 
 
-class TopicOutput(BaseModel):
+class TopicOutput(SchemaBase):
     topic: str
     category: Category
     audience: str
