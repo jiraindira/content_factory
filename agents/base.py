@@ -1,10 +1,15 @@
 from abc import ABC, abstractmethod
 from typing import Dict, Any
 
+
 class BaseAgent(ABC):
     """
     Base interface for all agents in the AI Affiliate Engine.
-    Agents are stateless and deterministic given the same input.
+
+    Agents should be stateless.
+    If an agent uses an LLM, keep runs *mostly* reproducible by using:
+      - temperature near 0
+      - a fixed seed
     """
 
     name: str
@@ -20,4 +25,4 @@ class BaseAgent(ABC):
         Returns:
             Structured output dictionary defined by the agent schema.
         """
-        pass
+        raise NotImplementedError

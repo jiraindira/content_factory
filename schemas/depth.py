@@ -1,80 +1,92 @@
-from pydantic import Field
-from schemas.base import SchemaBase
+from __future__ import annotations
+
+from typing import Any, Dict, List, Literal, Optional
+
+from pydantic import BaseModel, Field
 
 
-class ExpansionModuleSpec(SchemaBase):
+RewriteMode = Literal["repair", "upgrade", "preserve"]
+
+
+class ExpansionModuleSpec(BaseModel):
     """
-    A requested "module" to add to the post, e.g. FAQ, buyer's guide, etc.
+    A single expansion module the DepthExpansionAgent may apply.
+
+    rewrite_mode:
+      - None: inherit from DepthExpansionInput.rewrite_mode
+      - "repair": only rewrite existing sections if they look agent-y / internal
+      - "upgrade": rewrite existing sections to match the style profile voice
+      - "preserve": never rewrite existing sections (only add missing ones)
     """
-    name: str = Field(..., description="Module identifier, e.g. 'how_we_chose', 'buyers_guide', 'faqs'")
-    enabled: bool = Field(True, description="Whether to include this module")
-    max_words: int = Field(250, ge=50, le=2000, description="Soft cap for the module content")
-    notes: str = Field("", description="Optional extra instructions for the module")
 
-
-class DepthExpansionInput(SchemaBase):
-    """
-    Input for DepthExpansionAgent.
-
-    The agent takes an existing draft markdown and expands it by adding useful sections
-    and enriching existing ones, while keeping the content grounded and non-fluffy.
-    """
-    topic: str = Field(..., description="Post topic")
-    primary_keyword: str = Field(..., description="Primary keyword for the post")
-    secondary_keywords: list[str] = Field(default_factory=list, description="Secondary/related keywords")
-
-    title: str = Field(..., description="Final chosen title")
-    slug: str = Field(..., description="Post slug")
-
-    draft_markdown: str = Field(..., description="Existing draft markdown to expand")
-
-    # Optional structured inputs that help expansion stay grounded
-    products: list[dict] = Field(default_factory=list, description="List of product dicts (JSON-safe)")
-    outline: list[str] = Field(default_factory=list, description="Target outline headings, e.g. ['H2: ...']")
-    faqs: list[str] = Field(default_factory=list, description="FAQ questions to include if FAQ module enabled")
-
-    # Controls
-    target_word_count: int = Field(1400, ge=500, le=6000, description="Desired final word count (best effort)")
-    max_added_words: int = Field(1200, ge=100, le=6000, description="Maximum words to add (best effort)")
-    voice: str = Field("neutral", description="Voice style label")
-
-    # Which modules to add (and how)
-    modules: list[ExpansionModuleSpec] = Field(
-        default_factory=lambda: [
-            ExpansionModuleSpec(name="quick_picks", max_words=220),
-            ExpansionModuleSpec(name="how_we_chose", max_words=220),
-            ExpansionModuleSpec(name="buyers_guide", max_words=450),
-            ExpansionModuleSpec(name="faqs", max_words=420),
-            ExpansionModuleSpec(name="alternatives", max_words=280),
-            ExpansionModuleSpec(name="care_and_maintenance", max_words=280),
-        ],
-        description="Expansion modules to apply in order",
+    name: str = Field(..., description="Module name")
+    enabled: bool = Field(True, description="Whether module is active")
+    max_words: int = Field(220, ge=20, description="Clamp module output to this many words")
+    notes: str = Field("", description="Free-form notes")
+    rewrite_mode: Optional[RewriteMode] = Field(
+        None,
+        description="Override the global rewrite mode for this module",
     )
 
-    # Guardrails
+
+class AppliedModule(BaseModel):
+    name: str
+    added_words_estimate: int = 0
+    notes: str = ""
+
+
+class DepthExpansionInput(BaseModel):
+    """
+    Input to DepthExpansionAgent.
+
+    draft_markdown:
+      A markdown doc that typically contains frontmatter and may contain some sections like
+      '## Why this list'. The agent will add/replace sections based on modules + style profile.
+
+    rewrite_mode:
+      - repair: conservative; only rewrites content that looks like internal agent rationale
+      - upgrade: editorial; rewrites existing bland sections into the site voice
+      - preserve: hands-off; only adds missing sections
+    """
+
+    draft_markdown: str = Field(..., description="Existing markdown draft (frontmatter + optional sections).")
+
+    products: List[Dict[str, Any]] = Field(
+        default_factory=list,
+        description="List of product dicts (title, url, price, rating, reviews_count, description).",
+    )
+
+    modules: List[ExpansionModuleSpec] = Field(
+        default_factory=list,
+        description="Ordered list of modules to apply.",
+    )
+
+    max_added_words: int = Field(
+        900,
+        ge=0,
+        description="Stop expanding once we exceed this many added words vs original.",
+    )
+
+    voice: str = Field("neutral", description="Optional voice selector passed to style system.")
+
+    faqs: List[str] = Field(default_factory=list, description="Optional FAQ questions to use.")
     forbid_claims_of_testing: bool = Field(
-        True, description="Avoid implying hands-on testing unless explicitly provided"
-    )
-    allow_new_sections: bool = Field(
-        True, description="Allow agent to append new sections even if not in outline"
+        True,
+        description="If True, add a note that we did not do hands-on testing (where applicable).",
     )
 
-    # IMPORTANT: Your Astro site renders product cards from frontmatter.
-    # Keep this False so the agent doesn't duplicate product lists in the markdown body.
-    render_products_in_body: bool = Field(
-        False,
-        description="Whether to render product blocks in markdown body (default False for Astro cards).",
+    rewrite_mode: RewriteMode = Field(
+        "repair",
+        description="Global rewrite mode: repair | upgrade | preserve",
     )
 
 
-class AppliedModule(SchemaBase):
-    name: str = Field(..., description="Module name applied")
-    added_words_estimate: int = Field(..., ge=0, description="Approx words added by this module")
-    notes: str = Field("", description="What was added/changed")
+class DepthExpansionOutput(BaseModel):
+    expanded_markdown: str
+    applied_modules: List[AppliedModule]
 
+    word_count_before: int
+    word_count_after: int
 
-class DepthExpansionOutput(SchemaBase):
-    expanded_markdown: str = Field(..., description="Expanded markdown output")
-    applied_modules: list[AppliedModule] = Field(default_factory=list, description="Modules applied and summaries")
-    word_count_before: int = Field(..., ge=0, description="Approx word count before expansion")
-    word_count_after: int = Field(..., ge=0, description="Approx word count after expansion")
+    def to_dict(self) -> Dict[str, Any]:
+        return self.model_dump()
