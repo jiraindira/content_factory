@@ -1,15 +1,12 @@
-"""Title optimization agent.
+"""Title optimization agent (short, human, non-spam).
 
-This agent is intentionally deterministic: given the same input it will always
-produce the same ordered candidate list and selections.
+Deterministic: given the same input, returns the same ordered candidates and selections.
 
-It generates a pool of candidate titles from a fixed set of archetypes,
-filters out overused prefixes, scores candidates 0–100, and returns the top-N.
-
-Scoring (0–100):
-- Keyword presence: primary keyword weighted highest; secondary keywords add lift.
-- Clarity: penalizes overly long titles (> 80 characters).
-- Uniqueness: penalizes similarity vs existing titles using simple token overlap.
+Strategy:
+- Generate short, human titles (mostly noun phrases).
+- Hard reject clickbait / template-y phrasing.
+- Enforce tight length limits.
+- Score for keyword coverage, brevity, and uniqueness vs existing titles.
 """
 
 from __future__ import annotations
@@ -18,50 +15,33 @@ from dataclasses import dataclass
 from typing import Any, Callable, Iterable
 
 from agents.base import BaseAgent
-from schemas.title import (
-    TitleCandidate,
-    TitleOptimizationInput,
-    TitleOptimizationOutput,
-)
+from schemas.title import TitleCandidate, TitleOptimizationInput, TitleOptimizationOutput
 
+
+# -----------------------------
+# Normalization + similarity
+# -----------------------------
 
 def normalize_text(text: str) -> str:
-    """Normalize text for comparisons.
-
-    Lowercases and collapses whitespace.
-    """
     return " ".join((text or "").strip().lower().split())
 
-
 def tokenize(text: str) -> list[str]:
-    """Tokenize text into simple alphanumeric tokens.
-
-    This is a lightweight tokenizer intended for similarity checks.
-    """
-    normalized = normalize_text(text)
-    tokens: list[str] = []
-    current: list[str] = []
-
-    for ch in normalized:
+    t = normalize_text(text)
+    out: list[str] = []
+    cur: list[str] = []
+    for ch in t:
         if ch.isalnum():
-            current.append(ch)
+            cur.append(ch)
         else:
-            if current:
-                tokens.append("".join(current))
-                current = []
-
-    if current:
-        tokens.append("".join(current))
-
-    return tokens
-
+            if cur:
+                out.append("".join(cur))
+                cur = []
+    if cur:
+        out.append("".join(cur))
+    return out
 
 def token_overlap_similarity(a: str, b: str) -> float:
-    """Compute simple token-overlap similarity between two strings.
-
-    Uses Jaccard similarity on token sets: |A ∩ B| / |A ∪ B|.
-    Returns 0.0 for empty unions.
-    """
+    """Jaccard similarity over token sets."""
     a_tokens = set(tokenize(a))
     b_tokens = set(tokenize(b))
     union = a_tokens | b_tokens
@@ -69,19 +49,10 @@ def token_overlap_similarity(a: str, b: str) -> float:
         return 0.0
     return len(a_tokens & b_tokens) / len(union)
 
-
-def _starts_with_any_prefix(title: str, prefixes: Iterable[str]) -> bool:
-    """Case-insensitive startswith check against a list of prefixes."""
-    t = normalize_text(title)
-    for prefix in prefixes:
-        p = normalize_text(prefix)
-        if p and t.startswith(p):
-            return True
-    return False
-
+def _format_title(title: str) -> str:
+    return " ".join((title or "").strip().split())
 
 def _dedupe_preserve_order(items: Iterable[str]) -> list[str]:
-    """Deduplicate strings preserving order (case-insensitive via normalize_text)."""
     seen: set[str] = set()
     out: list[str] = []
     for item in items:
@@ -93,218 +64,313 @@ def _dedupe_preserve_order(items: Iterable[str]) -> list[str]:
     return out
 
 
-def _format_title(title: str) -> str:
-    """Light formatting for titles (trim, collapse whitespace)."""
-    return " ".join((title or "").strip().split())
+# -----------------------------
+# Guardrails (anti-clickbait)
+# -----------------------------
 
+STOPWORDS = {
+    "the", "a", "an", "and", "or", "to", "for", "of", "in", "on", "with", "from", "your",
+    "this", "that", "these", "those",
+}
+
+# Phrases that make titles feel spammy / blog-template-y.
+BANNED_PHRASES_BASE = [
+    "top", "best", "ultimate", "must-have", "must have", "game changer",
+    "you need", "what to buy", "worth buying", "explained",
+    "no-nonsense", "no nonsense", "without overthinking",
+    "mistakes", "pitfalls", "checklist", "hacks",
+    "buyers guide", "buying guide", "a practical guide",
+    "last-minute", "last minute", "this season", "this season’s", "this season's",
+    "kickstart", "goals",  # tends to create corporate-y fluff when stacked
+]
+
+# Intent/template tokens. If a title contains 2+ of these, it’s almost always “template soup”.
+INTENT_TOKENS = [
+    "how to", "guide", "explained", "checklist", "mistakes", "pitfalls",
+    "what to buy", "worth buying", "picks",
+]
+
+def _voice_config(voice: str) -> dict[str, Any]:
+    v = normalize_text(voice)
+    if v in {"wirecutterish", "wirecutter"}:
+        return {
+            "banned_phrases": BANNED_PHRASES_BASE + ["premium", "high-impact", "no-brainer"],
+            "allowed_soft_words": {"good", "simple", "reliable"},
+        }
+    if v in {"nerdwalletish", "nerdwallet"}:
+        return {
+            "banned_phrases": BANNED_PHRASES_BASE + ["insane", "crazy", "secret"],
+            "allowed_soft_words": {"simple", "practical"},
+        }
+    return {
+        "banned_phrases": BANNED_PHRASES_BASE,
+        "allowed_soft_words": set(),
+    }
+
+def _starts_with_any_prefix(title: str, prefixes: Iterable[str]) -> bool:
+    t = normalize_text(title)
+    for prefix in prefixes:
+        p = normalize_text(prefix)
+        if p and t.startswith(p):
+            return True
+    return False
+
+def _count_intent_hits(title: str) -> int:
+    t = normalize_text(title)
+    return sum(1 for token in INTENT_TOKENS if token in t)
+
+def _looks_spammy(title: str, banned_phrases: list[str]) -> tuple[bool, str]:
+    t = normalize_text(title)
+
+    # punctuation bloat / shouting
+    if title.count(":") > 1:
+        return True, "Too many colons"
+    if "!!" in title or "??" in title:
+        return True, "Shouty punctuation"
+    if "(" in title or ")" in title:
+        return True, "Parentheses feel template-y"
+
+    # intent soup
+    if _count_intent_hits(title) >= 2:
+        return True, "Multiple template intents"
+
+    # banned phrases (hard)
+    for phrase in banned_phrases:
+        p = normalize_text(phrase)
+        if p and p in t:
+            return True, f"Contains banned phrase: {phrase}"
+
+    return False, ""
+
+
+# -----------------------------
+# Title generation (short + human)
+# -----------------------------
 
 @dataclass(frozen=True)
-class _Archetype:
+class _Pattern:
     name: str
     build: Callable[[TitleOptimizationInput], list[str]]
 
+def _topic_phrases(topic: str) -> list[str]:
+    """Extract a couple short, deterministic phrases from the topic."""
+    toks = [x for x in tokenize(topic) if x not in STOPWORDS]
+    if not toks:
+        return []
+    # two and three token snippets (title-cased)
+    out: list[str] = []
+    two = " ".join(toks[:2]).title()
+    three = " ".join(toks[:3]).title()
+    if two:
+        out.append(two)
+    if three and three != two:
+        out.append(three)
+    return out
 
-def _archetypes() -> list[_Archetype]:
-    """Return the ordered list of title archetypes.
+def _secondary_phrases(secondaries: list[str]) -> list[str]:
+    """Clean, short secondary phrases; deterministic order."""
+    out: list[str] = []
+    for sk in secondaries:
+        s = _format_title(sk)
+        if not s:
+            continue
+        # keep short secondaries only (avoid dumping long SEO strings into titles)
+        if len(s) <= 24:
+            out.append(s)
+    return out[:8]
 
-    Keep this deterministic and stable: ordering affects candidate order.
-    """
+def _patterns() -> list[_Pattern]:
+    def plain(inp: TitleOptimizationInput) -> list[str]:
+        return [inp.primary_keyword.strip()]
 
-    def primary_first(inp: TitleOptimizationInput) -> list[str]:
+    def pk_for_secondary(inp: TitleOptimizationInput) -> list[str]:
         pk = inp.primary_keyword.strip()
-        return [
-            f"{pk}: A Practical Guide for {inp.topic}",
-            f"{pk} Explained: What to Buy and Why",
-            f"{pk} for Real Life: What Actually Works",
-        ]
+        return [f"{pk} for {s}" for s in _secondary_phrases(inp.secondary_keywords)]
 
-    def how_to(inp: TitleOptimizationInput) -> list[str]:
+    def pk_for_topic(inp: TitleOptimizationInput) -> list[str]:
         pk = inp.primary_keyword.strip()
-        return [
-            f"How to Choose the Right {pk} (Without Overthinking)",
-            f"How to Shop for {pk}: A No-Nonsense Checklist",
-            f"How to Get the Most from {pk} This Season",
-        ]
+        return [f"{pk} for {p}" for p in _topic_phrases(inp.topic or "")]
 
-    def mistakes(inp: TitleOptimizationInput) -> list[str]:
+    def topic_colon_pk(inp: TitleOptimizationInput) -> list[str]:
         pk = inp.primary_keyword.strip()
-        return [
-            f"Common {pk} Mistakes (and What to Do Instead)",
-            f"Avoid These {pk} Pitfalls: A Quick Guide",
-            f"Before You Buy: {pk} Mistakes to Avoid",
-        ]
+        return [f"{p}: {pk}" for p in _topic_phrases(inp.topic or "")]
 
-    def budget(inp: TitleOptimizationInput) -> list[str]:
+    def choosing(inp: TitleOptimizationInput) -> list[str]:
+        # Keep these minimal and not “How to…”
         pk = inp.primary_keyword.strip()
-        return [
-            f"Great {pk} on a Budget: What to Look For",
-            f"The Best Value {pk}: Smart Picks That Hold Up",
-            f"Affordable {pk} That Still Feel Premium",
-        ]
-
-    def comparisons(inp: TitleOptimizationInput) -> list[str]:
-        pk = inp.primary_keyword.strip()
-        return [
-            f"{pk} Buying Guide: What Matters (and What Doesn’t)",
-            f"{pk} Breakdown: Features Worth Paying For",
-            f"{pk} 101: The Key Features to Prioritize",
-        ]
-
-    def giftable(inp: TitleOptimizationInput) -> list[str]:
-        pk = inp.primary_keyword.strip()
-        return [
-            f"Giftable {pk}: Thoughtful Picks People Use",
-            f"The Most Giftable {pk} for {inp.topic}",
-            f"Last-Minute {pk} Gifts That Don’t Feel Last-Minute",
-        ]
-
-    def seasonal(inp: TitleOptimizationInput) -> list[str]:
-        pk = inp.primary_keyword.strip()
-        return [
-            f"{pk} for Right Now: Seasonal Picks for {inp.topic}",
-            f"This Season’s {pk}: What’s Worth Buying",
-            f"A Seasonal Guide to {pk} You’ll Actually Use",
-        ]
-
-    def audience_focus(inp: TitleOptimizationInput) -> list[str]:
-        pk = inp.primary_keyword.strip()
-        return [
-            f"{pk} for Beginners: Simple, Reliable Choices",
-            f"{pk} for Busy People: Low-Effort, High-Impact Picks",
-            f"{pk} for Small Spaces: Compact Options That Work",
-        ]
+        return [f"Choosing {pk}", f"Picking {pk}"]
 
     return [
-        _Archetype("primary-first", primary_first),
-        _Archetype("how-to", how_to),
-        _Archetype("mistakes", mistakes),
-        _Archetype("budget", budget),
-        _Archetype("comparisons", comparisons),
-        _Archetype("giftable", giftable),
-        _Archetype("seasonal", seasonal),
-        _Archetype("audience-focus", audience_focus),
+        _Pattern("plain", plain),
+        _Pattern("pk-secondary", pk_for_secondary),
+        _Pattern("pk-topic", pk_for_topic),
+        _Pattern("topic-first", topic_colon_pk),
+        _Pattern("choosing", choosing),
     ]
 
-
-def _generate_titles(inp: TitleOptimizationInput, *, target_count: int) -> list[tuple[str, str]]:
-    """Generate (title, archetype) pairs deterministically."""
+def _generate_titles(inp: TitleOptimizationInput, target_count: int) -> list[tuple[str, str]]:
     pairs: list[tuple[str, str]] = []
 
-    archetype_lists: list[tuple[str, list[str]]] = [
-        (a.name, [_format_title(t) for t in a.build(inp)])
-        for a in _archetypes()
-    ]
+    for pat in _patterns():
+        for t in pat.build(inp):
+            tt = _format_title(t)
+            if tt:
+                pairs.append((tt, pat.name))
 
-    max_len = max((len(titles) for _, titles in archetype_lists), default=0)
-    for i in range(max_len):
-        for archetype_name, titles in archetype_lists:
-            if i < len(titles):
-                pairs.append((titles[i], archetype_name))
-
-    secondaries = [s.strip() for s in inp.secondary_keywords if s and s.strip()]
-    pk = inp.primary_keyword.strip()
-    for sk in secondaries:
-        pairs.append((_format_title(f"{pk} + {sk}: A Smart Buyer’s Guide"), "secondary-combo"))
-        pairs.append((_format_title(f"{sk} and {pk}: What to Prioritize"), "secondary-combo"))
-
-    deduped: list[tuple[str, str]] = []
+    # Deterministic de-dupe
     seen: set[str] = set()
-    for title, archetype_name in pairs:
+    out: list[tuple[str, str]] = []
+    for title, archetype in pairs:
         key = normalize_text(title)
         if not key or key in seen:
             continue
         seen.add(key)
-        deduped.append((title, archetype_name))
+        out.append((title, archetype))
 
-    return deduped[: max(target_count, 0)]
+    return out[: max(0, target_count)]
 
+
+# -----------------------------
+# Scoring (brevity + relevance + uniqueness)
+# -----------------------------
+
+def _length_penalty(n: int) -> float:
+    # Sweet spot: 28–52. Hard cap 60. Reject > 70.
+    if n < 18:
+        return 18.0  # too short/vague
+    if n <= 52:
+        return 0.0
+    if n <= 60:
+        return (n - 52) * 1.8
+    if n <= 70:
+        return 15.0 + (n - 60) * 3.0
+    return 100.0
+
+def _keyword_coverage(pk: str, title: str) -> tuple[float, str]:
+    pk_tokens = [t for t in tokenize(pk) if t not in STOPWORDS]
+    title_tokens = set(tokenize(title))
+    if not pk_tokens:
+        return 0.0, "No primary keyword tokens"
+    covered = sum(1 for t in pk_tokens if t in title_tokens)
+    ratio = covered / len(pk_tokens)
+    if ratio >= 1.0:
+        return 45.0, "Primary keyword match"
+    if ratio >= 0.8:
+        return 36.0, "Strong keyword match"
+    if ratio >= 0.6:
+        return 24.0, "Partial keyword match"
+    if ratio >= 0.4:
+        return 12.0, "Weak keyword match"
+    return 0.0, "Keyword mismatch"
+
+def _secondary_bonus(secondaries: list[str], title: str) -> float:
+    title_tokens = set(tokenize(title))
+    bonus = 0.0
+    for sk in secondaries:
+        sk_tokens = [t for t in tokenize(sk) if t not in STOPWORDS]
+        if not sk_tokens:
+            continue
+        if all(t in title_tokens for t in sk_tokens):
+            bonus += 2.0
+    return min(8.0, bonus)
+
+def _uniqueness(existing_titles: list[str], title: str) -> tuple[float, float]:
+    if not existing_titles:
+        return 25.0, 0.0
+    sims = [token_overlap_similarity(title, t) for t in existing_titles]
+    max_sim = max(sims) if sims else 0.0
+    return 25.0 * (1.0 - max_sim), max_sim
+
+def _soft_voice_bonus(title: str, allowed_soft_words: set[str]) -> float:
+    if not allowed_soft_words:
+        return 0.0
+    toks = set(tokenize(title))
+    hit = len(toks & allowed_soft_words)
+    return min(4.0, float(hit) * 2.0)
 
 def _score_title(inp: TitleOptimizationInput, title: str) -> tuple[float, list[str]]:
-    """Score a title 0–100 and return (score, reasons)."""
     reasons: list[str] = []
+    title = _format_title(title)
 
-    title_norm = normalize_text(title)
-    pk_norm = normalize_text(inp.primary_keyword)
+    cfg = _voice_config(inp.voice)
+    banned_phrases: list[str] = list(cfg["banned_phrases"])
+    allowed_soft_words: set[str] = set(cfg["allowed_soft_words"])
 
-    keyword_score = 0.0
-    if pk_norm and pk_norm in title_norm:
-        keyword_score += 35.0
-        reasons.append("Primary keyword present")
-    else:
-        pk_tokens = set(tokenize(inp.primary_keyword))
-        title_tokens = set(tokenize(title))
-        if pk_tokens:
-            overlap = len(pk_tokens & title_tokens) / len(pk_tokens)
-            if overlap >= 0.8:
-                keyword_score += 28.0
-                reasons.append("Primary keyword mostly present")
-            elif overlap >= 0.5:
-                keyword_score += 18.0
-                reasons.append("Primary keyword partially present")
+    # Hard rejects
+    spammy, why = _looks_spammy(title, banned_phrases)
+    if spammy:
+        return 0.0, [f"Rejected: {why}"]
 
-    secondary_lift = 0.0
-    for sk in inp.secondary_keywords:
-        sk_norm = normalize_text(sk)
-        if sk_norm and sk_norm in title_norm:
-            secondary_lift += 2.5
-    secondary_lift = min(10.0, secondary_lift)
-    if secondary_lift > 0:
-        reasons.append("Includes secondary keywords")
+    # Length gating
+    lp = _length_penalty(len(title))
+    if lp >= 90.0:
+        return 0.0, ["Rejected: too long"]
 
-    keyword_component = min(45.0, keyword_score + secondary_lift)
+    # Keyword gating (must be at least weak match)
+    kw, kw_reason = _keyword_coverage(inp.primary_keyword, title)
+    if kw <= 0.0:
+        return 0.0, [f"Rejected: {kw_reason}"]
+    reasons.append(kw_reason)
 
-    clarity_component = 20.0
-    if len(title) > 80:
-        over = len(title) - 80
-        penalty = min(20.0, (over / 40.0) * 20.0)
-        clarity_component = max(0.0, 20.0 - penalty)
-        reasons.append("Too long; clarity penalty")
+    sb = _secondary_bonus(inp.secondary_keywords, title)
+    if sb > 0:
+        reasons.append("Includes secondary detail")
 
-    if inp.existing_titles:
-        similarities = [token_overlap_similarity(title, t) for t in inp.existing_titles]
-        max_sim = max(similarities) if similarities else 0.0
-    else:
-        max_sim = 0.0
-
-    uniqueness_component = 35.0 * (1.0 - max_sim)
+    uq, max_sim = _uniqueness(inp.existing_titles, title)
     if max_sim >= 0.6:
-        reasons.append("Very similar to an existing title")
+        reasons.append("Very similar to existing title")
     elif max_sim >= 0.35:
-        reasons.append("Somewhat similar to an existing title")
+        reasons.append("Somewhat similar to existing title")
     else:
         reasons.append("Distinct from existing titles")
 
-    total = keyword_component + clarity_component + uniqueness_component
-    total = max(0.0, min(100.0, total))
+    vb = _soft_voice_bonus(title, allowed_soft_words)
+    if vb > 0:
+        reasons.append("Voice fit")
 
-    return total, reasons
+    # Final score
+    score = 100.0
+    score -= lp
+    score -= (45.0 - kw)  # enforce primary keyword coverage
+    score += sb
+    score += uq
+    score += vb
 
+    score = max(0.0, min(100.0, score))
+    return float(round(score, 2)), _dedupe_preserve_order(reasons)
+
+
+# -----------------------------
+# Agent
+# -----------------------------
 
 class TitleOptimizationAgent(BaseAgent):
-    """Generate, filter, and score SEO-friendly blog titles."""
+    """Generate, filter, and score short, human blog titles."""
 
     name = "title-optimization"
 
-    def run(
-        self, input: TitleOptimizationInput | dict
-    ) -> dict[str, Any]:
+    def run(self, input: TitleOptimizationInput | dict) -> dict[str, Any]:
         inp = input if isinstance(input, TitleOptimizationInput) else TitleOptimizationInput(**input)
 
-        raw_pairs = _generate_titles(inp, target_count=inp.num_candidates * 3)
+        # Generate a small pool (deterministic)
+        raw_pairs = _generate_titles(inp, target_count=inp.num_candidates * 2)
 
+        # Apply user-configured banned starts (monoculture prevention)
         filtered_pairs = [
             (t, a) for (t, a) in raw_pairs if not _starts_with_any_prefix(t, inp.banned_starts)
-        ][: inp.num_candidates]
+        ]
 
         scored: list[TitleCandidate] = []
-        for title, archetype_name in filtered_pairs:
+        for title, archetype in filtered_pairs:
             score, reasons = _score_title(inp, title)
+            if score <= 0:
+                continue
             scored.append(
                 TitleCandidate(
                     title=title,
-                    archetype=archetype_name,
-                    score=float(round(score, 2)),
-                    reasons=_dedupe_preserve_order(reasons),
+                    archetype=archetype,
+                    score=score,
+                    reasons=reasons,
                 )
             )
 
@@ -313,17 +379,17 @@ class TitleOptimizationAgent(BaseAgent):
             key=lambda c: (-c.score, normalize_text(c.title), normalize_text(c.archetype)),
         )
 
+        candidates = scored_sorted[: inp.num_candidates]
+
+        # Select top-N with light archetype diversity
         selected: list[TitleCandidate] = []
-        seen_archetypes: set[str] = set()
-        for c in scored_sorted:
-            if c.archetype not in seen_archetypes or len(selected) < 2:
+        seen_arch: set[str] = set()
+        for c in candidates:
+            if c.archetype not in seen_arch or len(selected) < 2:
                 selected.append(c)
-                seen_archetypes.add(c.archetype)
+                seen_arch.add(c.archetype)
             if len(selected) == inp.return_top_n:
                 break
 
-        output = TitleOptimizationOutput(
-            selected=selected,
-            candidates=scored_sorted,
-        )
-        return output.to_dict()
+        output = TitleOptimizationOutput(selected=selected, candidates=candidates)
+        return output.model_dump() if hasattr(output, "model_dump") else output.dict()

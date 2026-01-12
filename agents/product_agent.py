@@ -4,52 +4,56 @@ from schemas.topic import TopicOutput
 from schemas.product import Product
 from config import OPENAI_API_KEY, MODEL_REASONING
 
+
 class ProductDiscoveryAgent:
     def __init__(self):
         self.client = OpenAI(api_key=OPENAI_API_KEY)
 
     def run(self, topic: TopicOutput) -> list[Product]:
         prompt = f"""
-        You are an expert affiliate marketer.
-        Given the blog topic: "{topic.topic}" and audience: "{topic.audience}", 
-        generate a list of 5-10 popular Amazon products relevant to this topic.
-        Each product should include:
-        - title
-        - URL (affiliate link)
-        - price
-        - rating (0-5)
-        - reviews_count (integer)
-        - description (1-2 sentences)
+You are an expert affiliate marketer.
 
-        Respond ONLY in JSON, with a top-level "products" list like this:
+Use this content brief (NOT a blog title):
+- Topic label: {topic.topic}
+- Audience: {topic.audience}
 
-        {{
-          "products": [
-            {{
-              "title": "...",
-              "url": "...",
-              "price": "...",
-              "rating": 4.5,
-              "reviews_count": 300,
-              "description": "..."
-            }}
-          ]
-        }}
-        """
+Task:
+Generate a list of 5–10 Amazon-relevant product ideas that match the topic label and audience.
+
+Rules:
+- Products should be specific items someone could actually buy (not vague categories).
+- Do NOT invent affiliate links, prices, ratings, or review counts. If unknown, use null.
+- Provide a short Amazon search query we can use to look up the real product later.
+
+Respond ONLY in JSON with a top-level "products" list like this:
+
+{{
+  "products": [
+    {{
+      "title": "...",
+      "amazon_search_query": "...",
+      "url": null,
+      "price": null,
+      "rating": null,
+      "reviews_count": null,
+      "description": "1–2 sentences"
+    }}
+  ]
+}}
+"""
 
         response = self.client.responses.create(
             model=MODEL_REASONING,
             input=[{"role": "user", "content": prompt}],
-            temperature=0.3
+            temperature=0.3,
         )
 
         raw_output = response.output_text.strip()
 
         # Remove Markdown code fences if present
-        if raw_output.startswith("```") and raw_output.endswith("```"):
+        if raw_output.startswith("```"):
             lines = raw_output.splitlines()
-            if len(lines) >= 3:
-                raw_output = "\n".join(lines[1:-1])
+            raw_output = "\n".join(line for line in lines if not line.strip().startswith("```")).strip()
 
         try:
             data = json.loads(raw_output)

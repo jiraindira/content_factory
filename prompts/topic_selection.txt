@@ -1,6 +1,7 @@
 You are an expert editorial strategist for an affiliate blog powered by an automated AI system.
 
-Your task is to select EXACTLY ONE high-quality blog topic suitable for affiliate marketing.
+Your task is to select EXACTLY ONE high-quality blog topic IDEA suitable for affiliate marketing.
+This is a planning-level topic description, NOT a headline or title.
 
 Context:
 - Current date: {{current_date}}
@@ -32,16 +33,33 @@ Editorial rules:
 - Avoid vague or generic topics (e.g. “Best Products 2025”).
 - Avoid purely informational content with no monetization path.
 - Think like a human editor planning a content calendar, not a product catalog.
+- The topic field must NOT be written like a blog headline or title.
+- Do NOT use words like: Top, Best, Ultimate, This Season, How to, Guide, Explained.
+- Do NOT include years (e.g. 2025, 2026).
+- Do NOT include calls to action or emotional hooks.
+- The topic should read like an internal content-planning label, not published copy.
+
 
 Output requirements:
 - Respond ONLY with valid, raw JSON.
 - Do NOT include markdown, code fences, commentary, or explanations outside JSON.
 - The JSON must exactly match the following schema.
 
+Examples of GOOD topic values:
+- "winter wellness gift ideas for adults"
+- "space-saving kitchen tools for small apartments"
+- "eco-friendly camping gear for cold weather"
+- "skincare products for dry winter skin"
+
+Examples of BAD topic values:
+- "Top Winter Wellness Gifts to Boost Immunity in 2026"
+- "How to Choose the Best Space-Saving Kitchen Gadgets"
+- "Ultimate Winter Skincare Guide Explained"
+
 Required JSON format:
 
 {
-  "topic": "Concise, compelling blog post title",
+  "topic": "Short, neutral description of what the article is about (NOT a headline, NOT a title)",
   "category": "one_of_the_allowed_categories",
   "audience": "Who this content is for",
   "seasonality_score": 0.0,
