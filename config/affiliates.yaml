@@ -1,0 +1,38 @@
+default_provider: amazon_uk
+region: UK
+
+providers:
+  amazon_uk:
+    label: "Amazon UK"
+    categories: [home, travel, gadgets, pets, kids, health]
+
+  mountain_warehouse:
+    label: "Mountain Warehouse"
+    categories: [travel]
+    requires_signal_group: outdoor_gear
+
+signal_groups:
+  outdoor_gear:
+    - ski
+    - skiing
+    - snow
+    - lapland
+    - winter hiking
+    - hiking
+    - trekking
+    - walking boots
+    - hiking boots
+    - snowshoe
+    - snowshoes
+    - waterproof
+    - rainproof
+    - insulated
+    - thermal
+    - fleece
+    - baselayer
+    - base layer
+    - down jacket
+    - puffer
+    - gloves
+    - beanie
+    - waterproof jacket
