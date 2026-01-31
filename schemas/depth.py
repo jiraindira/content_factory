@@ -69,6 +69,16 @@ class DepthExpansionInput(BaseModel):
 
     voice: str = Field("neutral", description="Optional voice selector passed to style system.")
 
+    # Optional author-provided guidance (do NOT persist into final Astro frontmatter)
+    seed_title: Optional[str] = Field(
+        None,
+        description="Optional seed title or title hint for the post (manual pipeline).",
+    )
+    seed_description: Optional[str] = Field(
+        None,
+        description="Optional raw description/intent to guide intro/how-we-chose (manual pipeline).",
+    )
+
     faqs: List[str] = Field(default_factory=list, description="Optional FAQ questions to use.")
     forbid_claims_of_testing: bool = Field(
         True,

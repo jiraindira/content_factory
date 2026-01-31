@@ -485,9 +485,13 @@ MARKDOWN BODY TO EDIT:
         title = _extract_frontmatter_value(md, "title")
         audience = _extract_frontmatter_value(md, "audience")
         context = f'TITLE: "{title}"\nAUDIENCE: "{audience}"'
+        seed_desc = (inp.seed_description or "").strip()
+        if seed_desc:
+            context += f'\nAUTHOR INTENT (raw): "{clamp_words(seed_desc, 80)}"'
         intent = (
             "Write a short intro (3–4 sentences). Situational, lightly funny/observational, not dry. "
             "Promise a short practical list. Do not mention 'affiliate' or 'SEO'."
+            " Keep it UK-general (do not name a city unless the author intent explicitly does)."
         )
 
         text = self._llm_author(
@@ -538,9 +542,13 @@ MARKDOWN BODY TO EDIT:
         title = _extract_frontmatter_value(md, "title")
         audience = _extract_frontmatter_value(md, "audience")
         context = f'TITLE: "{title}"\nAUDIENCE: "{audience}"'
+        seed_desc = (inp.seed_description or "").strip()
+        if seed_desc:
+            context += f'\nAUTHOR INTENT (raw): "{clamp_words(seed_desc, 80)}"'
         intent = (
             "Write 'How this list was chosen' as a short intro sentence plus 4–6 bullet points. "
             "Bullets should be concrete and practical. Keep it brief and human."
+            " Keep it UK-general (do not name a city unless the author intent explicitly does)."
         )
         format_hint = "FORMAT:\n- One short intro sentence\n- Then 4–6 bullets, one per line"
 

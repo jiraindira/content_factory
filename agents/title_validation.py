@@ -4,6 +4,8 @@ import re
 from dataclasses import dataclass
 from typing import Iterable
 
+from lib.product_type_summary import summarize_product_types, title_mentions_type, title_uses_umbrella_term
+
 
 @dataclass(frozen=True)
 class TitleValidationResult:
@@ -39,8 +41,8 @@ _PHYSICAL_SIGNAL_TERMS = {
 _CLAIM_TOKENS_REQUIRING_EVIDENCE = {
     # Digital claims
     "app", "apps", "software", "platform", "platforms", "template", "templates", "spreadsheet", "spreadsheets",
-    # Physical claims
-    "gear", "hardware", "device", "devices", "supplies", "equipment",
+    # Physical claims (keep specific nouns; allow generic "gear" without explicit corpus mention)
+    "hardware", "device", "devices", "supplies", "equipment",
 }
 
 # If title is "X and Y", X must be supported and Y must be supported.
@@ -159,5 +161,44 @@ def validate_title_semantics(
             # "gear" is often generic; still require evidence to prevent mismatch
             reasons.append(f"Title claims '{nt}', but it is not supported by the post content.")
 
+    # Product coverage constraints (for physical buying guides)
+    # If the product set clearly spans multiple major types, avoid titles that collapse
+    # to a single subtype like "raincoat".
+    coverage_reasons = _validate_title_product_coverage(title=title, products=products)
+    reasons.extend(coverage_reasons)
+
     ok = len(reasons) == 0
     return TitleValidationResult(ok=ok, reasons=reasons, inferred_mode=mode)
+
+
+def _validate_title_product_coverage(*, title: str, products: list[dict]) -> list[str]:
+    """Deterministic guard: title should reflect the product mix."""
+    if not title or not products:
+        return []
+
+    summary = summarize_product_types(products)
+    if not summary.is_mixed:
+        return []
+
+    # Broad umbrella terms are always acceptable for mixed sets.
+    if title_uses_umbrella_term(title):
+        return []
+
+    # If title explicitly mentions only one of the major types, reject.
+    mentioned = [t for t in summary.major_types if title_mentions_type(title, t)]
+    if len(mentioned) == 1:
+        other = [t for t in summary.major_types if t not in mentioned]
+        other_str = ", ".join(other)
+        return [
+            f"Title focuses on '{mentioned[0]}', but the product list is mixed ({other_str} also present). "
+            "Use an umbrella title like 'Travel rain gear essentials'."
+        ]
+
+    # If it mentions none of the major types, it's still possibly OK if it's broad,
+    # but in practice we want to nudge toward umbrella phrasing.
+    if len(mentioned) == 0:
+        return [
+            "Title is not specific to the product mix. Consider an umbrella title like 'Travel rain gear essentials'."
+        ]
+
+    return []

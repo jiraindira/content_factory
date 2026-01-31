@@ -5,6 +5,7 @@ from dataclasses import dataclass
 
 from integrations.openai_adapters import OpenAIJsonLLM
 from agents.title_validation import validate_title_semantics
+from lib.product_type_summary import summarize_product_types
 
 
 @dataclass(frozen=True)
@@ -141,8 +142,22 @@ class FinalTitleAgent:
         picks: list[str],
         products: list[dict],
         alternatives: str | None = None,
+        user_hint_title: str | None = None,
+        user_hint_description: str | None = None,
     ) -> str:
+        # Hard override (user-provided) is handled by the caller.
+
         picks_snip = "\n".join(f"- {p[:220]}" for p in (picks or [])[:5])
+
+        product_titles = [
+            str(p.get("title") or p.get("name") or "").strip()
+            for p in (products or [])
+            if isinstance(p, dict) and str(p.get("title") or p.get("name") or "").strip()
+        ]
+        products_snip = "\n".join(f"- {t[:140]}" for t in product_titles[:10])
+
+        mix = summarize_product_types(products or [])
+        mix_str = ", ".join(f"{k}={v}" for k, v in sorted(mix.counts.items())) or "(unknown)"
 
         system = (
             "You are a calm editorial headline writer.\n"
@@ -152,17 +167,25 @@ class FinalTitleAgent:
             "- No clickbait.\n"
             "- No promises of testing.\n"
             "- Avoid 'Top', 'Best', 'Ultimate', 'Must-Have' style openers.\n"
+            "- Avoid overfitting to a specific city (e.g., London) unless explicitly requested.\n"
             "Return JSON with key: candidates (array of strings).\n"
         )
 
         user = (
             f"TOPIC: {topic}\n"
             f"CATEGORY: {category or 'n/a'}\n\n"
+            f"PRODUCT MIX (heuristic): {mix_str}\n"
+            f"MIXED SET: {'yes' if mix.is_mixed else 'no'}\n\n"
+            f"PRODUCT TITLES (sample):\n{products_snip}\n\n"
+            f"USER TITLE HINT (optional): {user_hint_title or ''}\n"
+            f"USER DESCRIPTION HINT (optional): {(user_hint_description or '')[:300]}\n\n"
             f"INTRO (excerpt):\n{(intro or '')[:500]}\n\n"
             f"PICKS (excerpts):\n{picks_snip}\n\n"
             f"Generate {self._cfg.num_candidates} candidate titles.\n"
             "Keep them plainspoken and specific.\n"
             "No colons unless truly needed.\n"
+            "If the product set is mixed (e.g., umbrellas + ponchos + raincoats), prefer an umbrella title like '\n"
+            "Travel rain gear essentials' rather than naming only one subtype.\n"
         )
 
         data = self._llm.complete_json(system=system, user=user)
@@ -206,13 +229,18 @@ class FinalTitleAgent:
                 picks=picks or [],
                 alternatives=alternatives,
             )
-            if v.inferred_mode == "digital_only":
-                base = f"Tools for Managing {topic}"
-            elif v.inferred_mode == "mixed":
-                base = f"Tools for Managing {topic}"
+            topic_clean = re.sub(r"[_\-]+", " ", str(topic or "")).strip()
+
+            # Prefer umbrella wording for mixed physical sets.
+            if mix.is_mixed and (category or "").strip().lower() == "travel":
+                base = "Travel rain gear essentials"
+            elif mix.is_mixed:
+                base = f"{topic_clean} essentials" if topic_clean else "Travel rain gear essentials"
+            elif v.inferred_mode in {"digital_only", "mixed"}:
+                base = f"Tools for Managing {topic_clean or topic}"
             else:
-                # physical-only: avoid "apps/software" language
-                base = f"Tools for Organizing {topic}"
+                # Physical-only: keep it simple and non-clicky.
+                base = f"{topic_clean or topic} essentials"
 
             base = _truncate_to_max_chars(base, self._cfg.max_chars)
             return to_title_case(base)
