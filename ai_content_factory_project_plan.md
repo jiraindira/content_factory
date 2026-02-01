@@ -152,8 +152,9 @@ M3 ─ Brand Understanding & Source Ingestion
 M4 ─ Pipeline Refactor (Spec‑Driven)
 M5 ─ Delivery Adapters
 M6 ─ Operational Tooling & Docs
-M7 ─ Affiliate API Product Automation (Backlog)
-M8 ─ Single-Recipient Email Sending (Backlog)
+M7 ─ Multi-Intent Agents (Neutral Content Generation)
+M8 ─ Affiliate API Product Automation (Backlog)
+M9 ─ Single-Recipient Email Sending (Optional, Backlog)
 ```
 
 Milestones are sequential and must not overlap.
@@ -448,7 +449,36 @@ Make the system usable and safe.
 
 ---
 
-## 🧾 MILESTONE 7: Affiliate API Product Automation (Backlog)
+## 🧠 MILESTONE 7: Multi-Intent Agents (Neutral Content Generation)
+
+**Goal**
+Make the “agent stack” correct for non-affiliate use cases by separating intent/form-specific writing from legacy affiliate/blog assumptions.
+
+### Problem statement
+
+The legacy `agents/` pipeline is optimized for product/blog posts (picks sections, product count, "Skip it if" guidance, buying-guide phrasing).
+As we broaden beyond product affiliate blogging, we must prevent accidental buying-guide bias from leaking into thought leadership, email, and LinkedIn.
+
+### Tasks
+
+* [x] (added) Audit legacy `agents/` + `pipeline/` and classify which components are product/blog-specific vs reusable (`docs/legacy_agents_audit.md`)
+* [x] (added) Add an explicit intent/form router for any future LLM-driven generation (product vs thought leadership)
+* [ ] (added) Define a neutral, content-first generation contract (populate `ContentArtifact.sections/claims/sources` first; adapters format later)
+* [x] (added) Implement a thought-leadership writer path that never references products, “picks”, “what to buy”, or affiliate language
+* [x] (added) Implement product-recommendation writer path that respects manual products and avoids invented specs/claims
+* [ ] (added) Replace/extend QA rules so they’re channel-appropriate (blog vs email vs LinkedIn) and not dependent on a “picks” section
+* [x] (added) Add unit tests proving: (1) thought leadership outputs contain no buying-guide tokens, (2) product outputs require products, (3) routing is deterministic
+* [ ] (added) Update docs to explain the split between legacy affiliate engine and multi-intent content factory
+
+### Definition of Done
+
+* Thought leadership generation is structurally and linguistically non-affiliate by default
+* Product recommendation generation remains safe (no invented product facts) and explicitly gated by intent/form
+* Unit tests added and `python -m unittest` is green
+
+---
+
+## 🧾 MILESTONE 8: Affiliate API Product Automation (Backlog)
 
 **Goal**
 Enable optional automatic product retrieval/enrichment via affiliate APIs.
@@ -471,14 +501,14 @@ This milestone is explicitly **not required** for v1, which remains manual links
 
 ---
 
-## 📨 MILESTONE 8: Single-Recipient Email Sending (Optional, Backlog)
+## 📨 MILESTONE 9: Single-Recipient Email Sending (Optional, Backlog)
 
 **Goal**
 Optionally send an email-ready output to a single client recipient.
 
 This is explicitly **not part of Milestone 5**. Milestone 5 is export-only.
 
-This milestone is lower priority than onboarding/operational CLI work (Milestone 6).
+This milestone is lower priority than neutral multi-intent work (Milestones 6–7).
 
 ### Tasks
 
@@ -509,8 +539,6 @@ This milestone is lower priority than onboarding/operational CLI work (Milestone
 
 ## 5. Next Action
 
-Await explicit approval to begin:
+Milestone 7 is approved. Proceed with implementation.
 
-**→ Approve Milestone 7**
-
-No work will start before approval.
+**→ Continue Milestone 7 (Multi-Intent Agents)**

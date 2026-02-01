@@ -13,6 +13,7 @@ from content_factory.brand_context import (
     write_brand_context_artifact,
 )
 from content_factory.compiler import compile_content_artifact
+from content_factory.generation import generate_filled_artifact
 from content_factory.onboarding import write_onboarding_files
 from content_factory.validation import load_brand_profile, load_content_request, validate_request_against_brand
 
@@ -100,6 +101,10 @@ def cmd_run(args: argparse.Namespace) -> int:
 
     run_id = args.run_id or request_path.stem
     artifact = compile_content_artifact(brand=brand, request=req, brand_context=ctx, run_id=run_id)
+
+    # Populate content deterministically via intent/form-specific generation.
+    _ = generate_filled_artifact(brand=brand, request=req, artifact=artifact)
+
     validate_artifact_against_specs(brand=brand, request=req, artifact=artifact)
 
     out_artifact_path = write_content_artifact(repo_root=repo_root, artifact=artifact)
