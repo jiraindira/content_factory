@@ -316,12 +316,12 @@ Fail fast with precise, human‑readable errors.
 
 ### Tasks
 
-* [ ] Implement Pydantic models for all schemas
-* [ ] Enum enforcement everywhere
-* [ ] Illegal matrix validation
-* [ ] Brand source requirement validation
-* [ ] Domain → persona validation
-* [ ] Unit tests for valid and invalid configs
+* [x] Implement Pydantic models for all schemas (`content_factory/models.py`)
+* [x] Enum enforcement everywhere
+* [x] Illegal matrix validation (`content_factory/validation.py` + `ai_content_factory_schema.yaml`)
+* [x] Brand source requirement validation (`content_factory/models.py`)
+* [x] Domain → persona validation (`content_factory/validation.py`)
+* [x] Unit tests for valid and invalid configs (`tests/test_content_factory_validation.py`)
 
 ### Definition of Done
 
