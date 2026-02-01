@@ -431,6 +431,7 @@ Make the system usable and safe.
 
 ### Tasks
 
+* [ ] CLI: onboard a new client (scaffold brand YAML + request YAML + folders)
 * [ ] CLI: validate brand files
 * [ ] CLI: validate run requests
 * [ ] CLI: execute a run
@@ -441,6 +442,7 @@ Make the system usable and safe.
 ### Definition of Done
 
 * A new brand can be onboarded without code changes
+* A new brand can be onboarded via CLI + YAML (no manual file copying)
 * Invalid configs fail before runtime
 * Docs reflect actual behaviour
 
@@ -475,6 +477,8 @@ This milestone is explicitly **not required** for v1, which remains manual links
 Optionally send an email-ready output to a single client recipient.
 
 This is explicitly **not part of Milestone 5**. Milestone 5 is export-only.
+
+This milestone is lower priority than onboarding/operational CLI work (Milestone 6).
 
 ### Tasks
 
