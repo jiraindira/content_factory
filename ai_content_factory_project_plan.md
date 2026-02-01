@@ -165,22 +165,22 @@ Define the complete, explicit mental model of the system.
 
 ### Tasks
 
-* [ ] Finalise global enums
-* [ ] Finalise illegal combinations matrix
-* [ ] Finalise Brand Profile YAML schema
-* [ ] Finalise Content Request YAML schema
-* [ ] Add `brand_sources` section with enums and requirements
-* [ ] **Define the Robust `ContentArtifact` contract (output schema)**
+* [x] Finalise global enums (`ai_content_factory_schema.yaml`)
+* [x] Finalise illegal combinations matrix (`ai_content_factory_schema.yaml`)
+* [x] Finalise Brand Profile YAML schema (`ai_content_factory_schema.yaml` + `content_factory/brands/` examples)
+* [x] Finalise Content Request YAML schema (`ai_content_factory_schema.yaml` + `content_factory/requests/` examples)
+* [x] Add `brand_sources` section with enums and requirements
+* [x] **Define the Robust `ContentArtifact` contract (output schema)**
 
-  * [ ] Sections + blocks structure (no blob-only output)
-  * [ ] Products payload (conditional)
-  * [ ] Claims list with types + citation requirement flags
-  * [ ] Sources list (URL/file IDs + what they support)
-  * [ ] Constraints/compliance checklist (matrix + brand policy checks)
-  * [ ] Generation metadata (brand, intent, form, domain, persona/modifiers, depth, version, timestamps)
-* [ ] Add example brand configs (Alisa + Affiliate)
-* [ ] Add example run request
-* [ ] Add example ContentArtifact output JSON
+  * [x] Sections + blocks structure (no blob-only output)
+  * [x] Products payload (conditional)
+  * [x] Claims list with types + citation requirement flags
+  * [x] Sources list (URL/file IDs + what they support)
+  * [x] Constraints/compliance checklist (matrix + brand policy checks)
+  * [x] Generation metadata (brand, intent, form, domain, persona/modifiers, depth, version, timestamps)
+* [x] Add example brand configs (Alisa + Affiliate) (`content_factory/brands/`)
+* [x] Add example run request (`content_factory/requests/`)
+* [x] Add example ContentArtifact output JSON (`content_factory/examples/`)
 
 ### Robust ContentArtifact Contract (v1)
 
