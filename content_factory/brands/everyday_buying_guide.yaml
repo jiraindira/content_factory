@@ -47,7 +47,7 @@ persona_by_domain:
     personal_presence: none
     narration_mode: third_person_only
   kitchen:
-    primary_persona: enthusiastic_enthusiast
+    primary_persona: practical_expert
     persona_modifiers: [none]
     science_explicitness: implied
     personal_presence: none
