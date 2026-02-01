@@ -19,8 +19,10 @@ from content_factory.brand_context import BrandContextArtifact
 from content_factory.models import BrandProfile, ContentIntent, ContentRequest, ProductRecommendationForm
 
 
-def _utc_now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
+def _generated_at_for_request(*, request: ContentRequest) -> str:
+    # Deterministic: derived from the validated publish date.
+    d = request.publish.publish_date
+    return datetime(d.year, d.month, d.day, 0, 0, 0, tzinfo=timezone.utc).isoformat()
 
 
 def resolve_topic_value(*, brand: BrandProfile, request: ContentRequest) -> str:
@@ -181,7 +183,7 @@ def compile_content_artifact(
     return ContentArtifact(
         brand_id=brand.brand_id,
         run_id=run_id,
-        generated_at=_utc_now_iso(),
+        generated_at=_generated_at_for_request(request=request),
         intent=request.intent.value,
         form=request.form.value,
         domain=request.domain.value,
