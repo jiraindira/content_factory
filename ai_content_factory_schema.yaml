@@ -1,0 +1,472 @@
+# ============================================================
+# Canonical YAML Schema (v1)
+# - Hard-fail only
+# - No overrides
+# - Enumerated values only (unless explicitly noted)
+#
+# Files you will maintain:
+#   1) schemas/enums.yaml          (global enums + descriptions)
+#   2) schemas/illegal_matrix.yaml (global hard-fail rules)
+#   3) brands/<brand_id>.yaml      (per-client config)
+#   4) requests/<run>.yaml         (per-run content request)
+# ============================================================
+
+
+# ============================================================
+# 1) schemas/enums.yaml
+# ============================================================
+enums:
+  # ---- Brand archetype (brand-level) ----
+  brand_archetype:
+    trusted_guide: "Calm, reliable advisor; prioritises clarity and fair trade-offs."
+    expert_reviewer: "Detail-oriented evaluator; comfortable criticising products/ideas."
+    enthusiastic_enthusiast: "Passionate, upbeat, honest; shares excitement responsibly."
+    lifestyle_curator: "Focuses on fit-to-life, routines, aesthetics; less spec-heavy."
+
+  # ---- Intent (per-run, must be singular) ----
+  content_intent:
+    product_recommendation: "Help reader decide what to buy (ranking/comparing/evaluating)."
+    product_education: "Teach how to choose/use; may include recommendations if allowed by brand."
+    thought_leadership: "Original perspectives/frameworks to build authority and trust."
+    opinion_pov: "A clear stance; persuasive; may be contrarian."
+    digest_curation: "Curated roundup; filtering + light commentary."
+
+  # ---- Product recommendation forms ----
+  product_recommendation_form:
+    top_x_list: "Multi-product list of best options for a defined use case."
+    in_depth_single_review: "Deep dive into one product; strengths/weaknesses/ideal user."
+    comparison_table: "Side-by-side comparison using consistent criteria."
+    buyer_guide: "Teaches selection criteria; may recommend within the guide."
+    alternatives_roundup: "Short list of secondary options for different needs."
+
+  # ---- Thought leadership forms ----
+  thought_leadership_form:
+    core_insight_essay: "One central idea developed logically; ends with clear takeaway."
+    framework_breakdown: "Explains a model/system; explicit components; teachable."
+    contrarian_take: "Challenges a common belief; provocative but reasoned."
+    myths_vs_reality: "Corrects misconceptions; multiple short sections; educational."
+    narrative_with_lesson: "Story/anecdote first; insight extracted; controlled emotion."
+    micro_case_study: "Specific scenario; pattern → insight → outcome; practical."
+    question_led_exploration: "Starts with a sharp question; explores thoughtfully."
+
+  # ---- Domains (extend by adding new keys only) ----
+  domain:
+    leadership: "Leadership, exec presence, communication, org dynamics."
+    pets: "Pet care, comfort, owner convenience."
+    home: "Household, durability, everyday living."
+    kitchen: "Cooking tools, appliances, food-related accessories."
+    tech: "Consumer gadgets/electronics."
+
+  # ---- Personas (voice behavior) ----
+  persona:
+    practical_expert: "Grounded, solution-oriented; clear trade-offs; no fluff."
+    warm_reflective: "Empathetic, thoughtful; invites reflection; gentle authority."
+    quirky_fun: "Light humor; relatable scenarios; never silly or flippant."
+    minimalist_direct: "Concise, no-nonsense; every sentence earns its place."
+    deeply_technical: "Mechanisms/specs; precise language; assumes sophistication."
+    calm_authoritative: "Measured confidence; evidence-first; steady tone."
+    direct_insight_dense: "High-signal, compressed thinking; assumes sharp reader."
+    provocative_challenger: "Challenges assumptions; tension used carefully; still fair."
+    minimalist_executive: "Strategic, brief, composed; boardroom style."
+
+  # ---- Persona modifiers (optional, constrained) ----
+  persona_modifier:
+    science_led_explainer: "Explicit mechanisms/research references where credibility helps."
+    reassuring: "Reduces uncertainty; confirms reader’s feelings without coddling."
+    slightly_playful: "Small warmth/humor without changing persona."
+    none: "No modifiers."
+
+  science_explicitness:
+    implied: "Do not name physiology/neuroscience explicitly."
+    explicit_when_credibility_helpful: "Name science only when it strengthens trust."
+    explicit_often: "Science references are a common feature."
+
+  personal_presence:
+    none: "No personal anecdotes or first-person experiences."
+    occasional_personal_anecdotes: "Rare, relevant first-person moments; not dominant."
+    frequent_personal_anecdotes: "Regular first-person framing (still professional)."
+
+  narration_mode:
+    third_person_only: "Brand voice only; no 'I'."
+    first_person_allowed: "First-person allowed within constraints."
+    first_person_preferred: "Default to first-person voice."
+
+  # ---- Audience ----
+  primary_audience:
+    senior_executives_c_suite: "C-suite/senior execs, often public-facing."
+    mid_level_leaders: "Managers/leaders in the middle."
+    founders_entrepreneurs: "Founders/operators."
+    sales_leaders: "Sales leadership audience."
+    professional_speakers: "Keynote/pro speaking audience."
+    coaches_consultants: "Coaches/consultants audience."
+    general_consumers: "Everyday shoppers."
+    enthusiasts_hobbyists: "Highly engaged hobbyists."
+
+  audience_sophistication:
+    low: "New to topic; needs explanation."
+    medium: "Some familiarity; balanced."
+    high: "Sophisticated; expects nuance."
+
+  # ---- Commercial posture ----
+  commercial_posture:
+    invisible: "No buying/selling language."
+    soft_recommendation: "Gentle suggestions; no pressure."
+    clear_recommendation: "Direct recs; no urgency."
+    explicit_cta: "Clear invitation to buy/engage."
+
+  cta_policy:
+    none: "No CTA line."
+    soft_authority_signature_line: "One quiet line referencing your work; no pitch."
+    gentle_cta_at_end: "Small invitation to reach out; no urgency."
+    clear_invitation: "Direct invitation to work together."
+
+  prohibited_behavior:
+    fake_scarcity: "Scarcity/urgency that isn't real."
+    hype_superlatives: "‘Best ever’, ‘game-changer’ etc."
+    pressure_language: "Guilt or pushy tactics."
+
+  # ---- Content depth (brand-level fixed) ----
+  content_depth:
+    micro: "1–2 insights; ultra short."
+    short: "One idea with light elaboration."
+    medium: "One idea fully developed with nuance."
+    long: "Deep exploration; multi-layered."
+
+  # ---- Delivery ----
+  delivery_channel:
+    blog_article: "Evergreen article format."
+    email: "Email-friendly formatting."
+    social_longform: "LinkedIn-style long post."
+    social_shortform: "Short social post."
+    video_script: "Script format (future)."
+
+  delivery_destination:
+    hosted_by_us: "Your hosted site (Astro)."
+    client_website: "Client’s website/CMS."
+    linkedin: "LinkedIn destination."
+    email_list: "Newsletter/email list."
+    tiktok: "TikTok channel."
+    internal_only: "Not public."
+
+  delivery_strategy:
+    single_canonical_article: "One master artifact; no adaptation variants."
+    canonical_plus_short_social: "Master + derived short version (future)."
+
+  auto_publish:
+    false: "No automated posting."
+    true: "Automated posting enabled (future)."
+
+  publication_cadence:
+    on_demand: "Manual runs only."
+    weekly: "Once a week."
+    twice_weekly: "Two per week."
+    every_other_week: "Biweekly."
+    daily: "Daily."
+    custom: "Custom schedule (must specify)."
+
+  weekday:
+    mon: "Monday"
+    tue: "Tuesday"
+    wed: "Wednesday"
+    thu: "Thursday"
+    fri: "Friday"
+    sat: "Saturday"
+    sun: "Sunday"
+
+  timezone:
+    UTC: "UTC"
+    Europe_London: "Europe/London"
+
+
+# ============================================================
+# 2) schemas/illegal_matrix.yaml (hard-fail rules)
+# (Keep it data-driven; no overrides)
+# ============================================================
+illegal_matrix:
+  intent_x_form:
+    thought_leadership:
+      - top_x_list
+      - comparison_table
+      - in_depth_single_review
+    product_recommendation:
+      - narrative_with_lesson
+      - contrarian_take
+      - question_led_exploration
+    digest_curation:
+      - framework_breakdown
+
+  persona_x_form:
+    minimalist_executive:
+      - narrative_with_lesson
+      - myths_vs_reality
+    deeply_technical:
+      - quirky_fun
+    provocative_challenger:
+      - buyer_guide
+    quirky_fun:
+      - framework_breakdown
+    warm_reflective:
+      - comparison_table
+    direct_insight_dense:
+      - narrative_with_lesson
+
+  persona_x_commercial_posture:
+    provocative_challenger:
+      - explicit_cta
+    warm_reflective:
+      - explicit_cta
+    calm_authoritative:
+      - explicit_cta # optional; keep if you want extra strictness
+
+  domain_x_persona:
+    leadership:
+      - quirky_fun
+    finance:
+      - quirky_fun
+    health:
+      - provocative_challenger
+    pets:
+      - deeply_technical
+
+  depth_x_channel:
+    long:
+      - social_shortform
+    micro:
+      - blog_article
+    short:
+      - in_depth_single_review
+
+  persona_x_modifier:
+    quirky_fun:
+      - science_led_explainer # when explicit, tone clash
+    minimalist_executive:
+      - slightly_playful
+    provocative_challenger:
+      - reassuring
+
+  destination_x_posture:
+    linkedin:
+      - explicit_cta
+    hosted_by_us:
+      - explicit_cta # optional strictness
+    tiktok:
+      - long # not a posture, but you can enforce via channel/depth instead
+
+
+# ============================================================
+# 3) brands/<brand_id>.yaml (Brand Profile - per client)
+# ============================================================
+brand_profile_template:
+  brand_id: "string (kebab_case)"
+  brand_archetype: "enum: brand_archetype"
+
+  domains_supported: ["enum: domain", "..."]
+  domain_primary: "enum: domain"
+
+  audience:
+    primary_audience: "enum: primary_audience"
+    audience_sophistication: "enum: audience_sophistication"
+    audience_context: "string (optional, short; allowed free text)"
+
+  content_strategy:
+    allowed_intents: ["enum: content_intent"]
+    # forms allowed per intent
+    allowed_product_recommendation_forms: ["enum: product_recommendation_form"]
+    allowed_thought_leadership_forms: ["enum: thought_leadership_form"]
+    default_content_depth: "enum: content_depth (FIXED PER BRAND)"
+
+  persona_by_domain:
+    # one persona per domain, modifiers optional
+    leadership:
+      primary_persona: "enum: persona"
+      persona_modifiers: ["enum: persona_modifier"] # or ["none"]
+      science_explicitness: "enum: science_explicitness"
+      personal_presence: "enum: personal_presence"
+      narration_mode: "enum: narration_mode"
+    # pets/home/kitchen/etc repeat as needed
+
+  commercial_policy:
+    commercial_posture: "enum: commercial_posture"
+    cta_policy: "enum: cta_policy"
+    prohibited_behaviors: ["enum: prohibited_behavior", "..."]
+
+  delivery_policy:
+    delivery_channels: ["enum: delivery_channel", "..."]
+    delivery_destinations: ["enum: delivery_destination", "..."]
+    delivery_strategy: "enum: delivery_strategy"
+    auto_publish: "enum: auto_publish"
+
+  cadence:
+    publication_cadence: "enum: publication_cadence"
+    preferred_publish_days: ["enum: weekday"]  # optional, but required if cadence=custom
+    time_zone: "enum: timezone"
+
+
+# ============================================================
+# 4) requests/<run>.yaml (Per-run Content Request)
+# - Must validate against brand + matrix
+# ============================================================
+content_request_template:
+  brand_id: "string (must match a brand profile)"
+
+  intent: "enum: content_intent (SINGLE)"
+  form: "enum: product_recommendation_form OR thought_leadership_form (SINGLE)"
+  domain: "enum: domain (SINGLE)  # must be in brand.domains_supported"
+
+  topic:
+    mode: "enum: [manual, auto]"
+    value: "string (required if manual)"
+    # optional for future:
+    # seed: "string"
+    # constraints: ["string"]
+
+  # Delivery target for this run (subset of brand allowed)
+  delivery_target:
+    destination: "enum: delivery_destination"
+    channel: "enum: delivery_channel"
+
+  # Products only when intent involves products
+  products:
+    mode: "enum: [none, manual_list, engine_selects, manual_plus_suggestions]"
+    items:
+      - pick_id: "string"
+        title: "string"
+        url: "string"
+        rating: "number (optional)"
+        reviews_count: "int (optional)"
+
+
+# ============================================================
+# EXAMPLE BRAND: Alisa (thought leadership)
+# brands/alisa_amouage.yaml
+# ============================================================
+alisa_amouage_example:
+  brand_id: "alisa_amouage"
+  brand_archetype: trusted_guide
+
+  domains_supported: [leadership]
+  domain_primary: leadership
+
+  audience:
+    primary_audience: senior_executives_c_suite
+    audience_sophistication: high
+    audience_context: "Execs who speak publicly or represent the company"
+
+  content_strategy:
+    allowed_intents: [thought_leadership]
+    allowed_product_recommendation_forms: []
+    allowed_thought_leadership_forms:
+      - core_insight_essay
+      - framework_breakdown
+      - myths_vs_reality
+      - micro_case_study
+      - question_led_exploration
+      - contrarian_take
+      - narrative_with_lesson
+    default_content_depth: medium
+
+  persona_by_domain:
+    leadership:
+      primary_persona: warm_reflective
+      persona_modifiers: [science_led_explainer]
+      science_explicitness: explicit_when_credibility_helpful
+      personal_presence: occasional_personal_anecdotes
+      narration_mode: first_person_allowed
+
+  commercial_policy:
+    commercial_posture: invisible
+    cta_policy: soft_authority_signature_line
+    prohibited_behaviors: [fake_scarcity, hype_superlatives, pressure_language]
+
+  delivery_policy:
+    delivery_channels: [blog_article, social_longform]
+    delivery_destinations: [linkedin, client_website]
+    delivery_strategy: single_canonical_article
+    auto_publish: false
+
+  cadence:
+    publication_cadence: weekly
+    preferred_publish_days: [tue]
+    time_zone: Europe_London
+
+
+# ============================================================
+# EXAMPLE RUN REQUEST: Alisa first post
+# requests/alisa_2026-01-28.yaml
+# ============================================================
+alisa_run_example:
+  brand_id: "alisa_amouage"
+  intent: thought_leadership
+  form: core_insight_essay
+  domain: leadership
+
+  topic:
+    mode: manual
+    value: "Define voice readiness clearly for senior executives"
+
+  delivery_target:
+    destination: linkedin
+    channel: social_longform
+
+  products:
+    mode: none
+    items: []
+
+
+# ============================================================
+# EXAMPLE BRAND: Affiliate (product recommendation, multi-domain)
+# brands/everyday_buying_guide.yaml
+# ============================================================
+affiliate_brand_example:
+  brand_id: "everyday_buying_guide"
+  brand_archetype: trusted_guide
+
+  domains_supported: [pets, home, kitchen]
+  domain_primary: home
+
+  audience:
+    primary_audience: general_consumers
+    audience_sophistication: medium
+    audience_context: "Everyday shoppers who want clear recommendations"
+
+  content_strategy:
+    allowed_intents: [product_recommendation]
+    allowed_product_recommendation_forms: [top_x_list, in_depth_single_review, buyer_guide, alternatives_roundup]
+    allowed_thought_leadership_forms: []
+    default_content_depth: short
+
+  persona_by_domain:
+    pets:
+      primary_persona: quirky_fun
+      persona_modifiers: [none]
+      science_explicitness: implied
+      personal_presence: none
+      narration_mode: third_person_only
+    home:
+      primary_persona: practical_expert
+      persona_modifiers: [none]
+      science_explicitness: implied
+      personal_presence: none
+      narration_mode: third_person_only
+    kitchen:
+      primary_persona: enthusiastic_enthusiast
+      persona_modifiers: [none]
+      science_explicitness: implied
+      personal_presence: none
+      narration_mode: third_person_only
+
+  commercial_policy:
+    commercial_posture: clear_recommendation
+    cta_policy: gentle_cta_at_end
+    prohibited_behaviors: [fake_scarcity, hype_superlatives, pressure_language]
+
+  delivery_policy:
+    delivery_channels: [blog_article, email]
+    delivery_destinations: [hosted_by_us, email_list]
+    delivery_strategy: single_canonical_article
+    auto_publish: false
+
+  cadence:
+    publication_cadence: weekly
+    preferred_publish_days: [wed]
+    time_zone: Europe_London
