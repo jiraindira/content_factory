@@ -454,6 +454,13 @@ Make the system usable and safe.
 **Goal**
 Make the “agent stack” correct for non-affiliate use cases by separating intent/form-specific writing from legacy affiliate/blog assumptions.
 
+### PR-style summary (what shipped)
+
+* Added deterministic intent/form routing and generation paths (thought leadership vs product recommendation)
+* Wired generation into the Content Factory `run` pipeline (compile → generate → validate → render)
+* Added unit tests to prevent buying-guide leakage in thought leadership and to enforce product gating
+* Added a legacy agent bias/reuse audit to document what should not run for non-affiliate intents
+
 ### Problem statement
 
 The legacy `agents/` pipeline is optimized for product/blog posts (picks sections, product count, "Skip it if" guidance, buying-guide phrasing).
@@ -475,6 +482,12 @@ As we broaden beyond product affiliate blogging, we must prevent accidental buyi
 * Thought leadership generation is structurally and linguistically non-affiliate by default
 * Product recommendation generation remains safe (no invented product facts) and explicitly gated by intent/form
 * Unit tests added and `python -m unittest` is green
+
+### Remaining work (to finish M7)
+
+* Define a neutral, content-first generation contract (populate `sections/claims/sources` first; adapters format later)
+* Replace/extend QA rules so they’re channel-appropriate (blog vs email vs LinkedIn) and not dependent on a “picks” section
+* Update docs to explain the split between the legacy affiliate engine and the multi-intent content factory
 
 ---
 
@@ -542,3 +555,9 @@ This milestone is lower priority than neutral multi-intent work (Milestones 6–
 Milestone 7 is approved. Proceed with implementation.
 
 **→ Continue Milestone 7 (Multi-Intent Agents)**
+
+Suggested order:
+
+1) Define the neutral generation contract
+2) Add channel-appropriate QA (per delivery target)
+3) Update docs (architecture split + routing rationale)
