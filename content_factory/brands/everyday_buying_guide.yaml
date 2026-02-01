@@ -1,0 +1,75 @@
+brand_id: everyday_buying_guide
+brand_archetype: trusted_guide
+
+brand_sources:
+  require_at_least_one_of_purposes: [homepage, linkedin_profile]
+  sources:
+    - source_id: ebg_home
+      kind: url
+      purpose: homepage
+      ref: https://example.com
+
+domains_supported: [pets, home, kitchen]
+domain_primary: home
+
+audience:
+  primary_audience: general_consumers
+  audience_sophistication: medium
+  audience_context: Everyday shoppers who want clear recommendations
+
+content_strategy:
+  allowed_intents: [product_recommendation]
+  allowed_product_recommendation_forms:
+    - top_x_list
+    - in_depth_single_review
+    - buyer_guide
+    - alternatives_roundup
+  allowed_thought_leadership_forms: []
+  default_content_depth: short
+
+topic_policy:
+  allowlist:
+    - Best pet gifts for new dog owners
+    - Kitchen tools for small apartments
+    - Affordable home upgrades
+
+persona_by_domain:
+  pets:
+    primary_persona: quirky_fun
+    persona_modifiers: [none]
+    science_explicitness: implied
+    personal_presence: none
+    narration_mode: third_person_only
+  home:
+    primary_persona: practical_expert
+    persona_modifiers: [none]
+    science_explicitness: implied
+    personal_presence: none
+    narration_mode: third_person_only
+  kitchen:
+    primary_persona: enthusiastic_enthusiast
+    persona_modifiers: [none]
+    science_explicitness: implied
+    personal_presence: none
+    narration_mode: third_person_only
+
+commercial_policy:
+  commercial_posture: clear_recommendation
+  cta_policy: gentle_cta_at_end
+  prohibited_behaviors: [fake_scarcity, hype_superlatives, pressure_language]
+
+disclaimer_policy:
+  required: true
+  disclaimer_text: "Disclosure: This post may contain affiliate links. If you buy through our links, we may earn a commission at no extra cost to you."
+  locations: [header, before_products, footer]
+
+delivery_policy:
+  delivery_channels: [blog_article, email]
+  delivery_destinations: [hosted_by_us, email_list]
+  delivery_strategy: single_canonical_article
+  auto_publish: false
+
+cadence:
+  publication_cadence: weekly
+  preferred_publish_days: [wed]
+  time_zone: Europe_London

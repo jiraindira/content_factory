@@ -1,0 +1,120 @@
+{
+  "artifact_version": "1.0",
+  "brand_id": "alisa_amouage",
+  "run_id": "alisa_2026-02-01",
+  "generated_at": "2026-02-01T10:15:00Z",
+  "intent": "thought_leadership",
+  "form": "core_insight_essay",
+  "domain": "leadership",
+  "content_depth": "medium",
+  "audience": {
+    "primary_audience": "senior_executives_c_suite",
+    "audience_sophistication": "high"
+  },
+  "persona": {
+    "primary_persona": "warm_reflective",
+    "persona_modifiers": ["science_led_explainer"],
+    "science_explicitness": "explicit_when_credibility_helpful",
+    "personal_presence": "occasional_personal_anecdotes",
+    "narration_mode": "first_person_allowed"
+  },
+  "sections": [
+    {
+      "id": "intro",
+      "heading": null,
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "Most senior leaders don’t lack a voice. They lack a definition of what they want their voice to do in the room.",
+          "items": null,
+          "meta": null
+        }
+      ]
+    },
+    {
+      "id": "core_idea",
+      "heading": "Voice readiness is clarity, not charisma",
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "Voice readiness is the ability to produce the right level of clarity under the right level of pressure. Not louder. Not more polished. Clearer.",
+          "items": null,
+          "meta": null
+        },
+        {
+          "type": "bullets",
+          "text": null,
+          "items": [
+            "Clarity of intent: what outcome do you want this message to create?",
+            "Clarity of boundary: what are you not willing to imply or promise?",
+            "Clarity of pacing: what must be said now vs later?"
+          ],
+          "meta": null
+        }
+      ]
+    },
+    {
+      "id": "closing",
+      "heading": "A practical next step",
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "Before your next high-stakes conversation, write a single sentence that begins: ‘By the end of this, I want them to feel…’ If you can’t write it, you’re not voice-ready yet.",
+          "items": null,
+          "meta": null
+        },
+        {
+          "type": "callout",
+          "text": "This content is for informational purposes only and does not constitute professional advice.",
+          "items": null,
+          "meta": null
+        }
+      ]
+    }
+  ],
+  "products": null,
+  "rationale": {
+    "how_chosen_blocks": [
+      {
+        "type": "paragraph",
+        "text": "This post focuses on a single operational definition to reduce ambiguity and improve repeatability under pressure.",
+        "items": null,
+        "meta": null
+      }
+    ],
+    "selection_criteria": [
+      "Actionable for senior executives",
+      "Non-performative; prioritises clarity",
+      "Avoids unverifiable claims"
+    ]
+  },
+  "claims": [
+    {
+      "id": "c1",
+      "text": "Voice readiness is the ability to maintain clarity under pressure.",
+      "claim_type": "inference",
+      "requires_citation": false,
+      "supported_by_source_ids": []
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "alisa_home",
+      "kind": "url",
+      "ref": "https://example.com",
+      "purpose": "homepage",
+      "notes": null
+    }
+  ],
+  "checks": {
+    "matrix_validation_passed": true,
+    "brand_policy_checks_passed": true,
+    "required_sections_present": true,
+    "products_present_when_required": true,
+    "citations_present_when_required": true,
+    "topic_allowlist_passed": true,
+    "required_disclaimers_present": true,
+    "robots_policy_passed": true,
+    "disallowed_claims_found": []
+  }
+}

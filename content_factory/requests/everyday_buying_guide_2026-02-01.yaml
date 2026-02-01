@@ -1,0 +1,32 @@
+brand_id: everyday_buying_guide
+
+publish:
+  publish_date: 2026-02-01
+
+intent: product_recommendation
+form: top_x_list
+domain: kitchen
+
+topic:
+  mode: manual
+  value: Kitchen tools for small apartments
+
+delivery_target:
+  destination: hosted_by_us
+  channel: blog_article
+
+products:
+  mode: manual_list
+  items:
+    - pick_id: spatula_01
+      title: "Heat-resistant silicone spatula"
+      url: "https://example.com/affiliate/spatula"
+      rating: 4.7
+      reviews_count: 12450
+      provider: "amazon"
+    - pick_id: knife_01
+      title: "Compact chef's knife"
+      url: "https://example.com/affiliate/knife"
+      rating: 4.6
+      reviews_count: 8920
+      provider: "amazon"

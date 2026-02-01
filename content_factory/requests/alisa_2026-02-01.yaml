@@ -1,0 +1,20 @@
+brand_id: alisa_amouage
+
+publish:
+  publish_date: 2026-02-01
+
+intent: thought_leadership
+form: core_insight_essay
+domain: leadership
+
+topic:
+  mode: manual
+  value: Voice readiness for senior executives
+
+delivery_target:
+  destination: linkedin
+  channel: social_longform
+
+products:
+  mode: none
+  items: []
