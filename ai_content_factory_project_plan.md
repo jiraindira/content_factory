@@ -380,11 +380,11 @@ Remove all implicit logic from the content pipeline.
 
 ### Tasks
 
-* [ ] Refactor pipeline to accept Brand + Request only
-* [ ] Deterministic intent → form → persona routing
-* [ ] Inject BrandContextArtifact into agents
-* [ ] Remove agent‑side guessing
-* [ ] Update QA and repair agents to validate against specs
+* [x] Refactor pipeline to accept Brand + Request only (`scripts/run_content_factory.py`)
+* [x] Deterministic intent → form → persona routing (`content_factory/compiler.py`)
+* [x] Inject BrandContextArtifact into agents (`content_factory/compiler.py`)
+* [x] Remove agent‑side guessing (no LLM; structure and metadata are spec-driven)
+* [x] Update QA and repair agents to validate against specs (`content_factory/artifact_validation.py`)
 
 ### Definition of Done
 
@@ -479,6 +479,6 @@ This milestone is explicitly **not required** for v1, which remains manual links
 
 Await explicit approval to begin:
 
-**→ Approve Milestone 4**
+**→ Approve Milestone 5**
 
 No work will start before approval.
