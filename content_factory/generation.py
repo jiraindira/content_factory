@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Iterable
 
-from content_factory.artifact_models import Block, BlockType, ContentArtifact, Section
+from content_factory.artifact_models import Block, BlockType, Claim, ClaimType, ContentArtifact, Section
 from content_factory.models import BrandProfile, ContentRequest
 
 
@@ -97,6 +97,36 @@ def _ensure_bullets(section: Section, items: Iterable[str]) -> None:
     section.blocks.append(Block(type=BlockType.bullets, items=cleaned))
 
 
+def _set_claims(artifact: ContentArtifact, claims: list[Claim]) -> None:
+    # Always overwrite: claims are produced by the generator contract.
+    artifact.claims = claims
+
+
+def _extract_bullet_items(section: Section | None) -> list[str]:
+    if section is None:
+        return []
+    items: list[str] = []
+    for b in section.blocks:
+        if b.type == BlockType.bullets and b.items:
+            items.extend([x for x in b.items if (x or '').strip()])
+    return items
+
+
+def _assert_generation_contract_met(*, artifact: ContentArtifact, path: GenerationPath) -> None:
+    if not artifact.claims:
+        raise ValueError(f"Generation contract requires non-empty artifact.claims (path={path.value})")
+
+    # Only enforce citations when a claim declares it needs one.
+    source_ids = {s.source_id for s in (artifact.sources or [])}
+    for c in artifact.claims:
+        if c.requires_citation:
+            if not c.supported_by_source_ids:
+                raise ValueError(f"Claim requires citation but has no supported_by_source_ids: {c.id}")
+            missing = [sid for sid in c.supported_by_source_ids if sid not in source_ids]
+            if missing:
+                raise ValueError(f"Claim {c.id} references unknown source_ids: {missing}")
+
+
 def _generate_thought_leadership(*, brand: BrandProfile, request: ContentRequest, artifact: ContentArtifact) -> None:
     # Keep only meaningful blocks; preserve disclaimers/topic blocks inserted by the compiler.
     for s in artifact.sections:
@@ -141,7 +171,36 @@ def _generate_thought_leadership(*, brand: BrandProfile, request: ContentRequest
             "Keep it simple, and measure what you actually care about.",
         )
 
+    # Content-first contract: express the main points as structured claims.
+    bullets = _extract_bullet_items(core)
+    claims: list[Claim] = []
+    for i, text in enumerate(bullets[:6], start=1):
+        claims.append(
+            Claim(
+                id=f"clm_core_{i}",
+                text=text,
+                claim_type=ClaimType.advice,
+                requires_citation=False,
+                supported_by_source_ids=[],
+            )
+        )
+
+    # Ensure at least one claim exists even if templates change.
+    if not claims:
+        claims.append(
+            Claim(
+                id="clm_core_1",
+                text="Clarify the constraint and trade-off before choosing tactics.",
+                claim_type=ClaimType.advice,
+                requires_citation=False,
+                supported_by_source_ids=[],
+            )
+        )
+
+    _set_claims(artifact, claims)
+
     _assert_thought_leadership_is_non_affiliate(artifact=artifact)
+    _assert_generation_contract_met(artifact=artifact, path=GenerationPath.thought_leadership)
 
 
 def _generate_product_recommendation(*, brand: BrandProfile, request: ContentRequest, artifact: ContentArtifact) -> None:
@@ -163,14 +222,19 @@ def _generate_product_recommendation(*, brand: BrandProfile, request: ContentReq
         )
 
     if how is not None:
+        how_bullets = [
+            "Match the topic and intended use-case.",
+            "Prefer reputable sellers and clear product pages.",
+            "Avoid overstating performance when details are unknown.",
+        ]
         _ensure_bullets(
             how,
-            [
-                "Match the topic and intended use-case.",
-                "Prefer reputable sellers and clear product pages.",
-                "Avoid overstating performance when details are unknown.",
-            ],
+            how_bullets,
         )
+
+        # Keep rationale structured and channel-agnostic.
+        artifact.rationale.how_chosen_blocks = list(how.blocks)
+        artifact.rationale.selection_criteria = list(how_bullets)
 
     if picks is not None:
         _ensure_bullets(
@@ -183,6 +247,21 @@ def _generate_product_recommendation(*, brand: BrandProfile, request: ContentReq
             closing,
             "If you’re unsure, start with the option that best matches your constraints, then adjust after real-world use.",
         )
+
+    _set_claims(
+        artifact,
+        [
+            Claim(
+                id="clm_products_1",
+                text="Recommendations are based only on the provided product list; verify details on the linked product pages.",
+                claim_type=ClaimType.advice,
+                requires_citation=False,
+                supported_by_source_ids=[],
+            )
+        ],
+    )
+
+    _assert_generation_contract_met(artifact=artifact, path=GenerationPath.product_recommendation)
 
 
 def generate_filled_artifact(

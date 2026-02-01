@@ -51,9 +51,15 @@ class TestContentFactoryGeneration(unittest.TestCase):
         report = generate_filled_artifact(brand=brand, request=req, artifact=artifact)
         self.assertEqual(report.path, GenerationPath.thought_leadership)
 
+        self.assertGreaterEqual(len(artifact.claims), 1)
+
         text = _artifact_text(artifact).lower()
         for bad in ["amazon", "affiliate", "what to buy", "buying guide", "buyers guide", "picks", "buy now"]:
             self.assertNotIn(bad, text)
+
+        claims_text = "\n".join(c.text for c in artifact.claims).lower()
+        for bad in ["amazon", "affiliate", "what to buy", "buying guide", "buyers guide", "picks", "buy now"]:
+            self.assertNotIn(bad, claims_text)
 
     def test_product_recommendation_includes_products_in_picks(self) -> None:
         repo = Path(__file__).resolve().parents[1]
@@ -73,6 +79,8 @@ class TestContentFactoryGeneration(unittest.TestCase):
         artifact = compile_content_artifact(brand=brand, request=req, brand_context=ctx, run_id="run")
         report = generate_filled_artifact(brand=brand, request=req, artifact=artifact)
         self.assertEqual(report.path, GenerationPath.product_recommendation)
+
+        self.assertGreaterEqual(len(artifact.claims), 1)
 
         self.assertIsNotNone(artifact.products)
         self.assertGreaterEqual(len(artifact.products or []), 1)
