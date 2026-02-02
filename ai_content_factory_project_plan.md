@@ -80,6 +80,9 @@ These decisions are final unless this plan is explicitly revised.
 * **Disclaimers:** Required disclaimers must be present; missing disclaimers hard‑fail
 * **Products (v1):** Manual links only (no automatic product retrieval via affiliate APIs)
 * **Products scope:** `products` is present only when the intent/form involves products; otherwise null/omitted
+* **Product URLs (hard-fail):** Product URLs must be non-blank and valid absolute `http://` or `https://` URLs; invalid URLs hard-fail and must not be auto-fixed
+* **Product recommendation shape (operator-controlled):** Product recommendation blog posts are a **Top X** format in v1; this is a global/operator decision (not client-configurable)
+* **Picks section (Top X, hard-fail):** Top X product recommendation outputs must include a `picks` section
 * **Thought leadership links:** Allowed; no special handling (treated as normal links/citations under the same fetch + robots rules)
 * **ContentArtifact contract:** **Robust** (includes structured claims, sources, and compliance checklists)
 
@@ -153,11 +156,16 @@ M4 ─ Pipeline Refactor (Spec‑Driven)
 M5 ─ Delivery Adapters
 M6 ─ Operational Tooling & Docs
 M7 ─ Multi-Intent Agents (Neutral Content Generation)
-M8 ─ Affiliate API Product Automation (Backlog)
-M9 ─ Single-Recipient Email Sending (Optional, Backlog)
 ```
 
-Milestones are sequential and must not overlap.
+Milestones (M1–M7) are sequential and must not overlap.
+
+Backlog (not milestones yet):
+
+```
+B1 ─ Affiliate API Product Automation (formerly M8)
+B2 ─ Single-Recipient Email Sending (Optional) (formerly M9)
+```
 
 ---
 
@@ -222,6 +230,10 @@ The ContentArtifact is the **canonical compiled output** of a run. Delivery adap
 
 * `sections` (list[Section])
 
+Section structure requirements are intent/form dependent.
+
+For **Top X product recommendation** outputs, `sections` must include a `picks` section.
+
 Section
 
 * `id` (string): Stable identifiers such as `intro`, `how_chosen`, `picks`, `alternatives`, `closing`.
@@ -241,13 +253,19 @@ Block
 
 In v1, product entries (including URLs) must be provided explicitly as manual inputs.
 
+Product URL rules:
+
+* URLs must be non-blank strings
+* URLs must be valid absolute `http://` or `https://` URLs
+* Invalid URLs must hard-fail validation; do not auto-correct or guess
+
 Product
 
 * `pick_id` (string)
 
 * `title` (string)
 
-* `url` (string)
+* `url` (string): Non-blank absolute `http(s)` URL
 
 * `rating` (float | null)
 
@@ -473,7 +491,7 @@ As we broaden beyond product affiliate blogging, we must prevent accidental buyi
 * [ ] (added) Define a neutral, content-first generation contract (populate `ContentArtifact.sections/claims/sources` first; adapters format later)
 * [x] (added) Implement a thought-leadership writer path that never references products, “picks”, “what to buy”, or affiliate language
 * [x] (added) Implement product-recommendation writer path that respects manual products and avoids invented specs/claims
-* [ ] (added) Replace/extend QA rules so they’re channel-appropriate (blog vs email vs LinkedIn) and not dependent on a “picks” section
+* [ ] (added) Replace/extend QA rules so they’re channel-appropriate (blog vs email vs LinkedIn) and intent/form-appropriate (e.g., `picks` required for Top X product recommendation, irrelevant/forbidden for thought leadership)
 * [x] (added) Add unit tests proving: (1) thought leadership outputs contain no buying-guide tokens, (2) product outputs require products, (3) routing is deterministic
 * [ ] (added) Update docs to explain the split between legacy affiliate engine and multi-intent content factory
 
@@ -486,17 +504,17 @@ As we broaden beyond product affiliate blogging, we must prevent accidental buyi
 ### Remaining work (to finish M7)
 
 * Define a neutral, content-first generation contract (populate `sections/claims/sources` first; adapters format later)
-* Replace/extend QA rules so they’re channel-appropriate (blog vs email vs LinkedIn) and not dependent on a “picks” section
+* Replace/extend QA rules so they’re channel-appropriate (blog vs email vs LinkedIn) and intent/form-appropriate (e.g., `picks` required for Top X product recommendation, irrelevant/forbidden for thought leadership)
 * Update docs to explain the split between the legacy affiliate engine and the multi-intent content factory
 
 ---
 
-## 🧾 MILESTONE 8: Affiliate API Product Automation (Backlog)
+## 🧾 BACKLOG: Affiliate API Product Automation (formerly Milestone 8)
 
 **Goal**
 Enable optional automatic product retrieval/enrichment via affiliate APIs.
 
-This milestone is explicitly **not required** for v1, which remains manual links only.
+This backlog item is explicitly **not required** for v1, which remains manual links only.
 
 ### Tasks
 
@@ -514,14 +532,14 @@ This milestone is explicitly **not required** for v1, which remains manual links
 
 ---
 
-## 📨 MILESTONE 9: Single-Recipient Email Sending (Optional, Backlog)
+## 📨 BACKLOG: Single-Recipient Email Sending (Optional) (formerly Milestone 9)
 
 **Goal**
 Optionally send an email-ready output to a single client recipient.
 
 This is explicitly **not part of Milestone 5**. Milestone 5 is export-only.
 
-This milestone is lower priority than neutral multi-intent work (Milestones 6–7).
+This backlog item is lower priority than neutral multi-intent work (Milestones 6–7).
 
 ### Tasks
 
