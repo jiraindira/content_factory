@@ -82,6 +82,9 @@ These decisions are final unless this plan is explicitly revised.
 * **Products scope:** `products` is present only when the intent/form involves products; otherwise null/omitted
 * **Product URLs (hard-fail):** Product URLs must be non-blank and valid absolute `http://` or `https://` URLs; invalid URLs hard-fail and must not be auto-fixed
 * **Product recommendation shape (operator-controlled):** Product recommendation blog posts are a **Top X** format in v1; this is a global/operator decision (not client-configurable)
+
+  * Operator config knob (proposed): `operator.product_recommendation_blog_format = top_x`
+  * Future formats may be added, but must remain operator-controlled (clients must not be able to switch formats)
 * **Picks section (Top X, hard-fail):** Top X product recommendation outputs must include a `picks` section
 * **Thought leadership links:** Allowed; no special handling (treated as normal links/citations under the same fetch + robots rules)
 * **ContentArtifact contract:** **Robust** (includes structured claims, sources, and compliance checklists)
