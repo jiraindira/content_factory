@@ -1,4 +1,4 @@
-brand_id: everyday_buying_guide
+brand_id: the_product_wheel
 brand_archetype: trusted_guide
 
 brand_sources:
@@ -7,9 +7,9 @@ brand_sources:
     - source_id: ebg_home
       kind: url
       purpose: homepage
-      ref: https://example.com
+      ref: https://theproductwheel.com
 
-domains_supported: [pets, home, kitchen]
+domains_supported: [home, kitchen, tech, pets, travel]
 domain_primary: home
 
 audience:
