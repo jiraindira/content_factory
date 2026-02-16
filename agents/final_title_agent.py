@@ -13,14 +13,10 @@ class FinalTitleConfig:
     max_chars: int = 60
     num_candidates: int = 12
     banned_starts: tuple[str, ...] = (
-        "Top",
-        "Best",
         "Ultimate",
         "Must-Have",
         "You Need",
         "Our Favorite",
-        "Top Picks",
-        "Best Picks",
     )
 
 
@@ -166,7 +162,7 @@ class FinalTitleAgent:
             f"- Max {self._cfg.max_chars} characters.\n"
             "- No clickbait.\n"
             "- No promises of testing.\n"
-            "- Avoid 'Top', 'Best', 'Ultimate', 'Must-Have' style openers.\n"
+            "- Avoid 'Ultimate' / 'Must-Have' style openers.\n"
             "- Avoid overfitting to a specific city (e.g., London) unless explicitly requested.\n"
             "Return JSON with key: candidates (array of strings).\n"
         )

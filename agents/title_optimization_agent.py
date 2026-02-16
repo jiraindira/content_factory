@@ -75,7 +75,7 @@ STOPWORDS = {
 
 # Phrases that make titles feel spammy / blog-template-y.
 BANNED_PHRASES_BASE = [
-    "top", "best", "ultimate", "must-have", "must have", "game changer",
+    "ultimate", "must-have", "must have", "game changer",
     "you need", "what to buy", "worth buying", "explained",
     "no-nonsense", "no nonsense", "without overthinking",
     "mistakes", "pitfalls", "checklist", "hacks",

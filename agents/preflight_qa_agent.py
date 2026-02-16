@@ -25,6 +25,10 @@ RULE_MISSING_SKIP_IT_IF = "RULE_MISSING_SKIP_IT_IF"
 RULE_FORBIDDEN_TESTING_CLAIMS = "RULE_FORBIDDEN_TESTING_CLAIMS"
 RULE_MISSING_SPACE_AFTER_PUNCT = "RULE_MISSING_SPACE_AFTER_PUNCT"
 
+# Content-quality/editor rules
+RULE_EMPTY_PICK_BODIES = "RULE_EMPTY_PICK_BODIES"
+RULE_SUSPECT_LAP_COMPARTMENT_TYPO = "RULE_SUSPECT_LAP_COMPARTMENT_TYPO"
+
 # NEW: UI-contract rules (buttons + quick links depend on these)
 RULE_PICK_MARKER_HEADING_CONTRACT = "RULE_PICK_MARKER_HEADING_CONTRACT"
 RULE_PICK_ID_ALIGNMENT = "RULE_PICK_ID_ALIGNMENT"
@@ -49,6 +53,8 @@ _FORBIDDEN_TESTING_PHRASES = [
 ]
 
 _MISSING_SPACE_AFTER_PUNCT_RE = re.compile(r"(?<=[a-z])[.!?](?=[A-Z])")
+
+_LAP_COMPARTMENT_RE = re.compile(r"\blap compartment(s)?\b", re.I)
 
 _SKIP_GUIDANCE_PATTERNS = [
     r"\bskip it\b",
@@ -266,6 +272,26 @@ class PreflightQAAgent:
         if len(picks_texts or []) == 0:
             add(RULE_NO_PICKS_EXTRACTED, "error", "No pick writeups extracted under '## The picks'.")
 
+        # 4c) Picks bodies must not be empty (frontmatter-driven sites render these)
+        missing_bodies: list[dict[str, Any]] = []
+        for i, body in enumerate(picks_texts or []):
+            if not (body or "").strip():
+                prod = (products or [])[i] if i < len(products or []) else {}
+                missing_bodies.append(
+                    {
+                        "pick_number": i + 1,
+                        "pick_id": str((prod or {}).get("pick_id") or "").strip(),
+                        "title": str((prod or {}).get("title") or "").strip(),
+                    }
+                )
+        if missing_bodies:
+            add(
+                RULE_EMPTY_PICK_BODIES,
+                "error",
+                "One or more pick descriptions are empty.",
+                {"missing": missing_bodies},
+            )
+
         # 4b) UI contract: pick markers + H3 headings must align with products
         pick_blocks = _extract_pick_blocks_from_markdown(final_markdown)
         metrics["pick_blocks_count"] = len(pick_blocks)
@@ -359,6 +385,17 @@ class PreflightQAAgent:
                 "warning",
                 "Possible missing space after punctuation.",
                 {"examples": samples},
+            )
+
+        # 8) Common typo: 'lap compartment' (usually means 'laptop compartment')
+        lap_hits = _LAP_COMPARTMENT_RE.findall(final_markdown or "")
+        metrics["lap_compartment_hits"] = len(lap_hits)
+        if lap_hits:
+            add(
+                RULE_SUSPECT_LAP_COMPARTMENT_TYPO,
+                "warning",
+                "Found 'lap compartment' phrasing; likely meant 'laptop compartment'.",
+                {"count": len(lap_hits)},
             )
 
         # Outcome logic

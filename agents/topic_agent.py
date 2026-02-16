@@ -10,7 +10,7 @@ from config import OPENAI_API_KEY, MODEL_REASONING
 # ---- ADD SANITIZATION HELPERS HERE ----
 
 BANNED_TITLE_TOKENS = [
-    "top", "best", "ultimate", "must-have", "must have",
+    "ultimate", "must-have", "must have",
     "this season", "this season’s", "this season's",
     "what to buy", "worth buying", "explained", "guide",
     "kickstart", "goals",
@@ -22,9 +22,9 @@ def _sanitize_text(s: str) -> str:
 
     s = s.strip()
 
-    # Remove leading hype words like "Top ..."
+    # Remove leading hype words like "Ultimate ..."
     s = re.sub(
-        r"^(top|best|ultimate)\b[\s:,-]*",
+        r"^(ultimate)\b[\s:,-]*",
         "",
         s,
         flags=re.IGNORECASE,

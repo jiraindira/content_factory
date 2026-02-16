@@ -106,6 +106,14 @@ def cmd_run(args: argparse.Namespace) -> int:
     # Populate content deterministically via intent/form-specific generation.
     _ = generate_filled_artifact(brand=brand, request=req, artifact=artifact)
 
+    # Optional body-only editorial pass (LLM). Non-blocking by design.
+    try:
+        from content_factory.editorial import apply_copy_editor_to_artifact_if_applicable
+
+        _ = apply_copy_editor_to_artifact_if_applicable(brand=brand, request=req, artifact=artifact)
+    except Exception:
+        pass
+
     validate_artifact_against_specs(brand=brand, request=req, artifact=artifact)
     validate_artifact_against_channel_specs(brand=brand, request=req, artifact=artifact)
 
@@ -113,6 +121,20 @@ def cmd_run(args: argparse.Namespace) -> int:
 
     delivery = render_for_request(brand=brand, request=req, artifact=artifact)
     out_delivery_path = write_delivery(repo_root=repo_root, delivery=delivery)
+
+    # Pick images for blog outputs (non-blocking). Content-factory frontmatter is YAML, so allow rewrite.
+    try:
+        if out_delivery_path.suffix.lower() == ".md" and req.is_product_form():
+            from lib.pick_image_enrichment import enrich_pick_images_for_markdown
+
+            _ = enrich_pick_images_for_markdown(
+                markdown_path=out_delivery_path,
+                slug=out_delivery_path.stem,
+                repo_root=repo_root,
+                allow_yaml_frontmatter_rewrite=True,
+            )
+    except Exception:
+        pass
 
     print(f"Wrote ContentArtifact: {out_artifact_path}")
     print(f"Wrote Delivery Output: {out_delivery_path}")

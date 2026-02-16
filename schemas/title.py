@@ -21,7 +21,7 @@ class TitleOptimizationInput(SchemaBase):
     return_top_n: int = Field(3, ge=1, le=10, description="How many top titles to return")
 
     banned_starts: list[str] = Field(
-        default_factory=lambda: ["Top", "Top Cozy", "Top cosy", "Best", "Best Cozy", "Best cosy"],
+        default_factory=lambda: ["Ultimate", "Must-Have", "You Need", "Our Favorite"],
         description="Title prefixes that are overused or undesirable"
     )
 
