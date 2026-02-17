@@ -1,4 +1,4 @@
-brand_id: the_product_wheel
+brand_id: everyday_buying_guide
 brand_archetype: trusted_guide
 
 brand_sources:
@@ -9,7 +9,7 @@ brand_sources:
       purpose: homepage
       ref: https://theproductwheel.com
 
-domains_supported: [home, kitchen, tech, pets, travel]
+domains_supported: [home, kitchen, tech, pets]
 domain_primary: home
 
 audience:
@@ -47,6 +47,12 @@ persona_by_domain:
     personal_presence: none
     narration_mode: third_person_only
   kitchen:
+    primary_persona: practical_expert
+    persona_modifiers: [none]
+    science_explicitness: implied
+    personal_presence: none
+    narration_mode: third_person_only
+  tech:
     primary_persona: practical_expert
     persona_modifiers: [none]
     science_explicitness: implied

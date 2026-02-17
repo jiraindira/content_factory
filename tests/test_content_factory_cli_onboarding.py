@@ -14,7 +14,7 @@ class TestContentFactoryCliOnboarding(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             repo_root = Path(td)
 
-            publish_date = date(2026, 2, 1)
+            publish_date = date.today()
             paths = write_onboarding_files(
                 repo_root=repo_root,
                 brand_id="acme_consulting",
