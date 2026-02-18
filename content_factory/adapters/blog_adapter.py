@@ -54,6 +54,7 @@ def render_astro_markdown(*, brand: BrandProfile, request: ContentRequest, artif
             }
             for p in (artifact.products or [])
         ],
+        "picks": [{"pick_id": p.pick_id, "body": ""} for p in (artifact.products or [])],
     }
 
     fm = yaml.safe_dump(frontmatter, sort_keys=False).strip()

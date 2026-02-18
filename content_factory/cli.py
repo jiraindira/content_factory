@@ -122,6 +122,24 @@ def cmd_run(args: argparse.Namespace) -> int:
     delivery = render_for_request(brand=brand, request=req, artifact=artifact)
     out_delivery_path = write_delivery(repo_root=repo_root, delivery=delivery)
 
+    if args.write_package:
+        if req.delivery_target.channel.value != "blog_article":
+            raise ValueError("--write-package is currently supported only for blog_article deliveries")
+
+        from content_factory.adapters.common import extract_topic_from_artifact
+        from content_factory.package_writer import write_content_package_v1
+
+        topic = extract_topic_from_artifact(artifact) or artifact.run_id
+        pkg = write_content_package_v1(
+            repo_root=repo_root,
+            brand_id=brand.brand_id,
+            run_id=run_id,
+            publish_date=req.publish.publish_date,
+            slug_source=topic,
+            post_markdown=delivery.content,
+        )
+        print(f"Wrote Content Package: {pkg.package_dir}")
+
     print(f"Wrote ContentArtifact: {out_artifact_path}")
     print(f"Wrote Delivery Output: {out_delivery_path}")
     return 0
@@ -159,6 +177,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--build-context-if-missing",
         action="store_true",
         help="If BrandContextArtifact is missing, build it first.",
+    )
+    run.add_argument(
+        "--write-package",
+        action="store_true",
+        help="Write Content Package v1 into content_factory/packages/{brand_id}/{run_id}",
     )
     run.set_defaults(func=cmd_run)
 

@@ -1,0 +1,30 @@
+brand_id: the_product_wheel
+
+publish:
+  publish_date: 2099-01-01
+
+intent: product_recommendation
+form: top_x_list
+
+domain: tech
+
+topic:
+  mode: auto
+
+# For TheProductWheel, the managed site is ours.
+delivery_target:
+  destination: hosted_by_us
+  channel: blog_article
+
+products:
+  mode: manual_list
+  items:
+    - pick_id: carry_on_pick
+      title: "Carry-on suitcase (example placeholder)"
+      url: "https://amzn.to/4aUFUSk"
+    - pick_id: checked_bag_pick
+      title: "Checked luggage (example placeholder)"
+      url: "https://amzn.to/3MySugM"
+    - pick_id: budget_pick
+      title: "Budget luggage set (example placeholder)"
+      url: "https://amzn.to/4az0ExM"

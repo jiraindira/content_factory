@@ -6,3 +6,8 @@
 # Common virtualenv folders
 .venv/
 venv/
+
+# Generated content artifacts (do not commit)
+content_factory/artifacts/
+content_factory/outputs/
+content_factory/packages/
