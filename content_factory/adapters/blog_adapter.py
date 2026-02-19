@@ -33,15 +33,23 @@ def render_astro_markdown(*, brand: BrandProfile, request: ContentRequest, artif
         )
 
     topic = extract_topic_from_artifact(artifact)
-    title = topic or f"{request.intent.value}: {request.form.value}"
-    description = f"{request.domain.value} — {request.intent.value}"
+    title = (request.title_override or "").strip() or topic or f"{request.intent.value}: {request.form.value}"
+    description = (request.description_override or "").strip() or f"{request.domain.value} — {request.intent.value}"
+
+    categories = request.categories_override
+    if not categories:
+        categories = [request.domain.value]
+
+    audience = (request.audience_override or "").strip()
+    if not audience:
+        audience = getattr(brand.audience.primary_audience, "value", str(brand.audience.primary_audience))
 
     frontmatter = {
         "title": title,
         "description": description,
         "publishedAt": _published_at_iso(request=request),
-        "categories": [request.domain.value],
-        "audience": getattr(brand.audience.primary_audience, "value", str(brand.audience.primary_audience)),
+        "categories": categories,
+        "audience": audience,
         "products": [
             {
                 "pick_id": p.pick_id,

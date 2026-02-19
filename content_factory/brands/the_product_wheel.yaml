@@ -14,6 +14,7 @@ brand_sources:
 domains_supported:
   - tech
   - home
+  - travel
 
 domain_primary: tech
 
@@ -46,6 +47,13 @@ persona_by_domain:
     personal_presence: none
     narration_mode: third_person_only
   home:
+    primary_persona: practical_expert
+    persona_modifiers:
+      - none
+    science_explicitness: implied
+    personal_presence: none
+    narration_mode: third_person_only
+  travel:
     primary_persona: practical_expert
     persona_modifiers:
       - none
