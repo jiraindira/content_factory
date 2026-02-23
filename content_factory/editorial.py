@@ -128,9 +128,7 @@ def apply_copy_editor_to_artifact_if_applicable(
     pick_blocks: list[Block] = []
     for p in artifact.products:
         body = by_id.get(p.pick_id, "").strip()
-        # Render each pick as a subheading + paragraph in a single markdown block.
-        block_text = f"### {p.title}\n\n{body}".strip()
-        pick_blocks.append(Block(type=BlockType.paragraph, text=block_text))
+        pick_blocks.append(Block(type=BlockType.paragraph, text=body, meta={"pick_id": p.pick_id}))
 
     picks.blocks = pick_blocks
 

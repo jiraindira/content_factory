@@ -139,6 +139,77 @@ class TestDeliveryAdapters(unittest.TestCase):
         self.assertIn("categories:\n- custom", out)
         self.assertIn("audience: Custom audience", out)
 
+    def test_blog_adapter_extracts_pick_bodies_into_frontmatter(self) -> None:
+        repo = Path(__file__).resolve().parents[1]
+        brand = load_brand_profile(repo / "content_factory" / "brands" / "everyday_buying_guide.yaml")
+        req = load_content_request(repo / "content_factory" / "requests" / "everyday_buying_guide_2026-02-01.yaml")
+
+        # Add a single product to the artifact and a picks section with meta pick_id.
+        prod = {
+            "pick_id": "pick-1-example",
+            "title": "Example",
+            "url": "https://example.com",
+            "rating": 4.5,
+            "reviews_count": 100,
+            "provider": None,
+        }
+
+        artifact = ContentArtifact(
+            brand_id=brand.brand_id,
+            run_id="x",
+            generated_at="2099-01-01T00:00:00Z",
+            intent=req.intent.value,
+            form=req.form.value,
+            domain=req.domain.value,
+            content_depth=brand.content_strategy.default_content_depth.value,
+            audience={"primary_audience": "general_consumers", "audience_sophistication": "medium"},
+            persona={
+                "primary_persona": "practical_expert",
+                "persona_modifiers": [],
+                "science_explicitness": "implied",
+                "personal_presence": "none",
+                "narration_mode": "third_person_only",
+            },
+            sections=[
+                Section(id="intro", heading=None, blocks=[Block(type=BlockType.paragraph, text="Topic: X")]),
+                Section(
+                    id="picks",
+                    heading="Top picks",
+                    blocks=[
+                        Block(type=BlockType.paragraph, text="Pick body", meta={"pick_id": "pick-1-example"})
+                    ],
+                ),
+            ],
+            products=[prod],
+            rationale=Rationale(how_chosen_blocks=[], selection_criteria=[]),
+            claims=[
+                {
+                    "id": "clm_1",
+                    "text": "x",
+                    "claim_type": "advice",
+                    "requires_citation": False,
+                    "supported_by_source_ids": [],
+                }
+            ],
+            sources=[],
+            checks=Checks(
+                matrix_validation_passed=True,
+                brand_policy_checks_passed=True,
+                required_sections_present=True,
+                products_present_when_required=True,
+                citations_present_when_required=True,
+                topic_allowlist_passed=True,
+                required_disclaimers_present=True,
+                robots_policy_passed=True,
+                disallowed_claims_found=[],
+            ),
+        )
+
+        md = render_astro_markdown(brand=brand, request=req, artifact=artifact)
+        self.assertIn("picks:", md)
+        self.assertIn("pick_id: pick-1-example", md)
+        self.assertIn("body: Pick body", md)
+
     def test_adapter_rejects_mismatched_target(self) -> None:
         repo = Path(__file__).resolve().parents[1]
         brand = load_brand_profile(repo / "content_factory" / "brands" / "alisa_amouage.yaml")

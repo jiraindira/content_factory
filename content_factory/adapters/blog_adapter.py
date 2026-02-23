@@ -20,6 +20,27 @@ def _published_at_iso(*, request: ContentRequest) -> str:
     return datetime(d.year, d.month, d.day, 0, 0, 0, tzinfo=timezone.utc).isoformat().replace("+00:00", "Z")
 
 
+def _extract_picks_frontmatter(*, artifact: ContentArtifact) -> list[dict]:
+    products = list(artifact.products or [])
+    if not products:
+        return []
+
+    picks_section = next((s for s in artifact.sections if s.id == "picks"), None)
+    blocks = list(getattr(picks_section, "blocks", []) or []) if picks_section is not None else []
+
+    # Prefer explicit meta mapping.
+    by_id: dict[str, str] = {}
+    for b in blocks:
+        pid = None
+        if isinstance(getattr(b, "meta", None), dict):
+            pid = str(b.meta.get("pick_id") or "").strip()
+        txt = str(getattr(b, "text", "") or "").strip()
+        if pid:
+            by_id[pid] = txt
+
+    return [{"pick_id": p.pick_id, "body": (by_id.get(p.pick_id) or "").strip()} for p in products]
+
+
 def render_astro_markdown(*, brand: BrandProfile, request: ContentRequest, artifact: ContentArtifact) -> str:
     # Allow hosted_by_us or client_website, but still channel must be blog_article.
     if request.delivery_target.channel != DeliveryChannel.blog_article:
@@ -62,13 +83,21 @@ def render_astro_markdown(*, brand: BrandProfile, request: ContentRequest, artif
             }
             for p in (artifact.products or [])
         ],
-        "picks": [{"pick_id": p.pick_id, "body": ""} for p in (artifact.products or [])],
+        "picks": _extract_picks_frontmatter(artifact=artifact),
     }
 
-    fm = yaml.safe_dump(frontmatter, sort_keys=False).strip()
+    fm = yaml.safe_dump(
+        frontmatter,
+        sort_keys=False,
+        allow_unicode=True,
+        width=4096,
+    ).strip()
 
     body_parts: list[str] = []
     for sec in artifact.sections:
+        if sec.id == "picks":
+            # Picks are rendered by the managed site from structured frontmatter.
+            continue
         heading = sec.heading or sec.id.replace("_", " ").title()
         body_parts.append(f"## {heading}")
         t = section_to_plain_text(sec)
