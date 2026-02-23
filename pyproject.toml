@@ -3,7 +3,18 @@ name = "ai-affiliate-engine"
 version = "0.1.0"
 description = ""
 authors = ["JP"]
-package-mode = false
+package-mode = true
+
+# Poetry otherwise tries to locate a package named after `tool.poetry.name`
+# (ai_affiliate_engine), which doesn't exist in this repo. Declare the actual
+# top-level packages we import from so console scripts work.
+packages = [
+    { include = "content_factory" },
+    { include = "agents" },
+    { include = "integrations" },
+    { include = "schemas" },
+    { include = "lib" },
+]
 
 [tool.poetry.dependencies]
 pillow = ">=10.0.0,<11.0.0"
@@ -19,7 +30,6 @@ requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-generate-post = "cli:generate_post"
 content-factory = "content_factory.cli:main"
 
 
