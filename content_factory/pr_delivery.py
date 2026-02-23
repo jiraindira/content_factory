@@ -28,6 +28,16 @@ def _run_git(args: list[str], *, cwd: Path) -> str:
     return (p.stdout or "").strip()
 
 
+def _git_ref_exists(ref: str, *, cwd: Path) -> bool:
+    p = subprocess.run(
+        ["git", "rev-parse", "--verify", "--quiet", ref],
+        cwd=str(cwd),
+        capture_output=True,
+        text=True,
+    )
+    return p.returncode == 0
+
+
 def _sanitize_branch_component(s: str) -> str:
     s2 = re.sub(r"[^a-zA-Z0-9._/-]+", "-", (s or "").strip())
     s2 = re.sub(r"-+", "-", s2).strip("-/")
@@ -106,7 +116,14 @@ def deliver_package_as_pr(
     _run_git(["fetch", "origin"], cwd=managed_repo_path)
     _run_git(["checkout", base_branch], cwd=managed_repo_path)
     _run_git(["pull", "--ff-only", "origin", base_branch], cwd=managed_repo_path)
-    _run_git(["checkout", "-B", branch_name], cwd=managed_repo_path)
+
+    # If the branch already exists on origin (e.g., an existing PR), base our work on that
+    # history so pushes remain fast-forward.
+    remote_ref = f"origin/{branch_name}"
+    if _git_ref_exists(remote_ref, cwd=managed_repo_path):
+        _run_git(["checkout", "-B", branch_name, remote_ref], cwd=managed_repo_path)
+    else:
+        _run_git(["checkout", "-B", branch_name], cwd=managed_repo_path)
 
     _run_managed_site_hydration(
         managed_repo_path=managed_repo_path,

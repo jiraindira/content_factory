@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 from datetime import date
 from pathlib import Path
 
@@ -29,6 +30,7 @@ def _run_request_pipeline(
     run_id: str,
     build_context_if_missing: bool,
     write_package: bool,
+    require_editorial: bool = False,
 ) -> int:
     ctx_path = artifact_path_for_brand(repo_root=repo_root, brand_id=brand.brand_id)
     if not ctx_path.exists() and build_context_if_missing:
@@ -48,13 +50,25 @@ def _run_request_pipeline(
     # Populate content deterministically via intent/form-specific generation.
     _ = generate_filled_artifact(brand=brand, request=req, artifact=artifact)
 
-    # Optional body-only editorial pass (LLM). Non-blocking by design.
-    try:
-        from content_factory.editorial import apply_copy_editor_to_artifact_if_applicable
+    # Body-only editorial pass (LLM).
+    if require_editorial and not os.environ.get("OPENAI_API_KEY"):
+        raise RuntimeError(
+            "OPENAI_API_KEY is required for this run (LLM editorial is mandatory for manual-import posts)."
+        )
 
-        _ = apply_copy_editor_to_artifact_if_applicable(brand=brand, request=req, artifact=artifact)
-    except Exception:
-        pass
+    from content_factory.editorial import apply_copy_editor_to_artifact_if_applicable
+
+    edited = apply_copy_editor_to_artifact_if_applicable(
+        brand=brand,
+        request=req,
+        artifact=artifact,
+        require=require_editorial,
+    )
+    if require_editorial and not edited:
+        raise RuntimeError(
+            "LLM editorial was required but did not run. Ensure the artifact has intro/how_chosen/picks sections and products, "
+            "and that LLM dependencies are installed and configured."
+        )
 
     validate_artifact_against_specs(brand=brand, request=req, artifact=artifact)
     validate_artifact_against_channel_specs(brand=brand, request=req, artifact=artifact)
@@ -211,6 +225,7 @@ def cmd_import_manual(args: argparse.Namespace) -> int:
         run_id=run_id,
         build_context_if_missing=bool(args.build_context_if_missing),
         write_package=bool(args.write_package),
+        require_editorial=True,
     )
 
 

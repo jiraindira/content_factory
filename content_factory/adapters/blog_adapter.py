@@ -86,11 +86,13 @@ def render_astro_markdown(*, brand: BrandProfile, request: ContentRequest, artif
         "picks": _extract_picks_frontmatter(artifact=artifact),
     }
 
+    # Match the managed site’s preferred frontmatter style (flow/inline JSON-like arrays).
     fm = yaml.safe_dump(
         frontmatter,
         sort_keys=False,
         allow_unicode=True,
-        width=4096,
+        width=10_000,
+        default_flow_style=True,
     ).strip()
 
     body_parts: list[str] = []
@@ -98,13 +100,23 @@ def render_astro_markdown(*, brand: BrandProfile, request: ContentRequest, artif
         if sec.id == "picks":
             # Picks are rendered by the managed site from structured frontmatter.
             continue
+
+        # Render the disclosure/footer body without a “Closing” section header.
+        if sec.id == "closing":
+            t = section_to_plain_text(sec)
+            body = "\n".join(line for line in t.splitlines()[1:]).strip() if t else ""
+            if body:
+                body_parts.append(body)
+            continue
+
         heading = sec.heading or sec.id.replace("_", " ").title()
-        body_parts.append(f"## {heading}")
         t = section_to_plain_text(sec)
-        if t:
-            # section_to_plain_text includes heading again; we want just body blocks.
-            # so render blocks only.
-            body_parts.append("\n" + "\n".join(line for line in t.splitlines()[1:]).strip())
+        body = "\n".join(line for line in t.splitlines()[1:]).strip() if t else ""
+        if not body:
+            continue
+
+        body_parts.append(f"## {heading}")
+        body_parts.append(body)
 
     body = "\n\n".join([p for p in body_parts if p.strip()]).strip() + "\n"
 

@@ -1,13 +1,17 @@
 from __future__ import annotations
 
+import re
+
 from content_factory.adapters.common import extract_topic_from_artifact
 from content_factory.artifact_models import BlockType, ContentArtifact
 from content_factory.models import (
     BrandProfile,
     ContentRequest,
+    ContentIntent,
     DeliveryChannel,
     DeliveryDestination,
     DisclaimerLocation,
+    TopicMode,
 )
 
 
@@ -116,6 +120,49 @@ def validate_artifact_against_channel_specs(*, brand: BrandProfile, request: Con
             rendered = "\n\n".join([p for p in parts if p.strip()]).strip()
             if len(rendered) > 3000:
                 errors.append("LinkedIn social_longform output must be <= 3000 characters")
+
+    # Blog-specific quality gates for manual-import posts.
+    # These are intentionally heuristic: they enforce style invariants that keep
+    # manual-import output aligned with the "good post" standard.
+    if (
+        request.delivery_target.channel == DeliveryChannel.blog_article
+        and request.intent == ContentIntent.product_recommendation
+        and request.topic.mode == TopicMode.manual
+    ):
+        picks_section = next((s for s in artifact.sections if s.id == "picks"), None)
+        if not picks_section:
+            errors.append("manual-import blog posts must include a 'picks' section")
+        else:
+            bodies_by_pick_id: dict[str, str] = {}
+            for b in picks_section.blocks or []:
+                if b.type != BlockType.paragraph:
+                    continue
+                pick_id = str((b.meta or {}).get("pick_id") or "").strip()
+                if not pick_id:
+                    continue
+                bodies_by_pick_id[pick_id] = (b.text or "").strip()
+
+            # Require a body for each product pick_id.
+            for p in artifact.products or []:
+                body = (bodies_by_pick_id.get(p.pick_id) or "").strip()
+                if not body:
+                    errors.append(f"pick body is required for pick_id='{p.pick_id}'")
+                    continue
+
+                lower = body.lower()
+                if "skip it if" not in lower:
+                    errors.append(f"pick body must include a 'Skip it if…' line for pick_id='{p.pick_id}'")
+
+                # Block rating/review-count repetition in pick bodies (UI already shows it).
+                # Keep this intentionally narrow to avoid false positives (e.g., "IP rating").
+                if "★" in body:
+                    errors.append(f"pick body must not include star glyphs (★) for pick_id='{p.pick_id}'")
+                if re.search(r"\breviews?\b", lower):
+                    errors.append(f"pick body must not mention reviews for pick_id='{p.pick_id}'")
+                if re.search(r"\bstars?\b", lower):
+                    errors.append(f"pick body must not mention stars/star rating for pick_id='{p.pick_id}'")
+                if re.search(r"\brated\s+\d(?:\.\d)?\s*(?:out\s+of\s+)?5\b", lower):
+                    errors.append(f"pick body must not include explicit rating phrasing for pick_id='{p.pick_id}'")
 
     if errors:
         msg = "\n".join(f"- {e}" for e in errors)

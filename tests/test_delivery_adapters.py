@@ -136,7 +136,11 @@ class TestDeliveryAdapters(unittest.TestCase):
         out = render_astro_markdown(brand=brand, request=req2, artifact=artifact)
         self.assertIn("title: Override Title", out)
         self.assertIn("description: Override Description", out)
-        self.assertIn("categories:\n- custom", out)
+        # Frontmatter may render in block-style or flow-style YAML depending on adapter settings.
+        self.assertTrue(
+            ("categories:\n- custom" in out) or ("categories: [custom]" in out),
+            msg=f"Unexpected categories frontmatter format:\n{out}",
+        )
         self.assertIn("audience: Custom audience", out)
 
     def test_blog_adapter_extracts_pick_bodies_into_frontmatter(self) -> None:

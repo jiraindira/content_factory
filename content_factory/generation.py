@@ -283,27 +283,6 @@ def _generate_product_recommendation(*, brand: BrandProfile, request: ContentReq
         artifact.rationale.selection_criteria = list(how_bullets)
 
     if picks is not None:
-        def _fmt_rating(p) -> str:
-            if p.rating is None:
-                return ""
-            try:
-                return f"{float(p.rating):.1f}★"
-            except Exception:
-                return ""
-
-        def _fmt_reviews(p) -> str:
-            if p.reviews_count is None:
-                return ""
-            try:
-                n = int(p.reviews_count)
-                if n >= 1000:
-                    return f"{round(n / 1000):d}k+ reviews"
-                if n > 0:
-                    return f"{n} reviews"
-            except Exception:
-                return ""
-            return ""
-
         def _what_is_it(title: str) -> str:
             t = (title or "").lower()
             if "tumbler" in t:
@@ -337,16 +316,6 @@ def _generate_product_recommendation(*, brand: BrandProfile, request: ContentReq
 
         picks.blocks = []
         for p in artifact.products:
-            rating = _fmt_rating(p)
-            reviews = _fmt_reviews(p)
-            rr = ""
-            if rating and reviews:
-                rr = f"Rated {rating} with {reviews}."
-            elif rating:
-                rr = f"Rated {rating}."
-            elif reviews:
-                rr = f"Backed by {reviews}."
-
             features = _feature_hints(p.title)
             feat = ""
             if features:
@@ -354,7 +323,6 @@ def _generate_product_recommendation(*, brand: BrandProfile, request: ContentReq
 
             body = " ".join([x for x in [
                 f"{p.title} is {_what_is_it(p.title)} for everyday use.",
-                rr,
                 feat,
                 "Check the key details on the product page before buying.",
             ] if x]).strip()
@@ -369,11 +337,7 @@ def _generate_product_recommendation(*, brand: BrandProfile, request: ContentReq
             # adapters can choose not to surface it.
             picks.blocks.append(Block(type=BlockType.paragraph, text=f"{p.title} — {p.url}"))
 
-    if closing is not None:
-        _ensure_paragraph(
-            closing,
-            "If you’re unsure, start with the option that best matches your constraints, then adjust after real-world use.",
-        )
+    # Avoid adding generic closing copy; managed-site layout/disclaimers cover the footer.
 
     _set_claims(
         artifact,
