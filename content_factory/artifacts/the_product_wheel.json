@@ -1,0 +1,66 @@
+{
+  "artifact_version": "1.0",
+  "brand_id": "the_product_wheel",
+  "generated_at": "2026-02-16T22:06:41.055789+00:00",
+  "fetch_user_agent": "AIContentFactoryFetcher-1.0",
+  "sources": [
+    {
+      "source_id": "homepage",
+      "kind": "url",
+      "purpose": "homepage",
+      "ref": "https://theproductwheel.com",
+      "fetched_at": "2026-02-16T22:06:39.600933+00:00",
+      "ok": true,
+      "sha256": "69fb161d1345591d6702a4ef25bf5c4f3459551f41074a87817720d896d59d55",
+      "bytes_length": 34593,
+      "http_status": 200,
+      "robots_allowed": true
+    }
+  ],
+  "signals": {
+    "titles": [
+      "The Product Wheel"
+    ],
+    "headings": [
+      "The Product Wheel",
+      "Categories",
+      "All posts"
+    ],
+    "descriptions": [
+      "Thoughtful buying guides, powered by real product signals"
+    ],
+    "positioning_snippets": [
+      "The Product Wheel",
+      "Categories",
+      "All posts",
+      "Thoughtful buying guides, powered by real product signals"
+    ],
+    "key_terms": [
+      "buying",
+      "guide",
+      "product",
+      "jan",
+      "wheel",
+      "guides",
+      "home",
+      "travel",
+      "feb",
+      "cookies",
+      "analytics",
+      "earn",
+      "links",
+      "independent",
+      "recommendations",
+      "tech",
+      "pets",
+      "family",
+      "all",
+      "dehumidified",
+      "just",
+      "dry",
+      "best",
+      "top",
+      "picks"
+    ]
+  }
+}

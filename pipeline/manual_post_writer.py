@@ -1,0 +1,624 @@
+from __future__ import annotations
+
+import json
+import re
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
+from urllib.parse import urlparse
+
+from agents.depth_expansion_agent import DepthExpansionAgent
+from agents.final_title_agent import FinalTitleAgent, FinalTitleConfig
+from agents.copy_editor_agent import CopyEditorAgent, CopyEditorConfig
+from agents.image_generation_agent import ImageGenerationAgent
+from agents.preflight_qa_agent import PreflightQAAgent
+from agents.post_repair_agent import PostRepairAgent, PostRepairConfig
+
+from integrations.openai_adapters import OpenAIJsonLLM, OpenAIImageGenerator
+from pipeline.image_step import ensure_post_hero_is_present
+
+from lib.product_catalog import ProductCatalog
+from lib.post_formats import get_format_spec
+from lib.markdown_normalizer import normalize_markdown
+from schemas.depth import DepthExpansionInput, ExpansionModuleSpec
+from schemas.post_format import PostFormatId
+
+
+ASTRO_POSTS_DIR = Path("site/src/content/posts")
+PUBLIC_DIR = Path("site/public")
+PUBLIC_IMAGES_DIR = Path("site/public/images")
+CATALOG_PATH = Path("data/catalog/master.json")
+
+
+def _utc_now_iso() -> str:
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def _slugify(text: str) -> str:
+    s = (text or "").lower().strip()
+    s = s.replace("’", "").replace("'", "")
+    s = re.sub(r"[^a-z0-9\s-]", "", s)
+    s = re.sub(r"\s+", "-", s)
+    s = re.sub(r"-+", "-", s)
+    return s.strip("-")
+
+
+def _truncate_title_max_chars(title: str, max_chars: int) -> str:
+    s = (title or "").strip()
+    if not s:
+        return s
+    if len(s) <= max_chars:
+        return s
+    cut = s[:max_chars].rstrip()
+    if " " in cut:
+        cut = cut.rsplit(" ", 1)[0].rstrip()
+    return cut.rstrip(" .!?,;:")
+
+
+def _truncate_text_max_chars(text: str, max_chars: int) -> str:
+    s = (text or "").strip()
+    if not s:
+        return s
+    if len(s) <= max_chars:
+        return s
+    cut = s[:max_chars].rstrip()
+    if " " in cut:
+        cut = cut.rsplit(" ", 1)[0].rstrip()
+    return cut.rstrip(" .!?,;:")
+
+
+_MD_LINK_RE = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
+_MD_COMMENT_RE = re.compile(r"<!--([\s\S]*?)-->")
+_MD_TAG_RE = re.compile(r"<[^>]+>")
+
+
+def _plain_text_from_markdown(md: str) -> str:
+    s = (md or "").strip()
+    if not s:
+        return ""
+    s = _MD_COMMENT_RE.sub(" ", s)
+    s = _MD_LINK_RE.sub(r"\1", s)
+    s = _MD_TAG_RE.sub(" ", s)
+    s = s.replace("`", "").replace("*", "").replace("_", "")
+    s = re.sub(r"\s+", " ", s.replace("\n", " ")).strip()
+    return s
+
+
+def _derive_description(*, intro_md: str, category: str, audience: str, max_chars: int = 140) -> str:
+    txt = _plain_text_from_markdown(intro_md)
+    if txt:
+        # Prefer the first sentence if it looks meaningful.
+        m = re.match(r"^(.+?[.!?])\s+", txt)
+        if m and 60 <= len(m.group(1)) <= max_chars:
+            return m.group(1).strip()
+        return _truncate_text_max_chars(txt, max_chars)
+
+    # Fallback (should be rare): still better than the previous boilerplate.
+    cat = category.replace("_", " ")
+    return _truncate_text_max_chars(
+        f"A practical guide to choosing {cat} products for {audience}.",
+        max_chars,
+    )
+
+
+def _yaml_single_quoted(value: str) -> str:
+    s = (value or "").replace("\r\n", " ").replace("\n", " ").strip()
+    s = re.sub(r"\s+", " ", s)
+    return "'" + s.replace("'", "''") + "'"
+
+
+def _is_valid_http_url(url: str) -> bool:
+    """
+    Hard-fail URL validator: requires a fully-qualified http(s) URL with a netloc.
+    No auto-fixing (policy: hard fail).
+    """
+    if url is None:
+        return False
+    s = str(url).strip()
+    if not s:
+        return False
+
+    parsed = urlparse(s)
+    return parsed.scheme in ("http", "https") and bool(parsed.netloc)
+
+
+_H2_RE = re.compile(r"(?m)^##\s+(.+?)\s*$")
+_PICK_ID_COMMENT_RE = re.compile(r"(?m)^\s*<!--\s*pick_id:\s*([a-z0-9\-_:]+)\s*-->\s*$", re.I)
+_H3_RE = re.compile(r"(?m)^\s*###\s+(.+?)\s*$")
+
+
+def _extract_section(md: str, heading: str) -> str:
+    """
+    Extract the markdown content under `## {heading}` until next H2.
+    Returns body (no heading line).
+    """
+    text = md or ""
+    lines = text.splitlines()
+
+    start_idx = None
+    for i, ln in enumerate(lines):
+        m = _H2_RE.match(ln)
+        if m and m.group(1).strip().lower() == heading.strip().lower():
+            start_idx = i + 1
+            break
+    if start_idx is None:
+        return ""
+
+    end_idx = len(lines)
+    for j in range(start_idx, len(lines)):
+        m = _H2_RE.match(lines[j])
+        if m:
+            end_idx = j
+            break
+
+    body = "\n".join(lines[start_idx:end_idx]).strip()
+    return body
+
+
+def _extract_pick_bodies(md: str) -> dict[str, str]:
+    """
+    Parse bodies inside the '## The picks' section.
+
+    Expected structure per pick:
+      <!-- pick_id: X -->
+      ### Title
+      <body...>
+      <hr />
+
+    Returns: { pick_id -> body_markdown }
+    """
+    text = md or ""
+    lines = text.splitlines()
+
+    # Find "## The picks"
+    start = None
+    for i, ln in enumerate(lines):
+        m = _H2_RE.match(ln)
+        if m and m.group(1).strip().lower() == "the picks":
+            start = i + 1
+            break
+    if start is None:
+        return {}
+
+    # End at next H2
+    end = len(lines)
+    for j in range(start, len(lines)):
+        if j == start:
+            continue
+        if _H2_RE.match(lines[j]):
+            end = j
+            break
+
+    picks_lines = lines[start:end]
+
+    out: dict[str, str] = {}
+    i = 0
+    while i < len(picks_lines):
+        m = _PICK_ID_COMMENT_RE.match(picks_lines[i])
+        if not m:
+            i += 1
+            continue
+
+        pick_id = m.group(1).strip()
+
+        # Advance to next non-empty line, expect H3, then body starts after it
+        k = i + 1
+        while k < len(picks_lines) and picks_lines[k].strip() == "":
+            k += 1
+        if k >= len(picks_lines):
+            break
+
+        h3 = _H3_RE.match(picks_lines[k])
+        if not h3:
+            # If the structure is broken, skip this pick deterministically
+            i = k + 1
+            continue
+
+        body_start = k + 1
+
+        # Body ends at next <hr /> or next pick marker
+        body_end = len(picks_lines)
+        for t in range(body_start, len(picks_lines)):
+            if picks_lines[t].strip().lower().startswith("<hr"):
+                body_end = t
+                break
+            if _PICK_ID_COMMENT_RE.match(picks_lines[t]):
+                body_end = t
+                break
+
+        body = "\n".join(picks_lines[body_start:body_end]).strip()
+        out[pick_id] = body
+
+        i = body_end + 1
+
+    return out
+
+
+class ManualPostWriter:
+    def __init__(self, logger=print) -> None:
+        self._log = logger
+
+    def run(
+        self,
+        *,
+        input_path: str,
+        post_date: str,
+        dry_run: bool = False,
+        debug_dir: str | None = None,
+    ) -> int:
+        input_path_p = Path(input_path)
+        if not input_path_p.exists():
+            raise FileNotFoundError(f"Missing input file: {input_path_p}")
+
+        raw = json.loads(input_path_p.read_text(encoding="utf-8"))
+
+        # -----------------------------
+        # ✅ Category normalization
+        # - Prefer categories[] (multi-select)
+        # - Back-compat: category (single)
+        # - Always lowercase string[]
+        # -----------------------------
+        raw_categories = raw.get("categories")
+        raw_category = raw.get("category")
+
+        if isinstance(raw_categories, list) and raw_categories:
+            categories = [str(x).strip().lower() for x in raw_categories if str(x).strip()]
+        elif isinstance(raw_category, str) and raw_category.strip():
+            categories = [raw_category.strip().lower()]
+        else:
+            categories = ["general"]
+
+        # Keep a primary category string for prompts/copy/hero generation
+        category = categories[0]
+
+        subcategory = raw.get("subcategory")
+        audience = raw.get("audience", "UK readers")
+        raw_products = raw.get("products", [])
+
+        # Optional user-provided guidance
+        seed_title = str(raw.get("seed_title") or "").strip() or None
+        seed_description = str(raw.get("seed_description") or "").strip() or None
+
+        # Back-compat aliases (soft hints)
+        user_hint_title = str(raw.get("user_hint_title") or "").strip() or None
+        user_hint_description = str(raw.get("user_hint_description") or "").strip() or None
+
+        if len(raw_products) < 3:
+            raise RuntimeError("post_input.json must contain at least 3 products")
+
+        # Normalize products (strict URL validation: hard fail)
+        products: list[dict[str, Any]] = []
+        for idx, p in enumerate(raw_products):
+            title = p.get("title") or p.get("name")
+            if not title:
+                raise RuntimeError(f"Product[{idx}] must have 'title' (or 'name')")
+
+            url = str(p.get("url", "")).strip()
+            if not url:
+                raise RuntimeError(f"Product[{idx}] must have a non-empty 'url' (schema requires a valid URL).")
+
+            if not _is_valid_http_url(url):
+                raise RuntimeError(
+                    f"Product[{idx}] url is invalid (must be fully-qualified http(s) URL): {url}"
+                )
+
+            products.append(
+                {
+                    "title": str(title).strip(),
+                    "url": url,
+                    "price": str(p.get("price", "—")).strip() or "—",
+                    "rating": float(p.get("rating", 0) or 0),
+                    "reviews_count": int(p.get("reviews_count", 0) or 0),
+                    "description": str(p.get("description", "")).strip(),
+                    "catalog_key": p.get("catalog_key"),
+                }
+            )
+
+        # Title + slug
+        llm = OpenAIJsonLLM()
+        title_agent = FinalTitleAgent(llm=llm, config=FinalTitleConfig(max_chars=60))
+
+        if seed_title:
+            # Respect user-provided title but keep formatting consistent.
+            title = _truncate_title_max_chars(seed_title, 60)
+        else:
+            title = title_agent.run(
+                topic=subcategory or category,
+                category=category,
+                # Give the title agent a hint even before depth runs.
+                intro=seed_description or user_hint_description or "",
+                picks=[],
+                products=products,
+                alternatives=None,
+                user_hint_title=user_hint_title,
+                user_hint_description=seed_description or user_hint_description,
+            )
+
+        slug = f"{post_date}-{_slugify(title)}"
+        self._log(f"🟢 Writing post: {slug}")
+
+        # Catalog upsert
+        catalog = ProductCatalog(path=CATALOG_PATH)
+        catalog.ensure_entries_for_products(provider="amazon_uk", products=products)
+
+        # Astro frontmatter products array (re-assert URL validity defensively)
+        astro_products: list[dict[str, Any]] = []
+        for idx, p in enumerate(products, start=1):
+            if not _is_valid_http_url(p["url"]):
+                raise RuntimeError(
+                    f"Internal error: normalized product url is invalid for '{p.get('title','')}'. url={p['url']}"
+                )
+
+            astro_products.append(
+                {
+                    "pick_id": f"pick-{idx}-{_slugify(p['title'])}",
+                    "catalog_key": p.get("catalog_key"),
+                    "title": p["title"],
+                    "url": p["url"],
+                    "price": p["price"],
+                    "rating": p["rating"],
+                    "reviews_count": p["reviews_count"],
+                    "description": p["description"],
+                }
+            )
+
+        product_titles = [p["title"] for p in astro_products if isinstance(p.get("title"), str)]
+
+        format_id: PostFormatId = "top_picks"
+        format_spec = get_format_spec(format_id)
+
+        # Draft scaffold (includes picks placeholders so DepthExpansion can author them)
+        draft_description = seed_description or user_hint_description or ""
+        if not draft_description:
+            draft_description = _derive_description(intro_md=seed_description or "", category=category, audience=audience)
+
+        md = [
+            "---",
+            f'title: "{title}"',
+            f"description: {_yaml_single_quoted(draft_description)}",
+            f'publishedAt: "{_utc_now_iso()}"',
+            # ✅ Canonical: categories[]
+            f"categories: {json.dumps(categories, ensure_ascii=False)}",
+            f'audience: "{audience}"',
+            f"products: {json.dumps(astro_products, ensure_ascii=False)}",
+            "---",
+            "",
+            "## Intro",
+            "",
+            "{{INTRO}}",
+            "",
+            "## How this list was chosen",
+            "",
+            "{{HOW_WE_CHOSE}}",
+            "",
+            "## The picks",
+            "",
+        ]
+
+        for p in astro_products:
+            md.extend(
+                [
+                    f"<!-- pick_id: {p['pick_id']} -->",
+                    f"### {p['title']}",
+                    "",
+                    f"{{{{PICK:{p['pick_id']}}}}}",
+                    "",
+                    "<hr />",
+                    "",
+                ]
+            )
+
+        draft_markdown = "\n".join(md)
+
+        # Content generation
+        depth_agent = DepthExpansionAgent()
+        modules = [
+            ExpansionModuleSpec(
+                name="intro",
+                enabled=True,
+                max_words=format_spec.max_words_intro,
+                rewrite_mode="upgrade",
+            ),
+            ExpansionModuleSpec(
+                name="how_we_chose",
+                enabled=True,
+                max_words=format_spec.max_words_how_we_chose,
+                rewrite_mode="upgrade",
+            ),
+            ExpansionModuleSpec(
+                name="product_writeups",
+                enabled=True,
+                max_words=format_spec.max_words_product_writeups,
+                rewrite_mode="upgrade",
+            ),
+        ]
+
+        depth_out = depth_agent.run(
+            DepthExpansionInput(
+                draft_markdown=draft_markdown,
+                products=astro_products,
+                modules=modules,
+                rewrite_mode="upgrade",
+                max_added_words=sum(m.max_words for m in modules),
+                voice="neutral",
+                seed_title=seed_title or user_hint_title,
+                seed_description=seed_description or user_hint_description,
+                faqs=[],
+                forbid_claims_of_testing=True,
+            )
+        )
+
+        expanded_markdown = depth_out.get("expanded_markdown", draft_markdown)
+
+        # Deterministic structural normalization (makes parsing safe)
+        expanded_markdown = normalize_markdown(expanded_markdown, product_titles=product_titles)
+
+        # Extract authored content
+        intro_body = _extract_section(expanded_markdown, "Intro")
+        how_body = _extract_section(expanded_markdown, "How this list was chosen")
+        pick_bodies = _extract_pick_bodies(expanded_markdown)
+
+        # Build structured picks array aligned to products order
+        picks_structured = []
+        for p in astro_products:
+            pid = p["pick_id"]
+            picks_structured.append({"pick_id": pid, "body": pick_bodies.get(pid, "").strip()})
+
+        # ✅ Copy edit: body-only improvements + fill empty pick bodies
+        try:
+            editor = CopyEditorAgent(llm=llm, config=CopyEditorConfig(max_changes=20, max_pick_sentences=4))
+            edited = editor.run(
+                title=title,
+                audience=audience,
+                intro_md=intro_body,
+                how_md=how_body,
+                picks=picks_structured,
+                products=astro_products,
+                category=category,
+            )
+            intro_body = str(edited.get("intro_md") or intro_body)
+            how_body = str(edited.get("how_md") or how_body)
+            picks_out = edited.get("picks")
+            if isinstance(picks_out, list):
+                # Preserve order by astro_products
+                by_id = {str(p.get("pick_id") or ""): str(p.get("body") or "") for p in picks_out if isinstance(p, dict)}
+                picks_structured = [{"pick_id": p["pick_id"], "body": by_id.get(p["pick_id"], "").strip()} for p in picks_structured]
+        except Exception as e:
+            self._log(f"🟠 Copy edit failed; continuing with unedited text. Error: {e}")
+
+        # Minimal markdown body: Intro + How only
+        final_description = seed_description or user_hint_description or _derive_description(
+            intro_md=intro_body,
+            category=category,
+            audience=audience,
+            max_chars=160,
+        )
+        final_md_lines = [
+            "---",
+            f'title: "{title}"',
+            f"description: {_yaml_single_quoted(final_description)}",
+            f'publishedAt: "{_utc_now_iso()}"',
+            # ✅ Canonical: categories[]
+            f"categories: {json.dumps(categories, ensure_ascii=False)}",
+            f'audience: "{audience}"',
+            f"products: {json.dumps(astro_products, ensure_ascii=False)}",
+            f"picks: {json.dumps(picks_structured, ensure_ascii=False)}",
+            "---",
+            "",
+            "## Intro",
+            "",
+            intro_body.strip() if intro_body.strip() else "A short, practical guide to the picks below.",
+            "",
+            "## How this list was chosen",
+            "",
+            how_body.strip() if how_body.strip() else "Everything here was chosen to be practical and easy to use.",
+            "",
+        ]
+        final_markdown = "\n".join(final_md_lines).strip() + "\n"
+
+        # Hero image (non-blocking + self-healing)
+        try:
+            img_agent = ImageGenerationAgent(
+                llm=llm,
+                image_gen=OpenAIImageGenerator(),
+                public_images_dir=str(PUBLIC_IMAGES_DIR),
+                posts_subdir="posts",
+                # NOTE:
+                # ImageGenerationAgent now generates a canonical 16:9 source
+                # and derives post/home/card variants deterministically.
+            )
+
+            # Give the image prompt some real pick context (snippets)
+            pick_snippets: list[str] = []
+            for p in picks_structured[:8]:
+                body = (p.get("body") or "").strip()
+                if body:
+                    pick_snippets.append(body[:240])
+
+            hero = ensure_post_hero_is_present(
+                agent=img_agent,
+                # NOTE: self-heal expects the site/public root because hero paths
+                # are expressed as /images/... URL paths.
+                public_dir=str(PUBLIC_DIR),
+                slug=slug,
+                category=category,  # primary
+                title=title,
+                intro=intro_body,
+                picks=pick_snippets,
+                alternatives=None,
+            )
+
+            hero_lines = [
+                f'heroImage: "{hero.hero_image_path}"',
+                f'heroAlt: "{hero.hero_alt}"',
+            ]
+
+            if getattr(hero, "hero_image_home_path", None):
+                hero_lines.append(f'heroImageHome: "{hero.hero_image_home_path}"')
+
+            if getattr(hero, "hero_image_card_path", None):
+                hero_lines.append(f'heroImageCard: "{hero.hero_image_card_path}"')
+
+            if getattr(hero, "hero_source_path", None):
+                hero_lines.append(f'heroImageSource: "{hero.hero_source_path}"')
+
+            final_markdown = final_markdown.replace(
+                "---",
+                "---\n" + "\n".join(hero_lines),
+                1,
+            )
+        except Exception as e:
+            # Never block publishing, but make failures visible.
+            self._log(f"🟠 Hero image generation failed; using placeholder if available. Error: {e}")
+
+        # QA + repair (non-blocking)
+        qa = PreflightQAAgent(strict=False)
+        report = qa.run(
+            final_markdown=final_markdown,
+            frontmatter={},
+            intro_text=intro_body,
+            picks_texts=[p.get("body", "") for p in picks_structured],
+            products=astro_products,
+        )
+
+        if not report.ok:
+            try:
+                repair = PostRepairAgent(llm=llm, config=PostRepairConfig(max_changes=12))
+                repaired = repair.run(
+                    draft_markdown=final_markdown,
+                    qa_report=report.model_dump(),
+                    products=astro_products,
+                    intro_text=intro_body,
+                    picks_texts=[p.get("body", "") for p in picks_structured],
+                )
+                if isinstance(repaired, dict):
+                    final_markdown = repaired.get("repaired_markdown", final_markdown)
+            except Exception:
+                pass
+
+        if dry_run:
+            self._log("🟡 Dry run: post not written")
+            return 0
+
+        ASTRO_POSTS_DIR.mkdir(parents=True, exist_ok=True)
+        out_path = ASTRO_POSTS_DIR / f"{slug}.md"
+        out_path.write_text(final_markdown, encoding="utf-8")
+
+        # Pick images (non-blocking): populate products[].image + download assets.
+        try:
+            from lib.pick_image_enrichment import enrich_pick_images_for_markdown
+
+            res = enrich_pick_images_for_markdown(markdown_path=out_path, slug=slug)
+            if res.updated:
+                self._log(
+                    f"✅ Pick images enriched: updated={res.picks_updated} skipped={res.picks_skipped}"
+                )
+            else:
+                self._log(
+                    f"🟠 Pick images not enriched: updated={res.picks_updated} skipped={res.picks_skipped}"
+                )
+        except Exception as e:
+            self._log(f"🟠 Pick image enrichment failed (non-blocking): {e}")
+
+        self._log(f"✅ Wrote: {out_path}")
+        return 0

@@ -1,24 +1,53 @@
 from __future__ import annotations
 
 import json
-import re
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime, timezone
 from pathlib import Path
+from typing import Any
+
+import yaml
+
+from lib.product_catalog import slugify_key
+
+
+def _utc_now_iso() -> str:
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
 @dataclass(frozen=True)
-class ContentPackagePaths:
+class ContentPackageWriteResult:
     package_dir: Path
     manifest_path: Path
     post_path: Path
+    slug: str
 
 
-def _slugify(text: str) -> str:
-    s = (text or "").strip().lower()
-    s = re.sub(r"[^a-z0-9]+", "-", s)
-    s = re.sub(r"-+", "-", s).strip("-")
-    return s or "post"
+def _extract_yaml_frontmatter(md: str) -> tuple[dict[str, Any], str]:
+    """Extract YAML frontmatter from a markdown string.
+
+    Returns (frontmatter_dict, body_markdown).
+
+    If no frontmatter is present, returns ({}, original_md).
+    """
+
+    text = (md or "").replace("\r\n", "\n").replace("\r", "\n")
+    if not text.startswith("---\n"):
+        return {}, text
+
+    # Find the closing '---' delimiter.
+    end = text.find("\n---\n", 4)
+    if end == -1:
+        return {}, text
+
+    fm_text = text[4:end]
+    body = text[end + len("\n---\n") :]
+
+    fm = yaml.safe_load(fm_text) or {}
+    if not isinstance(fm, dict):
+        return {}, text
+
+    return fm, body
 
 
 def write_content_package_v1(
@@ -27,42 +56,49 @@ def write_content_package_v1(
     brand_id: str,
     run_id: str,
     publish_date: date,
-    slug_source: str,
     post_markdown: str,
-) -> ContentPackagePaths:
-    """Write Content Package v1.
+) -> ContentPackageWriteResult:
+    """Write Content Package v1 to content_factory/packages/{brand_id}/{run_id}.
 
-    Layout:
-      content_factory/packages/{brand_id}/{run_id}/
-        manifest.json
-        post.md
-
-    `slug_source` is slugified into manifest.slug.
+    Writes:
+      - manifest.json
+      - post.md
     """
 
-    packages_dir = repo_root / "content_factory" / "packages" / brand_id / run_id
-    packages_dir.mkdir(parents=True, exist_ok=True)
+    fm, _ = _extract_yaml_frontmatter(post_markdown)
+    title = str(fm.get("title") or "").strip()
 
-    slug = _slugify(slug_source)
+    slug = slugify_key(title) if title else slugify_key(run_id)
+    if not slug:
+        slug = "run"
+
+    package_dir = repo_root / "content_factory" / "packages" / brand_id / run_id
+    package_dir.mkdir(parents=True, exist_ok=True)
 
     manifest = {
         "version": "1",
         "brand_id": brand_id,
         "run_id": run_id,
+        "created_at": _utc_now_iso(),
         "publish_date": publish_date.isoformat(),
         "slug": slug,
         "outputs": [
             {
-                "type": "post",
+                "kind": "blog_post",
                 "path": "post.md",
             }
         ],
     }
 
-    manifest_path = packages_dir / "manifest.json"
-    post_path = packages_dir / "post.md"
+    manifest_path = package_dir / "manifest.json"
+    post_path = package_dir / "post.md"
 
     manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=False) + "\n", encoding="utf-8")
     post_path.write_text((post_markdown or "").rstrip() + "\n", encoding="utf-8")
 
-    return ContentPackagePaths(package_dir=packages_dir, manifest_path=manifest_path, post_path=post_path)
+    return ContentPackageWriteResult(
+        package_dir=package_dir,
+        manifest_path=manifest_path,
+        post_path=post_path,
+        slug=slug,
+    )

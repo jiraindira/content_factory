@@ -12,33 +12,41 @@ from content_factory.adapters.common import (
     section_to_plain_text,
 )
 from content_factory.artifact_models import ContentArtifact
+from content_factory.artifact_models import BlockType
 from content_factory.models import BrandProfile, ContentRequest, DeliveryChannel, DeliveryDestination
+
+
+def _extract_picks_frontmatter(*, artifact: ContentArtifact) -> list[dict]:
+    if not artifact.products:
+        return []
+
+    # Default: empty bodies (still useful as a stable pick_id index).
+    bodies_by_id: dict[str, str] = {p.pick_id: "" for p in artifact.products}
+
+    picks_section = next((s for s in artifact.sections if s.id == "picks"), None)
+    if picks_section is not None:
+        blocks = list(picks_section.blocks or [])
+
+        # Best-effort mapping: when editorial ran, picks.blocks is 1 paragraph block per product.
+        if len(blocks) == len(artifact.products) and all(b.type == BlockType.paragraph for b in blocks):
+            for product, block in zip(artifact.products, blocks, strict=True):
+                raw = (block.text or "").strip()
+                body = raw
+
+                # If block includes a markdown subheading ("### Title"), strip it.
+                if raw.lower().startswith("### "):
+                    parts = raw.split("\n\n", 1)
+                    if len(parts) == 2:
+                        body = parts[1].strip()
+
+                bodies_by_id[product.pick_id] = body
+
+    return [{"pick_id": p.pick_id, "body": (bodies_by_id.get(p.pick_id) or "").strip()} for p in artifact.products]
 
 
 def _published_at_iso(*, request: ContentRequest) -> str:
     d = request.publish.publish_date
     return datetime(d.year, d.month, d.day, 0, 0, 0, tzinfo=timezone.utc).isoformat().replace("+00:00", "Z")
-
-
-def _extract_picks_frontmatter(*, artifact: ContentArtifact) -> list[dict]:
-    products = list(artifact.products or [])
-    if not products:
-        return []
-
-    picks_section = next((s for s in artifact.sections if s.id == "picks"), None)
-    blocks = list(getattr(picks_section, "blocks", []) or []) if picks_section is not None else []
-
-    # Prefer explicit meta mapping.
-    by_id: dict[str, str] = {}
-    for b in blocks:
-        pid = None
-        if isinstance(getattr(b, "meta", None), dict):
-            pid = str(b.meta.get("pick_id") or "").strip()
-        txt = str(getattr(b, "text", "") or "").strip()
-        if pid:
-            by_id[pid] = txt
-
-    return [{"pick_id": p.pick_id, "body": (by_id.get(p.pick_id) or "").strip()} for p in products]
 
 
 def render_astro_markdown(*, brand: BrandProfile, request: ContentRequest, artifact: ContentArtifact) -> str:
@@ -54,23 +62,15 @@ def render_astro_markdown(*, brand: BrandProfile, request: ContentRequest, artif
         )
 
     topic = extract_topic_from_artifact(artifact)
-    title = (request.title_override or "").strip() or topic or f"{request.intent.value}: {request.form.value}"
-    description = (request.description_override or "").strip() or f"{request.domain.value} — {request.intent.value}"
-
-    categories = request.categories_override
-    if not categories:
-        categories = [request.domain.value]
-
-    audience = (request.audience_override or "").strip()
-    if not audience:
-        audience = getattr(brand.audience.primary_audience, "value", str(brand.audience.primary_audience))
+    title = topic or f"{request.intent.value}: {request.form.value}"
+    description = f"{request.domain.value} — {request.intent.value}"
 
     frontmatter = {
         "title": title,
         "description": description,
         "publishedAt": _published_at_iso(request=request),
-        "categories": categories,
-        "audience": audience,
+        "categories": [request.domain.value],
+        "audience": getattr(brand.audience.primary_audience, "value", str(brand.audience.primary_audience)),
         "products": [
             {
                 "pick_id": p.pick_id,
@@ -86,37 +86,17 @@ def render_astro_markdown(*, brand: BrandProfile, request: ContentRequest, artif
         "picks": _extract_picks_frontmatter(artifact=artifact),
     }
 
-    # Match the managed site’s preferred frontmatter style (flow/inline JSON-like arrays).
-    fm = yaml.safe_dump(
-        frontmatter,
-        sort_keys=False,
-        allow_unicode=True,
-        width=10_000,
-        default_flow_style=True,
-    ).strip()
+    fm = yaml.safe_dump(frontmatter, sort_keys=False).strip()
 
     body_parts: list[str] = []
     for sec in artifact.sections:
-        if sec.id == "picks":
-            # Picks are rendered by the managed site from structured frontmatter.
-            continue
-
-        # Render the disclosure/footer body without a “Closing” section header.
-        if sec.id == "closing":
-            t = section_to_plain_text(sec)
-            body = "\n".join(line for line in t.splitlines()[1:]).strip() if t else ""
-            if body:
-                body_parts.append(body)
-            continue
-
         heading = sec.heading or sec.id.replace("_", " ").title()
-        t = section_to_plain_text(sec)
-        body = "\n".join(line for line in t.splitlines()[1:]).strip() if t else ""
-        if not body:
-            continue
-
         body_parts.append(f"## {heading}")
-        body_parts.append(body)
+        t = section_to_plain_text(sec)
+        if t:
+            # section_to_plain_text includes heading again; we want just body blocks.
+            # so render blocks only.
+            body_parts.append("\n" + "\n".join(line for line in t.splitlines()[1:]).strip())
 
     body = "\n\n".join([p for p in body_parts if p.strip()]).strip() + "\n"
 

@@ -251,27 +251,17 @@ def _generate_product_recommendation(*, brand: BrandProfile, request: ContentReq
     picks = _find_section(artifact, "picks")
     closing = _find_section(artifact, "closing")
 
-    topic = (request.topic.value or "").strip()
-
     if intro is not None:
-        # Prefer user-provided seed description if present (manual imports use this).
-        seed_intro = (getattr(request, "description_override", None) or "").strip()
-        if seed_intro:
-            _ensure_paragraph(intro, seed_intro)
-        else:
-            _ensure_paragraph(
-                intro,
-                (
-                    f"Here are practical picks for {topic or 'your topic'}, based only on the products you provided. "
-                    "This avoids invented specs, prices, and performance claims—always double-check details on the product page."
-                ),
-            )
+        _ensure_paragraph(
+            intro,
+            "This list is based on your provided products. It avoids invented specs, prices, and performance claims.",
+        )
 
     if how is not None:
         how_bullets = [
-            f"Match {topic or 'the topic'} and the intended use-case.",
-            "Prefer clear product pages and predictable everyday usability.",
-            "Avoid overstating insulation time, durability, or leakproof claims when not verified.",
+            "Match the topic and intended use-case.",
+            "Prefer reputable sellers and clear product pages.",
+            "Avoid overstating performance when details are unknown.",
         ]
         _ensure_bullets(
             how,
@@ -283,61 +273,16 @@ def _generate_product_recommendation(*, brand: BrandProfile, request: ContentReq
         artifact.rationale.selection_criteria = list(how_bullets)
 
     if picks is not None:
-        def _what_is_it(title: str) -> str:
-            t = (title or "").lower()
-            if "tumbler" in t:
-                return "a tumbler"
-            if "mug" in t:
-                return "a travel mug"
-            if "flask" in t:
-                return "a flask"
-            if "bottle" in t:
-                return "a bottle"
-            if "knife" in t:
-                return "a knife"
-            if "spatula" in t:
-                return "a spatula"
-            return "a product"
+        _ensure_bullets(
+            picks,
+            [f"{p.title} — {p.url}" for p in artifact.products],
+        )
 
-        def _feature_hints(title: str) -> list[str]:
-            t = (title or "").lower()
-            hints: list[str] = []
-            if "straw" in t:
-                hints.append("a straw-style sip")
-            if "handle" in t:
-                hints.append("a handle for carrying")
-            if "leak" in t:
-                hints.append("a leak-resistant lid")
-            if "dishwasher" in t:
-                hints.append("easy cleaning")
-            if "cup holder" in t or "cup-holder" in t:
-                hints.append("car cup-holder fit")
-            return hints[:2]
-
-        picks.blocks = []
-        for p in artifact.products:
-            features = _feature_hints(p.title)
-            feat = ""
-            if features:
-                feat = "Good if you want " + " and ".join(features) + "."
-
-            body = " ".join([x for x in [
-                f"{p.title} is {_what_is_it(p.title)} for everyday use.",
-                feat,
-                "Check the key details on the product page before buying.",
-            ] if x]).strip()
-
-            picks.blocks.append(
-                Block(type=BlockType.paragraph, text=body, meta={"pick_id": p.pick_id})
-            )
-
-            # Add a reference line containing the URL to satisfy the generation
-            # contract tests and to keep a human-reviewable trace in the artifact.
-            # This block is intentionally not tagged with meta.pick_id, so delivery
-            # adapters can choose not to surface it.
-            picks.blocks.append(Block(type=BlockType.paragraph, text=f"{p.title} — {p.url}"))
-
-    # Avoid adding generic closing copy; managed-site layout/disclaimers cover the footer.
+    if closing is not None:
+        _ensure_paragraph(
+            closing,
+            "If you’re unsure, start with the option that best matches your constraints, then adjust after real-world use.",
+        )
 
     _set_claims(
         artifact,

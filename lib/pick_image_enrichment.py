@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import dataclass
+from html import unescape
 from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any
@@ -72,15 +73,28 @@ def _extract_og_image(html: str) -> str | None:
         return None
 
     for tag in parser.meta:
-        if tag.get("property") == "og:image" and tag.get("content"):
+        prop = (tag.get("property") or "").strip().lower()
+        if prop == "og:image" and tag.get("content"):
             return tag["content"].strip()
     for tag in parser.meta:
-        if tag.get("name") == "twitter:image" and tag.get("content"):
+        name = (tag.get("name") or "").strip().lower()
+        if name in ("twitter:image", "twitter:image:src") and tag.get("content"):
             return tag["content"].strip()
     for tag in parser.meta:
-        if tag.get("property") == "og:image:secure_url" and tag.get("content"):
+        prop = (tag.get("property") or "").strip().lower()
+        if prop == "og:image:secure_url" and tag.get("content"):
             return tag["content"].strip()
     return None
+
+
+def _unescape_js_string(s: str) -> str:
+    # Minimal unescape for common sequences in embedded JSON/script strings.
+    return (
+        s.replace("\\/", "/")
+        .replace("\\u0026", "&")
+        .replace("\\u003d", "=")
+        .replace("\\u003f", "?")
+    )
 
 
 def _looks_like_amazon(url: str) -> bool:
@@ -106,25 +120,61 @@ def _looks_like_amazon(url: str) -> bool:
 def _extract_amazon_product_image(html: str) -> str | None:
     m = re.search(r'id="landingImage"[^>]*?data-old-hires="([^"]+)"', html, re.IGNORECASE)
     if m:
-        return m.group(1).strip()
+        val = m.group(1).strip()
+        if val:
+            return val
 
-    m = re.search(r'id="landingImage"[^>]*?data-a-dynamic-image="([^"]+)"', html, re.IGNORECASE)
-    if m:
-        raw = m.group(1)
-        raw = raw.replace("&quot;", '"')
+    # data-a-dynamic-image can appear on multiple tags; pick the best (largest) candidate.
+    dynamic_matches = re.findall(r'data-a-dynamic-image\s*=\s*"([^"]+)"', html, flags=re.IGNORECASE)
+    for raw in dynamic_matches:
         try:
-            data = json.loads(raw)
-            if isinstance(data, dict):
-                for k in data.keys():
-                    if isinstance(k, str) and k.startswith("http"):
-                        return k.strip()
+            raw2 = unescape(raw)
+            data = json.loads(raw2)
+            if not isinstance(data, dict):
+                continue
+
+            best_url: str | None = None
+            best_area = -1
+            for k, dims in data.items():
+                if not (isinstance(k, str) and k.startswith("http")):
+                    continue
+
+                # dims typically like [width, height]
+                area = -1
+                if isinstance(dims, list) and len(dims) >= 2:
+                    try:
+                        w = int(dims[0])
+                        h = int(dims[1])
+                        area = w * h
+                    except Exception:
+                        area = -1
+
+                if area > best_area:
+                    best_area = area
+                    best_url = k
+
+            if best_url:
+                return best_url.strip()
         except Exception:
-            pass
+            continue
+
+    # Some variants keep the landing image directly on src/data-src.
+    m = re.search(r'id=["\']landingImage["\'][^>]*?\sdata-src=["\']([^"\']+)["\']', html, re.IGNORECASE)
+    if m:
+        val = m.group(1).strip()
+        if val:
+            return val
+
+    m = re.search(r'id=["\']landingImage["\'][^>]*?\ssrc=["\']([^"\']+)["\']', html, re.IGNORECASE)
+    if m:
+        val = m.group(1).strip()
+        if val:
+            return val
 
     for key in ("hiRes", "large"):
         m = re.search(rf'"{key}"\s*:\s*"(https:[^"]+)"', html)
         if m:
-            return m.group(1).strip()
+            return _unescape_js_string(m.group(1).strip())
 
     return None
 
@@ -151,7 +201,7 @@ def _ext_from_content_type(ct: str | None) -> str | None:
 
 def _download_image(*, client: httpx.Client, url: str, out_path: Path) -> bool:
     try:
-        r = client.get(url, timeout=20.0)
+        r = client.get(url, timeout=20.0, follow_redirects=True)
         r.raise_for_status()
         out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path.write_bytes(r.content)
@@ -160,21 +210,30 @@ def _download_image(*, client: httpx.Client, url: str, out_path: Path) -> bool:
         return False
 
 
-def _fetch_best_image_url(*, client: httpx.Client, product_url: str) -> str | None:
+def _fetch_best_image_url(*, client: httpx.Client, product_url: str) -> tuple[str | None, str | None]:
     try:
         r = client.get(product_url, timeout=20.0)
         r.raise_for_status()
         html = r.text
-    except Exception:
-        return None
+    except httpx.HTTPStatusError as e:
+        status = getattr(e.response, "status_code", None)
+        return None, f"fetch failed ({status})"
+    except Exception as e:
+        return None, f"fetch failed ({type(e).__name__})"
 
     base_url = str(getattr(r, "url", product_url))
+
+    # Amazon frequently responds with robot checks for automated clients.
+    if _looks_like_amazon(base_url):
+        low = html.lower()
+        if "robot check" in low or "validatecaptcha" in low or "captcha" in low:
+            return None, "amazon robot check/captcha"
 
     img = _extract_og_image(html)
     if img:
         img = _resolve_url(base_url, img)
         if not _is_probably_placeholder_image(img):
-            return img
+            return img, None
 
     # Amazon pages often omit OG tags or vary markup.
     if _looks_like_amazon(base_url):
@@ -182,9 +241,9 @@ def _fetch_best_image_url(*, client: httpx.Client, product_url: str) -> str | No
         if img2:
             img2 = _resolve_url(base_url, img2)
             if not _is_probably_placeholder_image(img2):
-                return img2
+                return img2, None
 
-    return None
+    return None, "no usable image found"
 
 
 def _extract_products_json_line(frontmatter: str) -> tuple[list[dict[str, Any]], str] | None:
@@ -286,9 +345,9 @@ def enrich_pick_images_for_markdown(
                     picks_skipped += 1
                     continue
 
-            image_url = _fetch_best_image_url(client=client, product_url=url)
+            image_url, reason = _fetch_best_image_url(client=client, product_url=url)
             if not image_url:
-                errors.append(f"no og image for {pick_id}")
+                errors.append(f"{pick_id}: {reason or 'no usable image found'}")
                 picks_skipped += 1
                 continue
 
@@ -343,7 +402,12 @@ def enrich_pick_images_for_markdown(
         try:
             fm_data2 = yaml.safe_load(fm) or {}
             fm_data2["products"] = products
-            new_fm = yaml.safe_dump(fm_data2, sort_keys=False).strip()
+            new_fm = yaml.safe_dump(
+                fm_data2,
+                sort_keys=False,
+                allow_unicode=True,
+                width=10_000,
+            ).strip()
             new_md = md.replace(f"---\n{fm}\n---", f"---\n{new_fm}\n---", 1)
             _write_text(markdown_path, new_md)
             return PickImageEnrichmentResult(updated=True, picks_updated=picks_updated, picks_skipped=picks_skipped, errors=errors)

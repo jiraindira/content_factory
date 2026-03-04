@@ -1,0 +1,78 @@
+brand_id: the_product_wheel
+publish:
+  publish_date: '2026-02-23'
+intent: product_recommendation
+form: top_x_list
+domain: travel
+topic:
+  mode: manual
+  value: Insulated drinkware
+delivery_target:
+  destination: hosted_by_us
+  channel: blog_article
+products:
+  mode: manual_list
+  items:
+  - pick_id: pick-1-byron-20-snapseal-travel-mug-470-ml-stainless-steel-vacuum-insulated
+    title: "Byron 2.0 SNAPSEAL\u2122 Travel Mug, 470 ml, Stainless Steel, Vacuum Insulated"
+    url: https://amzn.to/40iNwrJ
+    rating: 4.4
+    reviews_count: 22348
+    provider: amazon
+  - pick_id: pick-2-owala-freesip-insulated-stainless-steel-water-bottle-with-straw-710ml
+    title: Owala FreeSip Insulated Stainless Steel Water Bottle with Straw, 710ml
+    url: https://amzn.to/4s40R3i
+    rating: 4.6
+    reviews_count: 31426
+    provider: amazon
+  - pick_id: pick-3-stanley-quencher-h20-flowstate-tumbler-12l-cold-for-11-hours-iced-for-48-hours-metal-water-bottle-with-straw-handle-and-lid
+    title: STANLEY Quencher H2.0 Flowstate Tumbler 1.2L - Cold for 11 Hours - Iced
+      for 48 Hours - Metal Water Bottle with Straw, Handle and Lid
+    url: https://amzn.to/4rqPWAB
+    rating: 4.5
+    reviews_count: 13368
+    provider: amazon
+  - pick_id: pick-4-bottle-bottle-insulated-water-bottle-950ml32oz-stainless-steel-sports-water-bottles-with-straw-dual-use-lid-drink-flask-design-for-gym-with-pill-box
+    title: BOTTLE BOTTLE Insulated Water Bottle 950ml(32oz) Stainless Steel Sports
+      Water Bottles with Straw Dual-use Lid Drink Flask Design for Gym with Pill Box
+    url: https://amzn.to/4rCFPIU
+    rating: 4.6
+    reviews_count: 4586
+    provider: amazon
+  - pick_id: pick-5-hydropal-vacuum-insulated-stainless-steel-water-bottle-1200ml1000ml750ml-2-lids-straw-lid-and-spout-lid
+    title: HydroPal Vacuum Insulated Stainless Steel Water Bottle, 1200ml/1000ml/750ml-
+      2 Lids (Straw Lid and Spout Lid)
+    url: https://amzn.to/4aBHQ0Q
+    rating: 4.4
+    reviews_count: 2499
+    provider: amazon
+  - pick_id: pick-6-thermos-stainless-king-red-travel-flask-12l-premium-leak-proof-insulated-tea-coffee-flask-for-hot-cold-drinks-built-in-cup-twist-pour-stopper
+    title: Thermos - Stainless King Red Travel Flask (1.2L) - Premium Leak Proof Insulated
+      Tea & Coffee Flask for Hot & Cold Drinks, Built-in Cup, Twist-Pour Stopper
+    url: https://amzn.to/4aTVD3c
+    rating: 4.7
+    reviews_count: 24128
+    provider: amazon
+  - pick_id: pick-7-contigo-west-loop-autoseal-travel-mug-stainless-steel-thermal-mug-vacuum-flask
+    title: Contigo West Loop Autoseal Travel Mug, Stainless Steel Thermal Mug, Vacuum
+      Flask
+    url: https://amzn.to/4c9u9sC
+    rating: 4.4
+    reviews_count: 22231
+    provider: amazon
+  - pick_id: pick-8-stanley-1913-aerolight-transit-travel-mug-047l-keeps-6-hours-hot-8-hours-cold-dishwasher-safe-leakproof-car-cup-holder-compatible
+    title: STANLEY 1913 Aerolight Transit Travel Mug 0.47L - Keeps 6 Hours Hot - 8
+      Hours Cold - Dishwasher Safe - Leakproof - Car Cup Holder Compatible
+    url: https://amzn.to/3OmymPM
+    rating: 4.6
+    reviews_count: 5325
+    provider: amazon
+title_override: 'Stop Drinking Lukewarm Regret: The 8 Best Insulated Travel Bottles
+  in the UK'
+description_override: Whether you're racing for the 7:32 to Euston or road-tripping
+  through the Highlands, these top-rated insulated mugs and bottles keep drinks hot
+  for hours and ice solid overnight. Thousands of UK reviews later, these are the
+  clear winners.
+categories_override:
+- travel
+audience_override: UK shoppers

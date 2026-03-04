@@ -1,0 +1,14 @@
+{
+  "version": "1",
+  "brand_id": "the_product_wheel",
+  "run_id": "tpw_smoke_amzn",
+  "created_at": "2026-02-17T09:03:31Z",
+  "publish_date": "2099-01-01",
+  "slug": "everyday-carry-and-organization",
+  "outputs": [
+    {
+      "kind": "blog_post",
+      "path": "post.md"
+    }
+  ]
+}

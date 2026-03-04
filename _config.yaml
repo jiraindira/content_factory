@@ -1,0 +1,5 @@
+title: AI Affiliate Blog
+description: Weekly curated affiliate blog posts
+theme: minima
+plugins:
+  - jekyll-feed  # optional: adds RSS feed

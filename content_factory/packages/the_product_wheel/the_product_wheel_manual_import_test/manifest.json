@@ -1,0 +1,13 @@
+{
+  "version": "1",
+  "brand_id": "the_product_wheel",
+  "run_id": "the_product_wheel_manual_import_test",
+  "publish_date": "2099-01-01",
+  "slug": "travel-gear-and-luggage",
+  "outputs": [
+    {
+      "type": "post",
+      "path": "post.md"
+    }
+  ]
+}

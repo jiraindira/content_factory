@@ -47,7 +47,6 @@ class Domain(str, Enum):
     finance = "finance"
     health = "health"
     pets = "pets"
-    travel = "travel"
     home = "home"
     kitchen = "kitchen"
     tech = "tech"
@@ -424,13 +423,6 @@ class ContentRequest(SchemaBase):
     topic: Topic
     delivery_target: DeliveryTarget
     products: Products
-
-    # Optional manual/request-level overrides for downstream delivery adapters.
-    # These are intentionally not required by the core contract.
-    title_override: Optional[str] = None
-    description_override: Optional[str] = None
-    categories_override: Optional[List[str]] = None
-    audience_override: Optional[str] = None
 
     def is_product_form(self) -> bool:
         return isinstance(self.form, ProductRecommendationForm)

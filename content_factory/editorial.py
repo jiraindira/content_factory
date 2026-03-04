@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import re
 from typing import Any
 
 from content_factory.artifact_models import Block, BlockType, ContentArtifact, Section
@@ -50,45 +49,11 @@ def _set_section_markdown(section: Section, md: str) -> None:
     section.blocks = [Block(type=BlockType.paragraph, text=(md or "").strip())]
 
 
-def _normalize_markdown_bullets(md: str) -> str:
-    """Normalize common bullet glyphs into Markdown '-' list items.
-
-    Astro/marked won't treat '•' as a list marker, so we convert it.
-    """
-
-    text = (md or "").replace("\r\n", "\n").replace("\r", "\n").strip()
-    if not text:
-        return ""
-
-    # If the model emits '• ' bullets, normalize to '- '.
-    lines = [ln.strip() for ln in text.split("\n")]
-    has_dot_bullets = any(ln.startswith("•") for ln in lines)
-    if has_dot_bullets:
-        norm_lines: list[str] = []
-        for ln in lines:
-            if not ln:
-                continue
-            if ln.startswith("•"):
-                norm_lines.append("- " + ln.lstrip("•").strip())
-            else:
-                norm_lines.append(ln)
-        text = "\n".join(norm_lines).strip()
-
-    # If bullets are inline (e.g., "• A. • B."), split into separate list items.
-    if "•" in text and not re.search(r"^\s*[-*]\s+", text, flags=re.MULTILINE):
-        parts = [p.strip() for p in text.split("•") if p.strip()]
-        if len(parts) >= 2:
-            text = "\n".join(["- " + p.lstrip("-").strip() for p in parts]).strip()
-
-    return text
-
-
 def apply_copy_editor_to_artifact_if_applicable(
     *,
     brand: BrandProfile,
     request: ContentRequest,
     artifact: ContentArtifact,
-    require: bool = False,
 ) -> bool:
     """Body-only editorial pass for product recommendation artifacts.
 
@@ -96,14 +61,10 @@ def apply_copy_editor_to_artifact_if_applicable(
     """
 
     if request.intent != ContentIntent.product_recommendation:
-        if require:
-            raise ValueError("LLM editorial is required but request is not product_recommendation")
         return False
 
     # Only apply when products exist; editor uses product titles to craft pick bodies.
     if not artifact.products:
-        if require:
-            raise ValueError("LLM editorial is required but artifact has no products")
         return False
 
     intro = _find_section(artifact, "intro")
@@ -111,16 +72,12 @@ def apply_copy_editor_to_artifact_if_applicable(
     picks = _find_section(artifact, "picks")
 
     if intro is None or how is None or picks is None:
-        if require:
-            raise ValueError("LLM editorial is required but intro/how_chosen/picks sections are missing")
         return False
 
     try:
         from agents.copy_editor_agent import CopyEditorAgent, CopyEditorConfig
         from integrations.openai_adapters import OpenAIJsonLLM
-    except Exception as e:
-        if require:
-            raise
+    except Exception:
         return False
 
     # Build editor inputs (body-only)
@@ -128,15 +85,7 @@ def apply_copy_editor_to_artifact_if_applicable(
     audience = getattr(brand.audience.primary_audience, "value", str(brand.audience.primary_audience))
     category = request.domain.value
 
-    topic_blocks: list[Block] = []
-    intro_blocks_for_edit: list[Block] = []
-    for b in intro.blocks or []:
-        if b.type == BlockType.paragraph and (b.text or "").strip().lower().startswith("topic:"):
-            topic_blocks.append(b)
-        else:
-            intro_blocks_for_edit.append(b)
-
-    intro_md = _blocks_to_markdown(intro_blocks_for_edit)
+    intro_md = _blocks_to_markdown(intro.blocks)
     how_md = _blocks_to_markdown(how.blocks)
 
     products_payload: list[dict[str, Any]] = []
@@ -153,7 +102,7 @@ def apply_copy_editor_to_artifact_if_applicable(
 
     picks_payload = [{"pick_id": p.pick_id, "body": ""} for p in artifact.products]
 
-    editor = CopyEditorAgent(llm=OpenAIJsonLLM(), config=CopyEditorConfig(max_changes=25, max_pick_sentences=6))
+    editor = CopyEditorAgent(llm=OpenAIJsonLLM(), config=CopyEditorConfig(max_changes=25, max_pick_sentences=4))
     edited = editor.run(
         title=title,
         audience=audience,
@@ -165,11 +114,8 @@ def apply_copy_editor_to_artifact_if_applicable(
     )
 
     # Apply edits back to artifact sections.
-    edited_intro_md = str(edited.get("intro_md") or intro_md).strip()
-    intro.blocks = list(topic_blocks) + [Block(type=BlockType.paragraph, text=edited_intro_md)]
-    how_out = str(edited.get("how_md") or how_md)
-    how_out = _normalize_markdown_bullets(how_out)
-    _set_section_markdown(how, how_out)
+    _set_section_markdown(intro, str(edited.get("intro_md") or intro_md))
+    _set_section_markdown(how, str(edited.get("how_md") or how_md))
 
     by_id: dict[str, str] = {}
     for it in (edited.get("picks") or []):
@@ -182,7 +128,9 @@ def apply_copy_editor_to_artifact_if_applicable(
     pick_blocks: list[Block] = []
     for p in artifact.products:
         body = by_id.get(p.pick_id, "").strip()
-        pick_blocks.append(Block(type=BlockType.paragraph, text=body, meta={"pick_id": p.pick_id}))
+        # Render each pick as a subheading + paragraph in a single markdown block.
+        block_text = f"### {p.title}\n\n{body}".strip()
+        pick_blocks.append(Block(type=BlockType.paragraph, text=block_text))
 
     picks.blocks = pick_blocks
 

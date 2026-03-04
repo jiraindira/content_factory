@@ -1,0 +1,13 @@
+{
+  "version": "1",
+  "brand_id": "the_product_wheel",
+  "run_id": "the_product_wheel_2026-02-16",
+  "publish_date": "2099-01-01",
+  "slug": "everyday-carry-and-organization",
+  "outputs": [
+    {
+      "type": "post",
+      "path": "post.md"
+    }
+  ]
+}

@@ -1,0 +1,141 @@
+{
+  "artifact_version": "1.0",
+  "brand_id": "the_product_wheel",
+  "run_id": "tpw_smoke_amzn",
+  "generated_at": "2099-01-01T00:00:00+00:00",
+  "intent": "product_recommendation",
+  "form": "top_x_list",
+  "domain": "tech",
+  "content_depth": "medium",
+  "audience": {
+    "primary_audience": "general_consumers",
+    "audience_sophistication": "medium"
+  },
+  "persona": {
+    "primary_persona": "practical_expert",
+    "persona_modifiers": [
+      "none"
+    ],
+    "science_explicitness": "implied",
+    "personal_presence": "none",
+    "narration_mode": "third_person_only"
+  },
+  "sections": [
+    {
+      "id": "intro",
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "Topic: Everyday carry and organization"
+        },
+        {
+          "type": "paragraph",
+          "text": "This list is based on your provided products. It avoids invented specs, prices, and performance claims."
+        }
+      ]
+    },
+    {
+      "id": "how_chosen",
+      "heading": "How this list was chosen",
+      "blocks": [
+        {
+          "type": "bullets",
+          "items": [
+            "Match the topic and intended use-case.",
+            "Prefer reputable sellers and clear product pages.",
+            "Avoid overstating performance when details are unknown."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "picks",
+      "heading": "Top picks",
+      "blocks": [
+        {
+          "type": "bullets",
+          "items": [
+            "Carry-on suitcase (example placeholder) \u2014 https://amzn.to/4aUFUSk",
+            "Checked luggage (example placeholder) \u2014 https://amzn.to/3MySugM",
+            "Budget luggage set (example placeholder) \u2014 https://amzn.to/4az0ExM"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "closing",
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "If you\u2019re unsure, start with the option that best matches your constraints, then adjust after real-world use."
+        },
+        {
+          "type": "callout",
+          "text": "This post may contain affiliate links. If you buy through our links, we may earn a commission at no extra cost to you."
+        }
+      ]
+    }
+  ],
+  "products": [
+    {
+      "pick_id": "carry_on_pick",
+      "title": "Carry-on suitcase (example placeholder)",
+      "url": "https://amzn.to/4aUFUSk"
+    },
+    {
+      "pick_id": "checked_bag_pick",
+      "title": "Checked luggage (example placeholder)",
+      "url": "https://amzn.to/3MySugM"
+    },
+    {
+      "pick_id": "budget_pick",
+      "title": "Budget luggage set (example placeholder)",
+      "url": "https://amzn.to/4az0ExM"
+    }
+  ],
+  "rationale": {
+    "how_chosen_blocks": [
+      {
+        "type": "bullets",
+        "items": [
+          "Match the topic and intended use-case.",
+          "Prefer reputable sellers and clear product pages.",
+          "Avoid overstating performance when details are unknown."
+        ]
+      }
+    ],
+    "selection_criteria": [
+      "Match the topic and intended use-case.",
+      "Prefer reputable sellers and clear product pages.",
+      "Avoid overstating performance when details are unknown."
+    ]
+  },
+  "claims": [
+    {
+      "id": "clm_products_1",
+      "text": "Recommendations are based only on the provided product list; verify details on the linked product pages.",
+      "claim_type": "advice",
+      "requires_citation": false,
+      "supported_by_source_ids": []
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "homepage",
+      "kind": "url",
+      "ref": "https://theproductwheel.com",
+      "purpose": "homepage"
+    }
+  ],
+  "checks": {
+    "matrix_validation_passed": true,
+    "brand_policy_checks_passed": true,
+    "required_sections_present": true,
+    "products_present_when_required": true,
+    "citations_present_when_required": true,
+    "topic_allowlist_passed": true,
+    "required_disclaimers_present": true,
+    "robots_policy_passed": true,
+    "disallowed_claims_found": []
+  }
+}

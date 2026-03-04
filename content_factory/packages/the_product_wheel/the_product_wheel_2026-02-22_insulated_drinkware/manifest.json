@@ -1,0 +1,13 @@
+{
+  "version": "1",
+  "brand_id": "the_product_wheel",
+  "run_id": "the_product_wheel_2026-02-22_insulated_drinkware",
+  "publish_date": "2026-02-23",
+  "slug": "insulated-drinkware",
+  "outputs": [
+    {
+      "type": "post",
+      "path": "post.md"
+    }
+  ]
+}

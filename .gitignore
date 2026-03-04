@@ -1,13 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
 .pytest_cache/
-**/__pycache__/
-*.pyc
-*.pyo
 
-# Common virtualenv folders
+# Virtual environments
 .venv/
 venv/
+.venv_validate/
 
-# Generated content artifacts (do not commit)
-content_factory/artifacts/
-content_factory/outputs/
-content_factory/packages/
+# Local env
+.env
+
+# Generated outputs
+output/
+archive/outputs/
+site/dist/
+site/.astro/
+site/node_modules/

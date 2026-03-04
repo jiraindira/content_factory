@@ -1,0 +1,74 @@
+{
+  "category": "travel",
+  "subcategory": "insulated drinkware",
+  "audience": "UK shoppers",
+  "seed_title": "Stop Drinking Lukewarm Regret: The 8 Best Insulated Travel Bottles in the UK",
+  "seed_description": "Whether you're racing for the 7:32 to Euston or road-tripping through the Highlands, these top-rated insulated mugs and bottles keep drinks hot for hours and ice solid overnight. Thousands of UK reviews later, these are the clear winners.",
+  "source_url": "https://amzn.to/4rr8VLh",
+  "products": [
+    {
+      "name": "Byron 2.0 SNAPSEAL™ Travel Mug, 470 ml, Stainless Steel, Vacuum Insulated",
+      "url": "https://amzn.to/40iNwrJ",
+      "rating": 4.4,
+      "reviews_count": 22348,
+      "price": "£9.38",
+      "status": "ok"
+    },
+    {
+      "name": "Owala FreeSip Insulated Stainless Steel Water Bottle with Straw, 710ml",
+      "url": "https://amzn.to/4s40R3i",
+      "rating": 4.6,
+      "reviews_count": 31426,
+      "price": "£31.99",
+      "status": "ok"
+    },
+    {
+      "name": "STANLEY Quencher H2.0 Flowstate Tumbler 1.2L - Cold for 11 Hours - Iced for 48 Hours - Metal Water Bottle with Straw, Handle and Lid",
+      "url": "https://amzn.to/4rqPWAB",
+      "rating": 4.5,
+      "reviews_count": 13368,
+      "price": "£50.00",
+      "status": "ok"
+    },
+    {
+      "name": "BOTTLE BOTTLE Insulated Water Bottle 950ml(32oz) Stainless Steel Sports Water Bottles with Straw Dual-use Lid Drink Flask Design for Gym with Pill Box",
+      "url": "https://amzn.to/4rCFPIU",
+      "rating": 4.6,
+      "reviews_count": 4586,
+      "price": "£21.99",
+      "status": "ok"
+    },
+    {
+      "name": "HydroPal Vacuum Insulated Stainless Steel Water Bottle, 1200ml/1000ml/750ml- 2 Lids (Straw Lid and Spout Lid)",
+      "url": "https://amzn.to/4aBHQ0Q",
+      "rating": 4.4,
+      "reviews_count": 2499,
+      "price": "£14.44",
+      "status": "ok"
+    },
+    {
+      "name": "Thermos - Stainless King Red Travel Flask (1.2L) - Premium Leak Proof Insulated Tea & Coffee Flask for Hot & Cold Drinks, Built-in Cup, Twist-Pour Stopper",
+      "url": "https://amzn.to/4aTVD3c",
+      "rating": 4.7,
+      "reviews_count": 24128,
+      "price": "£27",
+      "status": "ok"
+    },
+    {
+      "name": "Contigo West Loop Autoseal Travel Mug, Stainless Steel Thermal Mug, Vacuum Flask",
+      "url": "https://amzn.to/4c9u9sC",
+      "rating": 4.4,
+      "reviews_count": 22231,
+      "price": "£23",
+      "status": "ok"
+    },
+    {
+      "name": "STANLEY 1913 Aerolight Transit Travel Mug 0.47L - Keeps 6 Hours Hot - 8 Hours Cold - Dishwasher Safe - Leakproof - Car Cup Holder Compatible ",
+      "url": "https://amzn.to/3OmymPM",
+      "rating": 4.6,
+      "reviews_count": 5325,
+      "price": "£37",
+      "status": "ok"
+    }
+  ]
+}

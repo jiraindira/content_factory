@@ -1,34 +1,25 @@
 from __future__ import annotations
 
 import argparse
-import subprocess
-import sys
 from pathlib import Path
 
-_REPO_ROOT = Path(__file__).resolve().parents[1]
-if str(_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_REPO_ROOT))
-
-from content_factory.pr_delivery import deliver_package_as_pr, ensure_managed_repo_checkout, has_gh_cli
+from content_factory.pr_delivery import (
+    deliver_package_as_pr,
+    ensure_managed_repo_checkout,
+    has_gh_cli,
+)
 
 
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(
-        description="Deliver a Content Package v1 into a managed-site repo as a PR-ready branch"
-    )
+    p = argparse.ArgumentParser(description="Deliver a Content Package v1 into a managed-site repo as a PR-ready branch")
 
     p.add_argument("--package-dir", required=True, help="Path to packages/{brand_id}/{run_id}")
     p.add_argument(
         "--managed-repo-path",
         required=True,
-        help="Local path to managed-site repo checkout (cloned if missing and --managed-repo-url is provided)",
+        help="Local path to managed-site repo checkout (will be cloned if missing and --managed-repo-url is provided)",
     )
     p.add_argument("--managed-repo-url", required=False, help="Git URL used to clone managed repo if path missing")
-    p.add_argument(
-        "--managed-python",
-        required=False,
-        help="Python executable to run managed-site hydration (defaults to current interpreter)",
-    )
     p.add_argument("--base-branch", default="main")
     p.add_argument("--branch", required=False, help="Branch name to create/update")
 
@@ -41,7 +32,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument(
         "--open-pr",
         action="store_true",
-        help="Open a PR using GitHub CLI (gh). Prints instructions if gh is missing.",
+        help="Open a PR using GitHub CLI (gh). Only prints instructions if gh is missing.",
     )
 
     return p
@@ -69,11 +60,11 @@ def main(argv: list[str] | None = None) -> int:
         regen_hero_if_possible=bool(args.regen_hero),
         commit=bool(args.commit),
         push=bool(args.push),
-        managed_python=args.managed_python,
     )
 
     print(f"Managed repo: {result.managed_repo_path}")
     print(f"Branch: {result.branch_name}")
+    print(f"Post: {result.post_path}")
     print(f"Changed entries: {result.changed_files}")
 
     if args.open_pr:
@@ -82,6 +73,8 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  cd {result.managed_repo_path}")
             print(f"  gh pr create --base {args.base_branch} --head {result.branch_name} --fill")
             return 0
+
+        import subprocess
 
         subprocess.run(
             [

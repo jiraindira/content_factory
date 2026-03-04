@@ -14,7 +14,6 @@ brand_sources:
 domains_supported:
   - tech
   - home
-  - travel
 
 domain_primary: tech
 
@@ -34,7 +33,6 @@ content_strategy:
 topic_policy:
   allowlist:
     - Travel gear and luggage
-    - Insulated drinkware
     - Everyday carry and organization
     - Home essentials and storage
     - Tech accessories
@@ -48,13 +46,6 @@ persona_by_domain:
     personal_presence: none
     narration_mode: third_person_only
   home:
-    primary_persona: practical_expert
-    persona_modifiers:
-      - none
-    science_explicitness: implied
-    personal_presence: none
-    narration_mode: third_person_only
-  travel:
     primary_persona: practical_expert
     persona_modifiers:
       - none

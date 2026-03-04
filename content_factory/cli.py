@@ -1,7 +1,33 @@
+
+def run_pipeline(brand_path: Path, request_path: Path, *, build_context_if_missing: bool = True, run_id: str | None = None) -> Path:
+    """Reusable pipeline entry point for tests and automation."""
+    repo_root = Path(__file__).resolve().parents[1]
+    brand = load_brand_profile(brand_path)
+    req = load_content_request(request_path)
+    validate_request_against_brand(brand=brand, request=req)
+
+    ctx_path = artifact_path_for_brand(repo_root=repo_root, brand_id=brand.brand_id)
+    if not ctx_path.exists() and build_context_if_missing:
+        artifact = build_brand_context_artifact(brand=brand, repo_root=repo_root)
+        ctx_path = write_brand_context_artifact(repo_root=repo_root, artifact=artifact)
+    if not ctx_path.exists():
+        raise FileNotFoundError(f"BrandContextArtifact not found: {ctx_path}. Run build-context first.")
+    from content_factory.brand_context import BrandContextArtifact
+    ctx = BrandContextArtifact.model_validate_json(ctx_path.read_text(encoding="utf-8"))
+    artifact = compile_content_artifact(brand=brand, request=req, brand_context=ctx, run_id=run_id or request_path.stem)
+    _ = generate_filled_artifact(brand=brand, request=req, artifact=artifact)
+    try:
+        from content_factory.editorial import apply_copy_editor_to_artifact_if_applicable
+        _ = apply_copy_editor_to_artifact_if_applicable(brand=brand, request=req, artifact=artifact)
+    except Exception:
+        pass
+    validate_artifact_against_specs(brand=brand, request=req, artifact=artifact)
+    validate_artifact_against_channel_specs(brand=brand, request=req, artifact=artifact)
+    out_artifact_path = write_content_artifact(repo_root=repo_root, artifact=artifact)
+    return out_artifact_path
 from __future__ import annotations
 
 import argparse
-import os
 from datetime import date
 from pathlib import Path
 
@@ -18,90 +44,6 @@ from content_factory.channel_qa import validate_artifact_against_channel_specs
 from content_factory.generation import generate_filled_artifact
 from content_factory.onboarding import write_onboarding_files
 from content_factory.validation import load_brand_profile, load_content_request, validate_request_against_brand
-
-
-def _run_request_pipeline(
-    *,
-    repo_root: Path,
-    brand_path: Path,
-    request_path: Path | None,
-    brand,
-    req,
-    run_id: str,
-    build_context_if_missing: bool,
-    write_package: bool,
-    require_editorial: bool = False,
-) -> int:
-    ctx_path = artifact_path_for_brand(repo_root=repo_root, brand_id=brand.brand_id)
-    if not ctx_path.exists() and build_context_if_missing:
-        artifact = build_brand_context_artifact(brand=brand, repo_root=repo_root)
-        ctx_path = write_brand_context_artifact(repo_root=repo_root, artifact=artifact)
-
-    if not ctx_path.exists():
-        raise FileNotFoundError(
-            f"BrandContextArtifact not found: {ctx_path}. Run `content-factory build-context --brand ...` first."
-        )
-
-    from content_factory.brand_context import BrandContextArtifact
-
-    ctx = BrandContextArtifact.model_validate_json(ctx_path.read_text(encoding="utf-8"))
-    artifact = compile_content_artifact(brand=brand, request=req, brand_context=ctx, run_id=run_id)
-
-    # Populate content deterministically via intent/form-specific generation.
-    _ = generate_filled_artifact(brand=brand, request=req, artifact=artifact)
-
-    # Body-only editorial pass (LLM).
-    if require_editorial and not os.environ.get("OPENAI_API_KEY"):
-        raise RuntimeError(
-            "OPENAI_API_KEY is required for this run (LLM editorial is mandatory for manual-import posts)."
-        )
-
-    from content_factory.editorial import apply_copy_editor_to_artifact_if_applicable
-
-    edited = apply_copy_editor_to_artifact_if_applicable(
-        brand=brand,
-        request=req,
-        artifact=artifact,
-        require=require_editorial,
-    )
-    if require_editorial and not edited:
-        raise RuntimeError(
-            "LLM editorial was required but did not run. Ensure the artifact has intro/how_chosen/picks sections and products, "
-            "and that LLM dependencies are installed and configured."
-        )
-
-    validate_artifact_against_specs(brand=brand, request=req, artifact=artifact)
-    validate_artifact_against_channel_specs(brand=brand, request=req, artifact=artifact)
-
-    out_artifact_path = write_content_artifact(repo_root=repo_root, artifact=artifact)
-    delivery = render_for_request(brand=brand, request=req, artifact=artifact)
-    out_delivery_path = write_delivery(repo_root=repo_root, delivery=delivery)
-
-    if write_package:
-        if req.delivery_target.channel.value != "blog_article":
-            raise ValueError("--write-package is currently supported only for blog_article deliveries")
-
-        from content_factory.adapters.common import extract_topic_from_artifact
-        from content_factory.package_writer import write_content_package_v1
-
-        topic = extract_topic_from_artifact(artifact) or artifact.run_id
-        pkg = write_content_package_v1(
-            repo_root=repo_root,
-            brand_id=brand.brand_id,
-            run_id=run_id,
-            publish_date=req.publish.publish_date,
-            slug_source=topic,
-            post_markdown=delivery.content,
-        )
-        print(f"Wrote Content Package: {pkg.package_dir}")
-
-    if request_path is not None:
-        print(f"Request: {request_path}")
-    if brand_path is not None:
-        print(f"Brand: {brand_path}")
-    print(f"Wrote ContentArtifact: {out_artifact_path}")
-    print(f"Wrote Delivery Output: {out_delivery_path}")
-    return 0
 
 
 def _repo_root() -> Path:
@@ -171,62 +113,77 @@ def cmd_run(args: argparse.Namespace) -> int:
     req = load_content_request(request_path)
     validate_request_against_brand(brand=brand, request=req)
 
+    ctx_path = artifact_path_for_brand(repo_root=repo_root, brand_id=brand.brand_id)
+    if not ctx_path.exists() and args.build_context_if_missing:
+        artifact = build_brand_context_artifact(brand=brand, repo_root=repo_root)
+        ctx_path = write_brand_context_artifact(repo_root=repo_root, artifact=artifact)
+
+    if not ctx_path.exists():
+        raise FileNotFoundError(
+            f"BrandContextArtifact not found: {ctx_path}. Run `content-factory build-context --brand ...` first."
+        )
+
+    from content_factory.brand_context import BrandContextArtifact
+
+    ctx = BrandContextArtifact.model_validate_json(ctx_path.read_text(encoding="utf-8"))
+
     run_id = args.run_id or request_path.stem
-    return _run_request_pipeline(
-        repo_root=repo_root,
-        brand_path=brand_path,
-        request_path=request_path,
-        brand=brand,
-        req=req,
-        run_id=run_id,
-        build_context_if_missing=bool(args.build_context_if_missing),
-        write_package=bool(args.write_package),
-    )
+    artifact = compile_content_artifact(brand=brand, request=req, brand_context=ctx, run_id=run_id)
 
+    # Populate content deterministically via intent/form-specific generation.
+    _ = generate_filled_artifact(brand=brand, request=req, artifact=artifact)
 
-def cmd_import_manual(args: argparse.Namespace) -> int:
-    repo_root = _repo_root()
-    brand_path = _abs_from_repo(repo_root, args.brand)
-    input_path = _abs_from_repo(repo_root, args.input)
+    # Optional body-only editorial pass (LLM). Non-blocking by design.
+    try:
+        from content_factory.editorial import apply_copy_editor_to_artifact_if_applicable
 
-    brand = load_brand_profile(brand_path)
+        _ = apply_copy_editor_to_artifact_if_applicable(brand=brand, request=req, artifact=artifact)
+    except Exception:
+        pass
 
-    from content_factory.manual_import import legacy_manual_to_request, load_legacy_manual_post_input
+    validate_artifact_against_specs(brand=brand, request=req, artifact=artifact)
+    validate_artifact_against_channel_specs(brand=brand, request=req, artifact=artifact)
 
-    legacy = load_legacy_manual_post_input(input_path)
-    publish_date = date.fromisoformat(args.publish_date) if args.publish_date else date.today()
-    run_id = args.run_id or input_path.stem
+    out_artifact_path = write_content_artifact(repo_root=repo_root, artifact=artifact)
 
-    result = legacy_manual_to_request(brand=brand, legacy=legacy, publish_date=publish_date, run_id=run_id)
-    req = result.request
-    validate_request_against_brand(brand=brand, request=req)
+    delivery = render_for_request(brand=brand, request=req, artifact=artifact)
+    out_delivery_path = write_delivery(repo_root=repo_root, delivery=delivery)
 
-    if args.request_out:
-        out_request_path = _abs_from_repo(repo_root, args.request_out)
-        out_request_path.parent.mkdir(parents=True, exist_ok=True)
-    else:
-        out_dir = repo_root / "content_factory" / "outputs" / "imported_requests"
-        out_dir.mkdir(parents=True, exist_ok=True)
-        out_request_path = out_dir / f"{run_id}.yaml"
+    # Content Package v1 (Milestone 2): write a reviewable package directory.
+    try:
+        if out_delivery_path.suffix.lower() == ".md":
+            from content_factory.package_writer import write_content_package_v1
 
-    import yaml
+            post_md = out_delivery_path.read_text(encoding="utf-8")
+            pkg = write_content_package_v1(
+                repo_root=repo_root,
+                brand_id=brand.brand_id,
+                run_id=artifact.run_id,
+                publish_date=req.publish.publish_date,
+                post_markdown=post_md,
+            )
+            print(f"Wrote Content Package: {pkg.package_dir}")
+    except Exception:
+        # Non-blocking for now; package writing should not stop content generation.
+        pass
 
-    out_request_path.write_text(yaml.safe_dump(req.to_dict(), sort_keys=False), encoding="utf-8")
-    print(f"Wrote imported request: {out_request_path}")
-    for w in result.warnings:
-        print(f"WARN: {w}")
+    # Pick images for blog outputs (non-blocking). Content-factory frontmatter is YAML, so allow rewrite.
+    try:
+        if out_delivery_path.suffix.lower() == ".md" and req.is_product_form():
+            from lib.pick_image_enrichment import enrich_pick_images_for_markdown
 
-    return _run_request_pipeline(
-        repo_root=repo_root,
-        brand_path=brand_path,
-        request_path=out_request_path,
-        brand=brand,
-        req=req,
-        run_id=run_id,
-        build_context_if_missing=bool(args.build_context_if_missing),
-        write_package=bool(args.write_package),
-        require_editorial=True,
-    )
+            _ = enrich_pick_images_for_markdown(
+                markdown_path=out_delivery_path,
+                slug=out_delivery_path.stem,
+                repo_root=repo_root,
+                allow_yaml_frontmatter_rewrite=True,
+            )
+    except Exception:
+        pass
+
+    print(f"Wrote ContentArtifact: {out_artifact_path}")
+    print(f"Wrote Delivery Output: {out_delivery_path}")
+    return 0
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -262,37 +219,7 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="If BrandContextArtifact is missing, build it first.",
     )
-    run.add_argument(
-        "--write-package",
-        action="store_true",
-        help="Write Content Package v1 into content_factory/packages/{brand_id}/{run_id}",
-    )
     run.set_defaults(func=cmd_run)
-
-    imp = sub.add_parser(
-        "import-manual",
-        help="Import legacy manual post_input.json into a factory request and run the pipeline",
-    )
-    imp.add_argument("--brand", required=True)
-    imp.add_argument("--input", required=True, help="Path to legacy manual post_input.json")
-    imp.add_argument("--publish-date", required=False, help="YYYY-MM-DD (defaults to today)")
-    imp.add_argument("--run-id", required=False, help="Defaults to input filename stem")
-    imp.add_argument(
-        "--request-out",
-        required=False,
-        help="Optional path to write the generated request YAML (defaults to content_factory/outputs/imported_requests/{run_id}.yaml)",
-    )
-    imp.add_argument(
-        "--build-context-if-missing",
-        action="store_true",
-        help="If BrandContextArtifact is missing, build it first.",
-    )
-    imp.add_argument(
-        "--write-package",
-        action="store_true",
-        help="Write Content Package v1 into content_factory/packages/{brand_id}/{run_id}",
-    )
-    imp.set_defaults(func=cmd_import_manual)
 
     return p
 
