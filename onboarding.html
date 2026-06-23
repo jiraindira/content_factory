@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Content Factory — Client Onboarding</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .card-opt {
+      cursor: pointer;
+      border: 2px solid #e5e7eb;
+      border-radius: 0.5rem;
+      padding: 0.75rem 1rem;
+      transition: all 0.15s;
+      background: white;
+    }
+    .card-opt:hover { border-color: #6366f1; background: #f5f3ff; }
+    .card-opt.selected { border-color: #6366f1; background: #eef2ff; }
+    .card-opt.selected .opt-dot { background: #6366f1; }
+    .opt-dot {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      border: 2px solid #6366f1;
+      flex-shrink: 0;
+      margin-top: 2px;
+      transition: background 0.15s;
+    }
+    .chip {
+      cursor: pointer;
+      border: 2px solid #e5e7eb;
+      border-radius: 9999px;
+      padding: 0.35rem 0.9rem;
+      font-size: 0.85rem;
+      transition: all 0.15s;
+      background: white;
+      user-select: none;
+    }
+    .chip:hover { border-color: #6366f1; }
+    .chip.selected { border-color: #6366f1; background: #eef2ff; color: #4338ca; font-weight: 500; }
+    .section-card {
+      background: white;
+      border-radius: 0.75rem;
+      border: 1px solid #e5e7eb;
+      padding: 1.75rem 2rem;
+      margin-bottom: 1.5rem;
+    }
+    .section-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.75rem; height: 1.75rem;
+      border-radius: 50%;
+      background: #eef2ff;
+      color: #4338ca;
+      font-size: 0.8rem;
+      font-weight: 700;
+      margin-right: 0.6rem;
+      flex-shrink: 0;
+    }
+    input[type=text], input[type=email], input[type=url], textarea, select {
+      width: 100%;
+      border: 1px solid #d1d5db;
+      border-radius: 0.375rem;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border 0.15s;
+      background: white;
+    }
+    input:focus, textarea:focus, select:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+    label.field-label { display: block; font-size: 0.8rem; font-weight: 600; color: #374151; margin-bottom: 0.3rem; }
+    .slot-row { display: flex; gap: 0.75rem; align-items: center; margin-bottom: 0.5rem; }
+    .slot-type-btn {
+      padding: 0.3rem 0.8rem;
+      border-radius: 0.375rem;
+      border: 2px solid #e5e7eb;
+      font-size: 0.8rem;
+      cursor: pointer;
+      background: white;
+      transition: all 0.15s;
+    }
+    .slot-type-btn.active { border-color: #6366f1; background: #eef2ff; color: #4338ca; font-weight: 600; }
+    #save-btn {
+      background: #4f46e5;
+      color: white;
+      border: none;
+      border-radius: 0.5rem;
+      padding: 0.85rem 2.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+      width: 100%;
+    }
+    #save-btn:hover { background: #4338ca; }
+    .client-item {
+      padding: 0.5rem 0.75rem;
+      border-radius: 0.375rem;
+      cursor: pointer;
+      font-size: 0.875rem;
+      color: #374151;
+      transition: background 0.1s;
+    }
+    .client-item:hover { background: #f3f4f6; }
+    .client-item.active { background: #eef2ff; color: #4338ca; font-weight: 600; }
+    #toast {
+      position: fixed; bottom: 2rem; right: 2rem;
+      background: #059669; color: white;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.5rem;
+      font-weight: 500;
+      display: none;
+      z-index: 999;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    #error-toast {
+      position: fixed; bottom: 2rem; right: 2rem;
+      background: #dc2626; color: white;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.5rem;
+      font-weight: 500;
+      display: none;
+      z-index: 999;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 font-sans text-gray-900">
+
+<div class="flex min-h-screen">
+
+  <!-- Sidebar -->
+  <aside class="w-64 bg-white border-r border-gray-200 flex flex-col flex-shrink-0">
+    <div class="p-5 border-b border-gray-200">
+      <div class="text-xs font-semibold text-indigo-600 uppercase tracking-widest mb-1">Content Factory</div>
+      <h1 class="text-base font-bold text-gray-900">Client Onboarding</h1>
+    </div>
+    <div class="p-4 flex-1 overflow-y-auto">
+      <button onclick="newClient()"
+        class="w-full mb-4 py-2 px-3 rounded-md border-2 border-dashed border-indigo-300 text-indigo-600 text-sm font-semibold hover:bg-indigo-50 transition">
+        + New Client
+      </button>
+      <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2 px-1">Existing clients</div>
+      <div id="client-list" class="space-y-0.5"></div>
+      <div id="client-actions" class="hidden mt-4 pt-4 border-t border-gray-100 space-y-2">
+        <button onclick="showTopics()"
+          class="w-full py-2 px-3 rounded-md text-sm font-semibold text-indigo-600 border border-indigo-200 hover:bg-indigo-50 transition">
+          ✦ Topics
+        </button>
+        <button onclick="deleteClient()"
+          class="w-full py-2 px-3 rounded-md text-sm font-semibold text-red-500 border border-red-200 hover:bg-red-50 transition">
+          Delete this client
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="flex-1 overflow-y-auto">
+    <div class="max-w-2xl mx-auto py-10 px-6">
+
+      <div id="form-area">
+
+        <!-- ── 1. Client basics ─────────────────────────────────────────── -->
+        <div class="section-card">
+          <div class="flex items-start mb-4">
+            <span class="section-num">1</span>
+            <div>
+              <h2 class="font-bold text-gray-900">Client basics</h2>
+              <p class="text-sm text-gray-500 mt-0.5">Core identity for this client profile.</p>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-4 mb-4">
+            <div>
+              <label class="field-label">Client name</label>
+              <input type="text" id="client_name" placeholder="e.g. Alisa Amouage" />
+            </div>
+            <div>
+              <label class="field-label">Email address</label>
+              <input type="email" id="client_email" placeholder="alisa@example.com" />
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-4 mb-4">
+            <div>
+              <label class="field-label">Brand ID <span class="font-normal text-gray-400">(slug, no spaces)</span></label>
+              <input type="text" id="brand_id" placeholder="e.g. alisa_amouage" />
+            </div>
+            <div>
+              <label class="field-label">Creator role</label>
+              <select id="brand_archetype" onchange="updateRoleTip()">
+                <option value="mentor_coach">Mentor / Coach</option>
+                <option value="product_ranker">Product Ranker</option>
+                <option value="product_guide">Product Guide</option>
+                <option value="reviewer">Reviewer</option>
+                <option value="travel_guide">Travel Guide</option>
+              </select>
+              <p id="role-tip" class="text-xs text-indigo-600 mt-1.5"></p>
+            </div>
+          </div>
+          <div>
+            <label class="field-label">What do they write about?</label>
+            <textarea id="topic_allowlist" rows="3" placeholder="e.g. Voice leadership and executive presence for senior leaders — how to communicate with authority, clarity, and confidence in high-stakes situations."></textarea>
+          </div>
+        </div>
+
+        <!-- ── 2. Brand sources ────────────────────────────────────────── -->
+        <div class="section-card">
+          <div class="flex items-start mb-4">
+            <span class="section-num">2</span>
+            <div>
+              <h2 class="font-bold text-gray-900">Brand sources</h2>
+              <p class="text-sm text-gray-500 mt-0.5">Where we'll go to understand their existing voice and content.</p>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="field-label">Website / homepage URL</label>
+              <input type="url" id="source_website" placeholder="https://example.com" />
+            </div>
+            <div>
+              <label class="field-label">LinkedIn profile URL <span class="font-normal text-gray-400">(optional)</span></label>
+              <input type="url" id="source_linkedin" placeholder="https://linkedin.com/in/..." />
+            </div>
+          </div>
+        </div>
+
+        <!-- ── 3. Primary audience ─────────────────────────────────────── -->
+        <div class="section-card">
+          <div class="flex items-start mb-4">
+            <span class="section-num">3</span>
+            <div>
+              <h2 class="font-bold text-gray-900">Who are we writing for?</h2>
+              <p class="text-sm text-gray-500 mt-0.5">Pick the primary audience. We can layer nuance later.</p>
+            </div>
+          </div>
+          <div id="audience-opts" class="space-y-2">
+            <!-- rendered by JS -->
+          </div>
+          <div class="mt-4">
+            <label class="field-label">If mixed or nuanced — who must feel "this is for me"?</label>
+            <input type="text" id="audience_context" placeholder="e.g. Mid-level leaders preparing for their first C-suite role" />
+          </div>
+        </div>
+
+        <!-- ── 4. Platform priority ────────────────────────────────────── -->
+        <div class="section-card">
+          <div class="flex items-start mb-4">
+            <span class="section-num">4</span>
+            <div>
+              <h2 class="font-bold text-gray-900">Where will this content live?</h2>
+              <p class="text-sm text-gray-500 mt-0.5">This affects length, structure, and how polished the writing feels.</p>
+            </div>
+          </div>
+          <div id="platform-opts" class="space-y-2">
+            <!-- rendered by JS -->
+          </div>
+        </div>
+
+        <!-- ── 5. Content schedule ─────────────────────────────────────── -->
+        <div class="section-card">
+          <div class="flex items-start mb-4">
+            <span class="section-num">5</span>
+            <div>
+              <h2 class="font-bold text-gray-900">Content schedule</h2>
+              <p class="text-sm text-gray-500 mt-0.5">Package size, cadence, and which days to publish.</p>
+            </div>
+          </div>
+
+          <div class="mb-5">
+            <label class="field-label">Package</label>
+            <div class="flex gap-3" id="package-btns">
+              <button type="button" class="slot-type-btn" id="pkg-8"  onclick="setPackage(8)">8 articles</button>
+              <button type="button" class="slot-type-btn" id="pkg-16" onclick="setPackage(16)">16 articles</button>
+              <button type="button" class="slot-type-btn" id="pkg-24" onclick="setPackage(24)">24 articles</button>
+            </div>
+          </div>
+
+          <div class="mb-5">
+            <label class="field-label">Publication cadence</label>
+            <div class="flex gap-3">
+              <button type="button" class="slot-type-btn active" id="cadence-1x" onclick="setCadence(1)">1× per week</button>
+              <button type="button" class="slot-type-btn" id="cadence-2x" onclick="setCadence(2)">2× per week</button>
+            </div>
+          </div>
+
+          <div id="slots-builder" class="space-y-2 mb-5"></div>
+
+          <div id="duration-banner" class="hidden text-sm text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-md px-4 py-2.5 mb-5"></div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="field-label">Time zone</label>
+              <select id="time_zone">
+                <option value="UTC">UTC</option>
+                <option value="America/New_York">Eastern (US)</option>
+                <option value="America/Chicago">Central (US)</option>
+                <option value="America/Los_Angeles">Pacific (US)</option>
+                <option value="Europe/London">London</option>
+                <option value="Europe/Paris">Paris / CET</option>
+                <option value="Asia/Dubai">Dubai</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── 6. Tone & voice ─────────────────────────────────────────── -->
+        <div class="section-card">
+          <div class="flex items-start mb-4">
+            <span class="section-num">6</span>
+            <div>
+              <h2 class="font-bold text-gray-900">Tone calibration</h2>
+              <p class="text-sm text-gray-500 mt-0.5">Which lane should the voice sit in?</p>
+            </div>
+          </div>
+          <div id="tone-opts" class="space-y-2 mb-4">
+            <!-- rendered by JS -->
+          </div>
+          <div id="custom-tone-wrap" class="hidden mt-2">
+            <label class="field-label">Describe the blend</label>
+            <textarea id="custom_tone" rows="2" placeholder="e.g. Calm but slightly playful, never corporate, always grounded in evidence…"></textarea>
+          </div>
+          <div class="mt-4 flex items-center gap-3">
+            <label class="field-label mb-0">Explicitly reference science / research in the writing?</label>
+            <div class="flex gap-2">
+              <button type="button" class="slot-type-btn" id="sci-yes" onclick="setSci('explicit_when_credibility_helpful')">Yes, when it helps</button>
+              <button type="button" class="slot-type-btn" id="sci-often" onclick="setSci('explicit_often')">Yes, often</button>
+              <button type="button" class="slot-type-btn active" id="sci-no" onclick="setSci('implied')">Keep it implied</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── 7. Personal presence ────────────────────────────────────── -->
+        <div class="section-card">
+          <div class="flex items-start mb-4">
+            <span class="section-num">7</span>
+            <div>
+              <h2 class="font-bold text-gray-900">Personal presence</h2>
+              <p class="text-sm text-gray-500 mt-0.5">How visible is the person behind the brand in the writing?</p>
+            </div>
+          </div>
+          <div id="presence-opts" class="space-y-2">
+            <!-- rendered by JS -->
+          </div>
+        </div>
+
+        <!-- ── 8. Commercial stance ────────────────────────────────────── -->
+        <div class="section-card">
+          <div class="flex items-start mb-4">
+            <span class="section-num">8</span>
+            <div>
+              <h2 class="font-bold text-gray-900">Relationship to selling</h2>
+              <p class="text-sm text-gray-500 mt-0.5">How overt should the commercial angle be?</p>
+            </div>
+          </div>
+          <div id="commercial-opts" class="space-y-2">
+            <!-- rendered by JS -->
+          </div>
+        </div>
+
+        <!-- ── 9. Disclaimer ──────────────────────────────────────────── -->
+        <div class="section-card">
+          <div class="flex items-start mb-4">
+            <span class="section-num">9</span>
+            <div>
+              <h2 class="font-bold text-gray-900">Disclaimer & affiliate</h2>
+              <p class="text-sm text-gray-500 mt-0.5">Required for affiliate content; optional for pure thought leadership.</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3 mb-4">
+            <input type="checkbox" id="disclaimer_required" onchange="toggleDisclaimer()" class="w-4 h-4 accent-indigo-600" />
+            <label for="disclaimer_required" class="text-sm font-medium text-gray-700">This client uses affiliate links / requires a disclaimer</label>
+          </div>
+          <div id="disclaimer-fields" class="hidden space-y-3">
+            <div>
+              <label class="field-label">Disclaimer text</label>
+              <textarea id="disclaimer_text" rows="2" placeholder="This post may contain affiliate links. If you buy through our links, we may earn a commission at no extra cost to you."></textarea>
+            </div>
+            <div>
+              <label class="field-label">Placement</label>
+              <div class="flex gap-2" id="disclaimer-loc-chips">
+                <span class="chip" data-val="header" onclick="toggleChipSingle(this, 'disclaimer-loc-chips')">Header</span>
+                <span class="chip selected" data-val="footer" onclick="toggleChipSingle(this, 'disclaimer-loc-chips')">Footer</span>
+                <span class="chip" data-val="before_products" onclick="toggleChipSingle(this, 'disclaimer-loc-chips')">Before products</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Save -->
+        <div class="pb-16">
+          <button id="save-btn" onclick="saveClient()">Save client profile</button>
+        </div>
+
+      </div><!-- /form-area -->
+
+      <!-- ── Topic review panel ──────────────────────────────────────── -->
+      <div id="topics-area" class="hidden">
+
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <button onclick="showForm()" class="text-sm text-indigo-600 hover:underline mb-1 block">← Back to profile</button>
+            <h2 class="text-xl font-bold text-gray-900">Topics for <span id="topics-client-name"></span></h2>
+            <p class="text-sm text-gray-500 mt-0.5">Review and edit before approving. Once approved these are locked in for production.</p>
+          </div>
+          <div id="topics-status-badge"></div>
+        </div>
+
+        <!-- Generate / regenerate bar -->
+        <div id="generate-bar" class="section-card mb-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-semibold text-gray-700">Generate topic ideas with AI</p>
+              <p class="text-xs text-gray-400 mt-0.5">Based on this client's voice, audience, and niche</p>
+            </div>
+            <button id="generate-btn" onclick="generateTopics()"
+              class="py-2 px-5 rounded-md bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition flex items-center gap-2">
+              <span id="generate-btn-label">Generate topics</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Topic list -->
+        <div id="topic-list" class="space-y-2 mb-6"></div>
+
+        <!-- Approve bar (shown once topics exist) -->
+        <div id="approve-bar" class="hidden section-card">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-semibold text-gray-700">Happy with this list?</p>
+              <p class="text-xs text-gray-400 mt-0.5">Approving locks the topics in for the scheduler.</p>
+            </div>
+            <button onclick="approveTopics()"
+              class="py-2 px-5 rounded-md bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition">
+              Approve topics
+            </button>
+          </div>
+        </div>
+
+      </div><!-- /topics-area -->
+
+    </div>
+  </main>
+</div>
+
+<div id="toast">✓ Client profile saved</div>
+<div id="delete-toast" style="position:fixed;bottom:2rem;right:2rem;background:#374151;color:white;padding:0.75rem 1.5rem;border-radius:0.5rem;font-weight:500;display:none;z-index:999;">Client deleted</div>
+<div id="error-toast">⚠ Error saving — check console</div>
+
+<script>
+// ── Data ────────────────────────────────────────────────────────────────────
+const ROLE_TIPS = {
+  mentor_coach: "Shares frameworks, lessons, and personal growth advice. Speaks like a trusted teacher or consultant.",
+  product_ranker: "Publishes best-of lists, top 10s, and category comparisons. Authority comes from breadth of research.",
+  product_guide: "Deep expert on one specific product or niche. Readers come for the definitive word on that thing.",
+  reviewer: "Opinionated evaluations of specific things — restaurants, gear, hotels, cities. Voice is personal and direct.",
+  travel_guide: "Destination and experience-led storytelling. Paints a picture of places and inspires the reader to go.",
+};
+
+const AUDIENCE_OPTS = [
+  { value: "c_suite_senior_leaders", label: "C-suite & senior leaders" },
+  { value: "entrepreneurs_founders", label: "Entrepreneurs & founders" },
+  { value: "coaches_consultants_speakers", label: "Coaches, consultants & speakers" },
+  { value: "everyday_consumers_shoppers", label: "Everyday consumers & shoppers" },
+  { value: "hobbyists_enthusiasts", label: "Hobbyists & enthusiasts" },
+  { value: "travelers_experience_seekers", label: "Travelers & experience seekers" },
+  { value: "professionals_specific_field", label: "Professionals in a specific field" },
+];
+
+const PLATFORM_OPTS = [
+  {
+    value: "linkedin_only",
+    label: "LinkedIn posts only",
+    desc: "Scroll-first, conversational, shorter form",
+    channels: ["social_longform"], destinations: ["linkedin"], strategy: "single_canonical_article"
+  },
+  {
+    value: "blog_only",
+    label: "Blog articles only",
+    desc: "Evergreen, SEO-friendly, long form",
+    channels: ["blog_article"], destinations: ["hosted_by_us"], strategy: "single_canonical_article"
+  },
+  {
+    value: "both",
+    label: "Both — blog + LinkedIn adaptation",
+    desc: "Full article as primary, LinkedIn as a shortened version",
+    channels: ["blog_article", "social_longform"], destinations: ["hosted_by_us", "linkedin"], strategy: "canonical_plus_short_social"
+  },
+];
+
+const TONE_OPTS = [
+  {
+    value: "calm_authoritative",
+    label: "Calm, authoritative, science-led",
+    persona: "calm_authoritative",
+    example: "Research on vocal load consistently shows that executives who speak under sustained stress compress their dynamic range — often without realising it."
+  },
+  {
+    value: "warm_reflective",
+    label: "Warm, reflective, quietly confident",
+    persona: "warm_reflective",
+    example: "There's a moment before a high-stakes conversation where most leaders tighten. I've watched it happen hundreds of times. The voice narrows before the room does."
+  },
+  {
+    value: "direct_insight_dense",
+    label: "Direct, sharp, insight-dense",
+    persona: "direct_insight_dense",
+    example: "Most executive voice coaching fixes symptoms. The problem isn't delivery. It's the belief system underneath it."
+  },
+  {
+    value: "practical_expert",
+    label: "Conversational but expert",
+    persona: "practical_expert",
+    example: "Here's what nobody tells you about confidence: it sounds different than you think it does. And most leaders are optimising for the wrong signal."
+  },
+  {
+    value: "minimalist_executive",
+    label: "Executive and minimal",
+    persona: "minimalist_executive",
+    example: "Clarity is not a communication style. It is a leadership decision."
+  },
+  {
+    value: "custom",
+    label: "A distinct blend — I'll describe it",
+    persona: null,
+    example: null
+  },
+];
+
+const PRESENCE_OPTS = [
+  { value: "first_person_frequent", label: "First-person, personal", desc: '"In my work with leaders…"', narration: "first_person_preferred", presence: "frequent_personal_anecdotes" },
+  { value: "first_person_occasional", label: "Occasional personal anecdotes", desc: "Mostly insight-led, personal moments used sparingly", narration: "first_person_allowed", presence: "occasional_personal_anecdotes" },
+  { value: "insight_only", label: "No personal anecdotes — insight only", desc: "The idea is the hero, not the person", narration: "third_person_only", presence: "none" },
+  { value: "third_person", label: "Third-person brand voice", desc: "Fully brand-led, no personal perspective", narration: "third_person_only", presence: "none" },
+];
+
+const COMMERCIAL_OPTS = [
+  { value: "invisible", label: "Pure value, no selling", desc: "Never reference services or products", posture: "invisible", cta: "none" },
+  { value: "soft_authority", label: "Soft authority building", desc: '"This is what I work on" — implied expertise only', posture: "soft_recommendation", cta: "soft_authority_signature_line" },
+  { value: "gentle_cta", label: "Gentle CTA at the end", desc: "One low-pressure invitation at the close", posture: "clear_recommendation", cta: "gentle_cta_at_end" },
+  { value: "clear_invitation", label: "Clear invitation to work together", desc: "Direct ask — book a call, join the programme, etc.", posture: "explicit_cta", cta: "clear_invitation" },
+];
+
+
+const DAYS = ["mon","tue","wed","thu","fri","sat","sun"];
+const DAY_LABELS = { mon:"Monday", tue:"Tuesday", wed:"Wednesday", thu:"Thursday", fri:"Friday", sat:"Saturday", sun:"Sunday" };
+
+// ── State ────────────────────────────────────────────────────────────────────
+let currentCadence = 1;
+let currentPackage = null;
+let sciExplicitness = "implied";
+let slots = [{ day: "mon", type: "long_blog" }];
+let currentBrandId = null;
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+document.addEventListener("DOMContentLoaded", () => {
+  renderCardOpts("audience-opts", AUDIENCE_OPTS, "audience", false);
+  renderCardOpts("platform-opts", PLATFORM_OPTS, "platform", false, true);
+  renderCardOpts("tone-opts", TONE_OPTS, "tone", false, false, onToneChange);
+  renderCardOpts("presence-opts", PRESENCE_OPTS, "presence", false, true);
+  renderCardOpts("commercial-opts", COMMERCIAL_OPTS, "commercial", false, true);
+  renderSlots();
+  updateRoleTip();
+  loadClientList();
+});
+
+// ── Render helpers ────────────────────────────────────────────────────────────
+function renderCardOpts(containerId, opts, name, multi, hasDesc, onChange) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = opts.map((o, i) => `
+    <div class="card-opt" data-val="${o.value}" data-group="${name}" onclick="selectCardOpt(this, '${name}', ${multi}, ${onChange ? 'onToneChange' : 'null'})">
+      <div class="flex items-start gap-3">
+        <div class="opt-dot mt-1"></div>
+        <div class="flex-1">
+          <div class="text-sm font-semibold text-gray-800">${o.label}</div>
+          ${o.desc ? `<div class="text-xs text-gray-500 mt-0.5">${o.desc}</div>` : ''}
+          ${o.example ? `<div class="text-xs text-gray-400 italic mt-1.5 border-l-2 border-gray-200 pl-2">"${o.example}"</div>` : ''}
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function selectCardOpt(el, group, multi, onChangeFn) {
+  if (!multi) {
+    document.querySelectorAll(`[data-group="${group}"]`).forEach(e => e.classList.remove('selected'));
+  }
+  el.classList.toggle('selected');
+  if (onChangeFn === 'onToneChange') onToneChange();
+}
+
+function getSelectedCardVal(group) {
+  const el = document.querySelector(`[data-group="${group}"].selected`);
+  return el ? el.dataset.val : null;
+}
+
+function getSelectedCardVals(group) {
+  return [...document.querySelectorAll(`[data-group="${group}"].selected`)].map(e => e.dataset.val);
+}
+
+function renderChips(containerId, opts, multi) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = opts.map(o => `
+    <span class="chip" data-val="${o.value}" data-group="${containerId}" onclick="toggleChip(this, '${containerId}', ${multi})">${o.label}</span>
+  `).join('');
+}
+
+function toggleChip(el, group, multi) {
+  if (!multi) {
+    document.querySelectorAll(`#${group} .chip`).forEach(e => e.classList.remove('selected'));
+  }
+  el.classList.toggle('selected');
+}
+
+function toggleChipSingle(el, group) {
+  document.querySelectorAll(`#${group} .chip`).forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function getSelectedChips(containerId) {
+  return [...document.querySelectorAll(`#${containerId} .chip.selected`)].map(e => e.dataset.val);
+}
+
+// ── Role tooltip ─────────────────────────────────────────────────────────────
+function updateRoleTip() {
+  const val = document.getElementById("brand_archetype").value;
+  document.getElementById("role-tip").textContent = ROLE_TIPS[val] || "";
+}
+
+// ── Tone ─────────────────────────────────────────────────────────────────────
+function onToneChange() {
+  const val = getSelectedCardVal("tone");
+  document.getElementById("custom-tone-wrap").classList.toggle("hidden", val !== "custom");
+}
+
+// ── Science ──────────────────────────────────────────────────────────────────
+function setSci(val) {
+  sciExplicitness = val;
+  ["sci-yes","sci-often","sci-no"].forEach(id => document.getElementById(id).classList.remove("active"));
+  const map = { "explicit_when_credibility_helpful": "sci-yes", "explicit_often": "sci-often", "implied": "sci-no" };
+  document.getElementById(map[val]).classList.add("active");
+}
+
+// ── Package ───────────────────────────────────────────────────────────────────
+function setPackage(n) {
+  currentPackage = n;
+  [8, 16, 24].forEach(v => document.getElementById(`pkg-${v}`).classList.toggle("active", v === n));
+  updateDuration();
+}
+
+// ── Slots builder ─────────────────────────────────────────────────────────────
+function setCadence(n) {
+  currentCadence = n;
+  document.getElementById("cadence-1x").classList.toggle("active", n === 1);
+  document.getElementById("cadence-2x").classList.toggle("active", n === 2);
+  while (slots.length < n) slots.push({ day: DAYS[slots.length % 7], type: "short_snippet" });
+  slots = slots.slice(0, n);
+  renderSlots();
+  updateDuration();
+}
+
+function updateDuration() {
+  const banner = document.getElementById("duration-banner");
+  if (!currentPackage || !currentCadence) { banner.classList.add("hidden"); return; }
+  const weeks = Math.ceil(currentPackage / currentCadence);
+  const perWeek = currentCadence === 1 ? "1 article per week" : "2 articles per week";
+  banner.textContent = `${currentPackage} articles × ${perWeek} = ${weeks} weeks of content`;
+  banner.classList.remove("hidden");
+}
+
+function renderSlots() {
+  const el = document.getElementById("slots-builder");
+  el.innerHTML = slots.map((slot, i) => `
+    <div class="slot-row">
+      <select style="width:160px" onchange="slots[${i}].day = this.value">
+        ${DAYS.map(d => `<option value="${d}" ${slot.day === d ? 'selected' : ''}>${DAY_LABELS[d]}</option>`).join('')}
+      </select>
+      <button type="button" class="slot-type-btn ${slot.type === 'long_blog' ? 'active' : ''}"
+        onclick="setSlotType(${i}, 'long_blog', this)">Long blog</button>
+      <button type="button" class="slot-type-btn ${slot.type === 'short_snippet' ? 'active' : ''}"
+        onclick="setSlotType(${i}, 'short_snippet', this)">Short snippet</button>
+    </div>
+  `).join('');
+}
+
+function setSlotType(i, type, btn) {
+  slots[i].type = type;
+  const row = btn.closest('.slot-row');
+  row.querySelectorAll('.slot-type-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// ── Disclaimer ────────────────────────────────────────────────────────────────
+function toggleDisclaimer() {
+  const checked = document.getElementById("disclaimer_required").checked;
+  document.getElementById("disclaimer-fields").classList.toggle("hidden", !checked);
+}
+
+// ── Client list ───────────────────────────────────────────────────────────────
+async function loadClientList() {
+  const res = await fetch("/api/brands");
+  const brands = await res.json();
+  const el = document.getElementById("client-list");
+  if (!brands.length) {
+    el.innerHTML = '<p class="text-xs text-gray-400 px-1">No clients yet</p>';
+    return;
+  }
+  el.innerHTML = brands.map(b => `
+    <div class="client-item ${b === currentBrandId ? 'active' : ''}" id="ci-${b}" onclick="loadClient('${b}')">${b}</div>
+  `).join('');
+}
+
+async function loadClient(brandId) {
+  const res = await fetch(`/api/brands/${brandId}`);
+  if (!res.ok) return;
+  const d = await res.json();
+  currentBrandId = brandId;
+  populateForm(d);
+  document.querySelectorAll('.client-item').forEach(el => el.classList.remove('active'));
+  const ci = document.getElementById(`ci-${brandId}`);
+  if (ci) ci.classList.add('active');
+  document.getElementById('client-actions').classList.remove('hidden');
+}
+
+function newClient() {
+  currentBrandId = null;
+  resetForm();
+  document.querySelectorAll('.client-item').forEach(el => el.classList.remove('active'));
+  document.getElementById('client-actions').classList.add('hidden');
+  showForm();
+}
+
+async function deleteClient() {
+  if (!currentBrandId) return;
+  if (!confirm(`Delete "${currentBrandId}"? This cannot be undone.`)) return;
+  const res = await fetch(`/api/brands/${currentBrandId}`, { method: 'DELETE' });
+  if (!res.ok) { showToast('error-toast'); return; }
+  currentBrandId = null;
+  resetForm();
+  document.getElementById('client-actions').classList.add('hidden');
+  loadClientList();
+  showToast('delete-toast');
+}
+
+// ── Populate form from loaded data ────────────────────────────────────────────
+function populateForm(d) {
+  setVal("client_name", d.client_name || "");
+  setVal("client_email", d.client_email || "");
+  setVal("brand_id", d.brand_id || "");
+  setVal("brand_archetype", d.brand_archetype || "mentor_coach");
+  updateRoleTip();
+
+  const sources = (d.brand_sources && d.brand_sources.sources) || [];
+  const website = sources.find(s => s.purpose === "homepage");
+  const linkedin = sources.find(s => s.purpose === "linkedin_profile");
+  setVal("source_website", website ? website.ref : "");
+  setVal("source_linkedin", linkedin ? linkedin.ref : "");
+
+  selectCardByVal("audience", (d.audience && d.audience.primary_audience) || null);
+  setVal("audience_context", (d.audience && d.audience.audience_context) || "");
+
+  const platform = derivePlatform(d.delivery_policy);
+  selectCardByVal("platform", platform);
+
+  if (d.package_size) setPackage(d.package_size);
+
+  if (d.content_slots) {
+    slots = d.content_slots;
+    currentCadence = slots.length <= 1 ? 1 : 2;
+    document.getElementById("cadence-1x").classList.toggle("active", currentCadence === 1);
+    document.getElementById("cadence-2x").classList.toggle("active", currentCadence === 2);
+    renderSlots();
+    updateDuration();
+  }
+
+  setVal("time_zone", (d.cadence && d.cadence.time_zone) || "UTC");
+
+  const firstDomain = d.domains_supported && d.domains_supported[0];
+  const personaCfg = firstDomain && d.persona_by_domain && d.persona_by_domain[firstDomain];
+  if (personaCfg) {
+    selectCardByVal("tone", personaCfg.primary_persona);
+    selectCardByVal("presence", derivePresence(personaCfg));
+    setSci(personaCfg.science_explicitness || "implied");
+    onToneChange();
+  }
+
+  const comm = d.commercial_policy || {};
+  selectCardByVal("commercial", deriveCommercial(comm));
+
+  const topics = (d.topic_policy && d.topic_policy.allowlist) || [];
+  setVal("topic_allowlist", topics.join(" ").trim());
+
+  const disc = d.disclaimer_policy || {};
+  document.getElementById("disclaimer_required").checked = !!disc.required;
+  toggleDisclaimer();
+  setVal("disclaimer_text", disc.disclaimer_text || "");
+  setChips("disclaimer-loc-chips", disc.locations || ["footer"]);
+
+}
+
+function derivePlatform(policy) {
+  if (!policy) return null;
+  const ch = policy.delivery_channels || [];
+  const hasBlog = ch.includes("blog_article");
+  const hasLinkedIn = ch.includes("social_longform");
+  if (hasBlog && hasLinkedIn) return "both";
+  if (hasLinkedIn) return "linkedin_only";
+  if (hasBlog) return "blog_only";
+  return null;
+}
+
+function derivePresence(p) {
+  if (p.narration_mode === "first_person_preferred") return "first_person_frequent";
+  if (p.personal_presence === "occasional_personal_anecdotes") return "first_person_occasional";
+  if (p.narration_mode === "third_person_only" && p.personal_presence === "none") return "insight_only";
+  return "third_person";
+}
+
+function deriveCommercial(c) {
+  if (c.cta_policy === "none") return "invisible";
+  if (c.cta_policy === "soft_authority_signature_line") return "soft_authority";
+  if (c.cta_policy === "gentle_cta_at_end") return "gentle_cta";
+  if (c.cta_policy === "clear_invitation") return "clear_invitation";
+  return "invisible";
+}
+
+function resetForm() {
+  ["client_name","client_email","brand_id","source_website","source_linkedin",
+   "audience_context","topic_allowlist","disclaimer_text","custom_tone"].forEach(id => setVal(id, ""));
+  document.getElementById("brand_archetype").value = "mentor_coach";
+  updateRoleTip();
+  document.querySelectorAll(".card-opt").forEach(el => el.classList.remove("selected"));
+  document.getElementById("disclaimer_required").checked = false;
+  toggleDisclaimer();
+  slots = [{ day: "mon", type: "long_blog" }];
+  currentCadence = 1;
+  currentPackage = null;
+  setCadence(1);
+  [8, 16, 24].forEach(v => document.getElementById(`pkg-${v}`).classList.remove("active"));
+  document.getElementById("duration-banner").classList.add("hidden");
+  setSci("implied");
+}
+
+// ── Save ──────────────────────────────────────────────────────────────────────
+async function saveClient() {
+  const brand_id = document.getElementById("brand_id").value.trim();
+  if (!brand_id) { alert("Brand ID is required."); return; }
+
+  const platformVal = getSelectedCardVal("platform");
+  const platformOpt = PLATFORM_OPTS.find(p => p.value === platformVal) || PLATFORM_OPTS[0];
+
+  const toneVal = getSelectedCardVal("tone");
+  const toneOpt = TONE_OPTS.find(t => t.value === toneVal);
+  const persona = (toneOpt && toneOpt.persona) || "practical_expert";
+
+  const presenceVal = getSelectedCardVal("presence");
+  const presenceOpt = PRESENCE_OPTS.find(p => p.value === presenceVal) || PRESENCE_OPTS[0];
+
+  const commercialVal = getSelectedCardVal("commercial");
+  const commercialOpt = COMMERCIAL_OPTS.find(c => c.value === commercialVal) || COMMERCIAL_OPTS[0];
+
+  const domains = getSelectedChips("domain-chips");
+  const primaryDomain = domains[0] || "leadership";
+
+  const personaCfg = {
+    primary_persona: persona,
+    persona_modifiers: ["none"],
+    science_explicitness: sciExplicitness,
+    personal_presence: presenceOpt.presence,
+    narration_mode: presenceOpt.narration,
+  };
+
+  const personaByDomain = {};
+  (domains.length ? domains : [primaryDomain]).forEach(d => { personaByDomain[d] = personaCfg; });
+
+  const sources = [];
+  const ws = document.getElementById("source_website").value.trim();
+  const li = document.getElementById("source_linkedin").value.trim();
+  if (ws) sources.push({ source_id: "homepage", kind: "url", purpose: "homepage", ref: ws });
+  if (li) sources.push({ source_id: "linkedin", kind: "url", purpose: "linkedin_profile", ref: li });
+
+  const topicText = document.getElementById("topic_allowlist").value.trim();
+  const topicLines = topicText ? [topicText] : ["General"];
+
+  const publishDays = [...new Set(slots.map(s => s.day))];
+  const cadenceVal = currentCadence === 1 ? "weekly" : "twice_weekly";
+  const packageSize = currentPackage;
+
+  const disclaimerRequired = document.getElementById("disclaimer_required").checked;
+
+  const data = {
+    brand_id,
+    client_name: document.getElementById("client_name").value.trim(),
+    client_email: document.getElementById("client_email").value.trim(),
+    brand_archetype: document.getElementById("brand_archetype").value,
+
+    brand_sources: {
+      require_at_least_one_of_purposes: ["homepage"],
+      sources,
+    },
+
+    domains_supported: domains.length ? domains : [primaryDomain],
+    domain_primary: primaryDomain,
+
+    audience: {
+      primary_audience: getSelectedCardVal("audience") || "general_consumers",
+      audience_sophistication: "medium",
+      audience_context: document.getElementById("audience_context").value.trim(),
+    },
+
+    content_strategy: {
+      allowed_intents: ["thought_leadership"],
+      allowed_product_recommendation_forms: [],
+      allowed_thought_leadership_forms: [],
+      default_content_depth: "long",
+    },
+
+    topic_policy: { allowlist: topicLines.length ? topicLines : ["General"] },
+
+    persona_by_domain: personaByDomain,
+
+    commercial_policy: {
+      commercial_posture: commercialOpt.posture,
+      cta_policy: commercialOpt.cta,
+      prohibited_behaviors: ["fake_scarcity", "hype_superlatives", "pressure_language"],
+    },
+
+    disclaimer_policy: {
+      required: disclaimerRequired,
+      disclaimer_text: disclaimerRequired ? document.getElementById("disclaimer_text").value.trim() : "",
+      locations: disclaimerRequired ? (getSelectedChips("disclaimer-loc-chips").length ? getSelectedChips("disclaimer-loc-chips") : ["footer"]) : [],
+    },
+
+    delivery_policy: {
+      delivery_channels: platformOpt.channels,
+      delivery_destinations: platformOpt.destinations,
+      delivery_strategy: platformOpt.strategy,
+      auto_publish: false,
+    },
+
+    cadence: {
+      publication_cadence: cadenceVal,
+      preferred_publish_days: publishDays,
+      time_zone: document.getElementById("time_zone").value,
+    },
+
+    package_size: packageSize,
+    content_slots: slots,
+  };
+
+  try {
+    const res = await fetch("/api/brands", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    currentBrandId = brand_id;
+    showToast("toast");
+    loadClientList();
+  } catch (e) {
+    console.error(e);
+    showToast("error-toast");
+  }
+}
+
+// ── Utilities ─────────────────────────────────────────────────────────────────
+function setVal(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.value = val;
+}
+
+function selectCardByVal(group, val) {
+  document.querySelectorAll(`[data-group="${group}"]`).forEach(el => {
+    el.classList.toggle('selected', el.dataset.val === val);
+  });
+}
+
+function setChips(containerId, vals) {
+  document.querySelectorAll(`#${containerId} .chip`).forEach(el => {
+    el.classList.toggle('selected', vals.includes(el.dataset.val));
+  });
+}
+
+// ── Topic review ──────────────────────────────────────────────────────────────
+let topicTitles = [];
+
+function showForm() {
+  document.getElementById("form-area").classList.remove("hidden");
+  document.getElementById("topics-area").classList.add("hidden");
+}
+
+async function showTopics() {
+  if (!currentBrandId) return;
+  document.getElementById("form-area").classList.add("hidden");
+  document.getElementById("topics-area").classList.remove("hidden");
+
+  const name = document.getElementById("client_name").value || currentBrandId;
+  document.getElementById("topics-client-name").textContent = name;
+
+  // try loading existing topics
+  try {
+    const res = await fetch(`/api/brands/${currentBrandId}/topics`);
+    if (res.ok) {
+      const data = await res.json();
+      topicTitles = data.topics.map(t => t.title);
+      renderTopics();
+      renderTopicsStatus(data.status);
+      return;
+    }
+  } catch {}
+
+  topicTitles = [];
+  renderTopics();
+  renderTopicsStatus(null);
+}
+
+function renderTopicsStatus(status) {
+  const el = document.getElementById("topics-status-badge");
+  if (!status) { el.innerHTML = ""; return; }
+  const cfg = status === "approved"
+    ? { label: "Approved", cls: "bg-emerald-100 text-emerald-700 border-emerald-200" }
+    : { label: "Pending approval", cls: "bg-amber-100 text-amber-700 border-amber-200" };
+  el.innerHTML = `<span class="text-xs font-semibold px-3 py-1 rounded-full border whitespace-nowrap ${cfg.cls}">${cfg.label}</span>`;
+}
+
+function renderTopics() {
+  const list = document.getElementById("topic-list");
+  const approveBar = document.getElementById("approve-bar");
+
+  if (!topicTitles.length) {
+    list.innerHTML = `<p class="text-sm text-gray-400 text-center py-8">No topics yet — click "Generate topics" to get started.</p>`;
+    approveBar.classList.add("hidden");
+    return;
+  }
+
+  list.innerHTML = topicTitles.map((title, i) => `
+    <div class="section-card !py-3 !px-4 flex items-start gap-3">
+      <span class="text-xs font-bold text-gray-300 w-5 flex-shrink-0 mt-1">${i + 1}</span>
+      <textarea rows="2"
+        oninput="topicTitles[${i}] = this.value; this.style.height='auto'; this.style.height=this.scrollHeight+'px'"
+        class="flex-1 border-0 outline-none text-sm text-gray-800 bg-transparent p-0 resize-none overflow-hidden"
+        style="box-shadow:none">${title}</textarea>
+      <button onclick="removeTopic(${i})" class="text-gray-300 hover:text-red-400 transition text-lg leading-none flex-shrink-0 mt-0.5">×</button>
+    </div>
+  `).join('');
+
+  approveBar.classList.remove("hidden");
+  // auto-size all textareas to fit their content
+  requestAnimationFrame(() => {
+    list.querySelectorAll('textarea').forEach(ta => {
+      ta.style.height = 'auto';
+      ta.style.height = ta.scrollHeight + 'px';
+    });
+  });
+}
+
+function removeTopic(i) {
+  topicTitles.splice(i, 1);
+  renderTopics();
+}
+
+async function generateTopics() {
+  if (!currentBrandId) return;
+  const btn = document.getElementById("generate-btn");
+  const label = document.getElementById("generate-btn-label");
+  btn.disabled = true;
+  label.textContent = "Generating…";
+
+  try {
+    const res = await fetch(`/api/brands/${currentBrandId}/topics/generate`, { method: "POST" });
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    topicTitles = data.topics.map(t => t.title);
+    renderTopics();
+    renderTopicsStatus(data.status);
+  } catch (e) {
+    console.error(e);
+    showToast("error-toast");
+  } finally {
+    btn.disabled = false;
+    label.textContent = "Regenerate";
+  }
+}
+
+async function approveTopics() {
+  if (!currentBrandId || !topicTitles.length) return;
+  const res = await fetch(`/api/brands/${currentBrandId}/topics/approve`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ titles: topicTitles }),
+  });
+  if (!res.ok) { showToast("error-toast"); return; }
+  renderTopicsStatus("approved");
+  showToast("toast");
+}
+
+
+function showToast(id) {
+  const el = document.getElementById(id);
+  el.style.display = "block";
+  setTimeout(() => { el.style.display = "none"; }, 3000);
+}
+</script>
+
+</body>
+</html>

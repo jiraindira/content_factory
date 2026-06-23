@@ -13,7 +13,8 @@ This contract is **brand-agnostic**, but must support TheProductWheel as the fir
 
 ## Package Semantics
 
-- A package represents one publishable unit: **one blog post**.
+- A package represents one publishable unit: a **single canonical article run**.
+- The primary output is one **blog post**; derived assets (for example, an Instagram caption) may be included as additional outputs in the same package.
 - The package is **content-only**:
   - It may include product URLs and structured pick/product metadata.
   - It must not include downloaded images.
@@ -28,6 +29,8 @@ A package is a directory:
 - `packages/{brand_id}/{run_id}/`
   - `manifest.json`
   - `post.md`
+  - `instagram/` (optional, present when an Instagram output is included)
+    - `caption.txt` (plain-text caption, no frontmatter)
 
 `run_id` is an opaque unique identifier (timestamp/uuid).
 
@@ -42,8 +45,12 @@ A package is a directory:
 - `publish_date`: `YYYY-MM-DD`
 - `slug`: string (kebab-case; no date prefix)
 - `outputs`: array of objects:
-  - `kind`: currently only `"blog_post"`
-  - `path`: currently only `"post.md"`
+  - `kind`: identifies the logical output type
+    - `"blog_post"`: canonical article content (required)
+    - `"instagram_post"`: shortform caption derived from the same run (optional)
+  - `path`: relative path within the package directory
+    - For `kind: "blog_post"`: `"post.md"`
+    - For `kind: "instagram_post"`: `"instagram/caption.txt"`
 
 ## Blog Post File (post.md)
 

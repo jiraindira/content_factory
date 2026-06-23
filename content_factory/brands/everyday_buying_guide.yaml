@@ -13,7 +13,7 @@ domains_supported: [home, kitchen, tech, pets]
 domain_primary: home
 
 audience:
-  primary_audience: general_consumers
+  primary_audience: everyday_consumers_shoppers
   audience_sophistication: medium
   audience_context: Everyday shoppers who want clear recommendations
 

@@ -117,6 +117,32 @@ def validate_artifact_against_channel_specs(*, brand: BrandProfile, request: Con
             if len(rendered) > 3000:
                 errors.append("LinkedIn social_longform output must be <= 3000 characters")
 
+    if request.delivery_target.channel == DeliveryChannel.social_shortform:
+        # Instagram-specific sizing rules for shortform captions.
+        if request.delivery_target.destination == DeliveryDestination.instagram:
+            parts: list[str] = []
+            if topic:
+                parts.append(topic)
+            for sec in artifact.sections:
+                if sec.heading and sec.heading.strip():
+                    parts.append(sec.heading.strip())
+                for b in sec.blocks:
+                    if b.type in (BlockType.paragraph, BlockType.callout, BlockType.quote) and b.text:
+                        t = b.text.strip()
+                        if t:
+                            parts.append(t)
+                    elif b.type in (BlockType.bullets, BlockType.numbered) and b.items:
+                        for it in b.items:
+                            it2 = (it or "").strip()
+                            if it2:
+                                parts.append(it2)
+
+            rendered = "\n\n".join([p for p in parts if p.strip()]).strip()
+            if not rendered:
+                errors.append("Instagram social_shortform output must not be empty")
+            if len(rendered) > 2200:
+                errors.append("Instagram social_shortform output must be <= 2200 characters")
+
     if errors:
         msg = "\n".join(f"- {e}" for e in errors)
         raise ValueError(f"Channel QA failed:\n{msg}")

@@ -10,10 +10,11 @@ from schemas.base import SchemaBase
 
 
 class BrandArchetype(str, Enum):
-    trusted_guide = "trusted_guide"
-    expert_reviewer = "expert_reviewer"
-    enthusiastic_enthusiast = "enthusiastic_enthusiast"
-    lifestyle_curator = "lifestyle_curator"
+    mentor_coach = "mentor_coach"
+    product_ranker = "product_ranker"
+    product_guide = "product_guide"
+    reviewer = "reviewer"
+    travel_guide = "travel_guide"
 
 
 class ContentIntent(str, Enum):
@@ -117,14 +118,13 @@ class NarrationMode(str, Enum):
 
 
 class PrimaryAudience(str, Enum):
-    senior_executives_c_suite = "senior_executives_c_suite"
-    mid_level_leaders = "mid_level_leaders"
-    founders_entrepreneurs = "founders_entrepreneurs"
-    sales_leaders = "sales_leaders"
-    professional_speakers = "professional_speakers"
-    coaches_consultants = "coaches_consultants"
-    general_consumers = "general_consumers"
-    enthusiasts_hobbyists = "enthusiasts_hobbyists"
+    c_suite_senior_leaders = "c_suite_senior_leaders"
+    entrepreneurs_founders = "entrepreneurs_founders"
+    coaches_consultants_speakers = "coaches_consultants_speakers"
+    everyday_consumers_shoppers = "everyday_consumers_shoppers"
+    hobbyists_enthusiasts = "hobbyists_enthusiasts"
+    travelers_experience_seekers = "travelers_experience_seekers"
+    professionals_specific_field = "professionals_specific_field"
 
 
 class AudienceSophistication(str, Enum):
@@ -173,6 +173,7 @@ class DeliveryDestination(str, Enum):
     client_website = "client_website"
     linkedin = "linkedin"
     email_list = "email_list"
+    instagram = "instagram"
     tiktok = "tiktok"
     internal_only = "internal_only"
 
@@ -183,12 +184,15 @@ class DeliveryStrategy(str, Enum):
 
 
 class PublicationCadence(str, Enum):
-    on_demand = "on_demand"
     weekly = "weekly"
     twice_weekly = "twice_weekly"
-    every_other_week = "every_other_week"
-    daily = "daily"
-    custom = "custom"
+    on_demand = "on_demand"
+
+
+class PackageSize(int, Enum):
+    starter = 8
+    standard = 16
+    premium = 24
 
 
 class Weekday(str, Enum):
@@ -318,6 +322,7 @@ class Cadence(SchemaBase):
 class BrandProfile(SchemaBase):
     brand_id: str
     brand_archetype: BrandArchetype
+    package_size: Optional[PackageSize] = None
 
     brand_sources: BrandSources
 

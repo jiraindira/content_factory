@@ -1,11 +1,10 @@
-# AI Content Factory (and legacy Affiliate Engine)
+# AI Content Factory
 
-This repository contains two related systems:
+A **spec-driven content compiler** that takes a Brand YAML + Request YAML configuration and produces a robust `ContentArtifact` JSON. Supports multiple clients and content use cases (product recommendations, thought leadership, educational content, and more).
 
-1) **AI Content Factory (current direction):** a spec-driven content compiler that takes a Brand YAML + Request YAML and produces a robust `ContentArtifact` JSON.
-2) **Legacy AI Affiliate Engine:** the earlier manual affiliate post pipeline (kept for now).
+Content is delivered to [The Product Wheel](https://github.com/jiraindira/theproductwheel) (separate Astro site repo) via Git pull requests.
 
-The project operating contract and milestone plan lives in `ai_content_factory_project_plan.md`.
+**Project operating contract & milestones:** [ai_content_factory_project_plan.md](ai_content_factory_project_plan.md)
 
 ---
 

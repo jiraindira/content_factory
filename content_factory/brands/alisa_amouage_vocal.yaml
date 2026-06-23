@@ -1,0 +1,73 @@
+brand_id: alisa_amouage_vocal
+client_name: Alisa Amouge
+client_email: jirain@gmail.com
+brand_archetype: mentor_coach
+brand_sources:
+  require_at_least_one_of_purposes:
+  - homepage
+  sources:
+  - source_id: homepage
+    kind: url
+    purpose: homepage
+    ref: https://www.alisaamouage.com/
+  - source_id: linkedin
+    kind: url
+    purpose: linkedin_profile
+    ref: https://www.linkedin.com/in/alisa-amouage/
+domains_supported:
+- leadership
+domain_primary: leadership
+audience:
+  primary_audience: c_suite_senior_leaders
+  audience_sophistication: medium
+  audience_context: Execs who speak publicly or represent the company
+content_strategy:
+  allowed_intents:
+  - thought_leadership
+  allowed_product_recommendation_forms: []
+  allowed_thought_leadership_forms: []
+  default_content_depth: long
+topic_policy:
+  allowlist:
+  - Voice readiness for senior executives Executive presence under pressure Credible
+    confidence vs performative confidence
+persona_by_domain:
+  leadership:
+    primary_persona: warm_reflective
+    persona_modifiers:
+    - none
+    science_explicitness: explicit_when_credibility_helpful
+    personal_presence: occasional_personal_anecdotes
+    narration_mode: first_person_allowed
+commercial_policy:
+  commercial_posture: soft_recommendation
+  cta_policy: soft_authority_signature_line
+  prohibited_behaviors:
+  - fake_scarcity
+  - hype_superlatives
+  - pressure_language
+disclaimer_policy:
+  required: false
+  disclaimer_text: ''
+  locations: []
+delivery_policy:
+  delivery_channels:
+  - blog_article
+  - social_longform
+  delivery_destinations:
+  - hosted_by_us
+  - linkedin
+  delivery_strategy: canonical_plus_short_social
+  auto_publish: false
+cadence:
+  publication_cadence: twice_weekly
+  preferred_publish_days:
+  - tue
+  - fri
+  time_zone: UTC
+package_size: 8
+content_slots:
+- day: tue
+  type: short_snippet
+- day: fri
+  type: long_blog

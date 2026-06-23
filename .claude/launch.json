@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "onboarding",
+      "runtimeExecutable": "poetry",
+      "runtimeArgs": ["run", "uvicorn", "onboarding_app:app", "--host", "localhost", "--port", "8502"],
+      "port": 8502
+    }
+  ]
+}

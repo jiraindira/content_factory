@@ -14,6 +14,3 @@ venv/
 # Generated outputs
 output/
 archive/outputs/
-site/dist/
-site/.astro/
-site/node_modules/

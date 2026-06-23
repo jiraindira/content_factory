@@ -172,6 +172,7 @@ enums:
     client_website: "Client’s website/CMS."
     linkedin: "LinkedIn destination."
     email_list: "Newsletter/email list."
+    instagram: "Instagram destination."
     tiktok: "TikTok channel."
     internal_only: "Not public."
 

@@ -1,4 +1,25 @@
 
+from __future__ import annotations
+
+import argparse
+from datetime import date
+from pathlib import Path
+
+from content_factory.adapters.dispatch import render_for_request, write_delivery
+from content_factory.artifact_io import write_content_artifact
+from content_factory.artifact_validation import validate_artifact_against_specs
+from content_factory.brand_context import (
+    artifact_path_for_brand,
+    build_brand_context_artifact,
+    write_brand_context_artifact,
+)
+from content_factory.compiler import compile_content_artifact
+from content_factory.channel_qa import validate_artifact_against_channel_specs
+from content_factory.generation import generate_filled_artifact
+from content_factory.onboarding import write_onboarding_files
+from content_factory.validation import load_brand_profile, load_content_request, validate_request_against_brand
+
+
 def run_pipeline(brand_path: Path, request_path: Path, *, build_context_if_missing: bool = True, run_id: str | None = None) -> Path:
     """Reusable pipeline entry point for tests and automation."""
     repo_root = Path(__file__).resolve().parents[1]
@@ -25,25 +46,6 @@ def run_pipeline(brand_path: Path, request_path: Path, *, build_context_if_missi
     validate_artifact_against_channel_specs(brand=brand, request=req, artifact=artifact)
     out_artifact_path = write_content_artifact(repo_root=repo_root, artifact=artifact)
     return out_artifact_path
-from __future__ import annotations
-
-import argparse
-from datetime import date
-from pathlib import Path
-
-from content_factory.adapters.dispatch import render_for_request, write_delivery
-from content_factory.artifact_io import write_content_artifact
-from content_factory.artifact_validation import validate_artifact_against_specs
-from content_factory.brand_context import (
-    artifact_path_for_brand,
-    build_brand_context_artifact,
-    write_brand_context_artifact,
-)
-from content_factory.compiler import compile_content_artifact
-from content_factory.channel_qa import validate_artifact_against_channel_specs
-from content_factory.generation import generate_filled_artifact
-from content_factory.onboarding import write_onboarding_files
-from content_factory.validation import load_brand_profile, load_content_request, validate_request_against_brand
 
 
 def _repo_root() -> Path:
@@ -152,15 +154,27 @@ def cmd_run(args: argparse.Namespace) -> int:
     # Content Package v1 (Milestone 2): write a reviewable package directory.
     try:
         if out_delivery_path.suffix.lower() == ".md":
+            from content_factory.adapters.instagram_adapter import build_instagram_caption_from_artifact
             from content_factory.package_writer import write_content_package_v1
 
             post_md = out_delivery_path.read_text(encoding="utf-8")
+            instagram_caption: str | None = None
+            # For brands that support social_shortform+instagram, derive a
+            # simple caption from the same artifact and include it in the
+            # Content Package alongside the blog post.
+            if (
+                DeliveryChannel.social_shortform in brand.delivery_policy.delivery_channels
+                and DeliveryDestination.instagram in brand.delivery_policy.delivery_destinations
+            ):
+                instagram_caption = build_instagram_caption_from_artifact(artifact=artifact)
+
             pkg = write_content_package_v1(
                 repo_root=repo_root,
                 brand_id=brand.brand_id,
                 run_id=artifact.run_id,
                 publish_date=req.publish.publish_date,
                 post_markdown=post_md,
+                instagram_caption=instagram_caption,
             )
             print(f"Wrote Content Package: {pkg.package_dir}")
     except Exception:

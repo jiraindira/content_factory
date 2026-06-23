@@ -21,6 +21,7 @@ class ContentPackageWriteResult:
     manifest_path: Path
     post_path: Path
     slug: str
+    instagram_caption_path: Path | None = None
 
 
 def _extract_yaml_frontmatter(md: str) -> tuple[dict[str, Any], str]:
@@ -57,6 +58,7 @@ def write_content_package_v1(
     run_id: str,
     publish_date: date,
     post_markdown: str,
+    instagram_caption: str | None = None,
 ) -> ContentPackageWriteResult:
     """Write Content Package v1 to content_factory/packages/{brand_id}/{run_id}.
 
@@ -75,7 +77,7 @@ def write_content_package_v1(
     package_dir = repo_root / "content_factory" / "packages" / brand_id / run_id
     package_dir.mkdir(parents=True, exist_ok=True)
 
-    manifest = {
+    manifest: dict[str, Any] = {
         "version": "1",
         "brand_id": brand_id,
         "run_id": run_id,
@@ -92,13 +94,32 @@ def write_content_package_v1(
 
     manifest_path = package_dir / "manifest.json"
     post_path = package_dir / "post.md"
+    instagram_caption_path: Path | None = None
 
     manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=False) + "\n", encoding="utf-8")
     post_path.write_text((post_markdown or "").rstrip() + "\n", encoding="utf-8")
+
+    # Optional Instagram shortform output derived from the same run.
+    if instagram_caption is not None:
+        caption = (instagram_caption or "").rstrip()
+        if caption:
+            caption_rel_path = "instagram/caption.txt"
+            instagram_dir = package_dir / "instagram"
+            instagram_dir.mkdir(parents=True, exist_ok=True)
+            instagram_caption_path = instagram_dir / "caption.txt"
+            instagram_caption_path.write_text(caption + "\n", encoding="utf-8")
+            manifest["outputs"].append(
+                {
+                    "kind": "instagram_post",
+                    "path": caption_rel_path,
+                }
+            )
+            manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=False) + "\n", encoding="utf-8")
 
     return ContentPackageWriteResult(
         package_dir=package_dir,
         manifest_path=manifest_path,
         post_path=post_path,
         slug=slug,
+        instagram_caption_path=instagram_caption_path,
     )
