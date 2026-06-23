@@ -55,7 +55,7 @@ def _mark_topic_generated(brand_id: str, topic_id: int) -> None:
         if t["id"] == topic_id:
             t["status"] = "generated"
             break
-    with open(path, "w") as f:
+    with open(path, "w", encoding="utf-8") as f:
         yaml.dump(data, f, allow_unicode=True, sort_keys=False)
 
 
@@ -100,7 +100,7 @@ def _build_request_yaml(brand: dict, topic_title: str, slot_type: str) -> Path:
     REQUESTS_DIR.mkdir(parents=True, exist_ok=True)
     slug = _slug(topic_title)
     path = REQUESTS_DIR / f"{brand_id}_{date.today()}_{slug}.yaml"
-    with open(path, "w") as f:
+    with open(path, "w", encoding="utf-8") as f:
         yaml.dump(request, f, allow_unicode=True, sort_keys=False)
     return path
 

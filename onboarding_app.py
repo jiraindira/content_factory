@@ -36,7 +36,7 @@ def get_brand(brand_id: str):
     path = BRANDS_DIR / f"{brand_id}.yaml"
     if not path.exists():
         raise HTTPException(status_code=404, detail="Brand not found")
-    with open(path) as f:
+    with open(path, encoding="utf-8") as f:
         return yaml.safe_load(f) or {}
 
 
@@ -57,7 +57,7 @@ async def save_brand(request: Request):
         raise HTTPException(status_code=400, detail="brand_id is required")
     BRANDS_DIR.mkdir(parents=True, exist_ok=True)
     path = BRANDS_DIR / f"{brand_id}.yaml"
-    with open(path, "w") as f:
+    with open(path, "w", encoding="utf-8") as f:
         yaml.dump(data, f, allow_unicode=True, sort_keys=False)
     return {"saved": str(path)}
 
@@ -77,7 +77,7 @@ def generate_topics_endpoint(brand_id: str):
     path = BRANDS_DIR / f"{brand_id}.yaml"
     if not path.exists():
         raise HTTPException(status_code=404, detail="Brand not found")
-    with open(path) as f:
+    with open(path, encoding="utf-8") as f:
         brand = yaml.safe_load(f) or {}
     titles = generate_topics(brand)
     return save_topics(brand_id, titles, status="pending_approval")
@@ -157,7 +157,7 @@ def approve_generated(brand_id: str, run_id: str):
 
     # Mark generated content as approved
     data["status"] = "approved"
-    with open(path, "w") as f:
+    with open(path, "w", encoding="utf-8") as f:
         yaml.dump(data, f, allow_unicode=True, sort_keys=False)
 
     # Mark topic as sent
@@ -168,7 +168,7 @@ def approve_generated(brand_id: str, run_id: str):
             if t.get("title") == data.get("topic"):
                 t["status"] = "sent"
                 break
-        with open(topics_path, "w") as f:
+        with open(topics_path, "w", encoding="utf-8") as f:
             yaml.dump(topics_data, f, allow_unicode=True, sort_keys=False)
 
     return {"approved": True, "email_id": email_id}
@@ -186,7 +186,7 @@ async def reject_generated(brand_id: str, run_id: str, request: Request):
     data = yaml.safe_load(path.read_text()) or {}
     data["status"] = "rejected"
     data["rejection_note"] = note
-    with open(path, "w") as f:
+    with open(path, "w", encoding="utf-8") as f:
         yaml.dump(data, f, allow_unicode=True, sort_keys=False)
 
     # Put topic back to pending so it can be regenerated
@@ -197,7 +197,7 @@ async def reject_generated(brand_id: str, run_id: str, request: Request):
             if t.get("title") == data.get("topic"):
                 t["status"] = "pending"
                 break
-        with open(topics_path, "w") as f:
+        with open(topics_path, "w", encoding="utf-8") as f:
             yaml.dump(topics_data, f, allow_unicode=True, sort_keys=False)
 
     return {"rejected": True}

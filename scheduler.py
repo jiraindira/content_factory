@@ -36,7 +36,7 @@ def _has_pending_review(brand_id: str) -> bool:
     if not d.exists():
         return False
     for p in d.glob("*.yaml"):
-        data = yaml.safe_load(p.read_text()) or {}
+        data = yaml.safe_load(p.read_text(encoding="utf-8")) or {}
         if data.get("status") == "pending_review":
             return True
     return False
@@ -46,7 +46,7 @@ def _has_approved_topics(brand_id: str) -> bool:
     path = TOPICS_DIR / f"{brand_id}.yaml"
     if not path.exists():
         return False
-    data = yaml.safe_load(path.read_text()) or {}
+    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     if data.get("status") != "approved":
         return False
     return any(t.get("status") not in ("generated", "sent") for t in data.get("topics", []))
@@ -67,7 +67,7 @@ def run() -> int:
     skipped = 0
 
     for brand_id in brands:
-        brand = yaml.safe_load((BRANDS_DIR / f"{brand_id}.yaml").read_text()) or {}
+        brand = yaml.safe_load((BRANDS_DIR / f"{brand_id}.yaml").read_text(encoding="utf-8")) or {}
         client_name = brand.get("client_name") or brand_id
 
         slot = _slot_for_today(brand)

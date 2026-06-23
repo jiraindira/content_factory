@@ -115,6 +115,6 @@ def save_topics(brand_id: str, titles: list[str], status: str = "pending_approva
         data["approved_at"] = str(date.today())
 
     path = TOPICS_DIR / f"{brand_id}.yaml"
-    with open(path, "w") as f:
+    with open(path, "w", encoding="utf-8") as f:
         yaml.dump(data, f, allow_unicode=True, sort_keys=False)
     return data
