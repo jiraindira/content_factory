@@ -17,7 +17,7 @@ import resend
 
 resend.api_key = os.environ.get("RESEND_API_KEY", "").strip()
 
-FROM_ADDRESS = "Content Factory <onboarding@resend.dev>"
+FROM_ADDRESS = os.environ.get("FROM_EMAIL", "Said By <onboarding@resend.dev>")
 OPERATOR_EMAIL = os.environ.get("OPERATOR_EMAIL", "").strip()
 REVIEW_UI_URL = os.environ.get("REVIEW_UI_URL", "http://localhost:8502").strip()
 
