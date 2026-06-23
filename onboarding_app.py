@@ -4,6 +4,7 @@ Run with: poetry run python onboarding_app.py
 Opens automatically at http://localhost:8502
 """
 
+import os
 from pathlib import Path
 
 import uvicorn
@@ -204,4 +205,6 @@ async def reject_generated(brand_id: str, run_id: str, request: Request):
 
 
 if __name__ == "__main__":
-    uvicorn.run("onboarding_app:app", host="localhost", port=8502, reload=True)
+    port = int(os.environ.get("PORT", 8502))
+    host = "0.0.0.0" if os.environ.get("PORT") else "localhost"
+    uvicorn.run("onboarding_app:app", host=host, port=port, reload=not os.environ.get("PORT"))
