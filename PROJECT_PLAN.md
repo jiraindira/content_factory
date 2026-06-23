@@ -101,9 +101,10 @@ Client onboarding (Railway UI)
 - [x] Review UI (approve/reject with article reader)
 - [x] GitHub Actions daily scheduler
 - [x] Railway deployment
+- [x] Public homepage + admin auth (session login, protected /admin)
+- [x] Public client intake form (/onboard) with submission → operator email → activate flow
 
 ## To-do
-- [ ] Public homepage + admin auth (protect Railway URL with login)
 - [ ] Cross-client "All content" overview (see all articles across clients in one view)
 - [ ] Add custom domain to Resend (remove sandbox restriction)
 - [ ] Content delivery to client website / LinkedIn (not just email)
@@ -113,5 +114,4 @@ Client onboarding (Railway UI)
 
 ## Known limitations
 - Resend sandbox: delivery emails go to operator until custom domain is added
-- Review UI requires `git pull` locally after scheduler runs (fixed by Railway hosting)
 - LinkedIn blocked by robots.txt — brand context uses homepage only
