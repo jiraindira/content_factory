@@ -501,6 +501,28 @@
           </div>
         </div>
 
+        <!-- Generate on demand -->
+        <div class="section-card mb-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-semibold text-gray-700">Generate off-schedule</p>
+              <p class="text-xs text-gray-400 mt-0.5">Picks the next approved topic and emails you for review</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="flex gap-1">
+                <button type="button" id="gen-type-long" onclick="setGenType('long_blog')"
+                  class="slot-type-btn active text-xs">Long blog</button>
+                <button type="button" id="gen-type-short" onclick="setGenType('short_snippet')"
+                  class="slot-type-btn text-xs">Short snippet</button>
+              </div>
+              <button id="gen-btn" onclick="generateNow()"
+                class="py-2 px-4 rounded-md bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition">
+                Generate
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- Article list -->
         <div id="review-list" class="space-y-3 mb-6"></div>
 
@@ -1515,6 +1537,37 @@ async function openArticle(runId) {
 function closeReader() {
   activeRunId = null;
   document.getElementById("article-reader").classList.add("hidden");
+}
+
+let genSlotType = 'long_blog';
+
+function setGenType(type) {
+  genSlotType = type;
+  document.getElementById('gen-type-long').classList.toggle('active', type === 'long_blog');
+  document.getElementById('gen-type-short').classList.toggle('active', type === 'short_snippet');
+}
+
+async function generateNow() {
+  if (!currentBrandId) return;
+  const btn = document.getElementById('gen-btn');
+  btn.textContent = 'Generating…';
+  btn.disabled = true;
+  try {
+    const res = await fetch(`/api/brands/${currentBrandId}/generate?slot_type=${genSlotType}`, { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Generation failed');
+    if (data.status === 'no_pending_topics') {
+      alert('No approved topics remaining — approve some topics first.');
+    } else {
+      await loadGeneratedList();
+      showToast('toast');
+    }
+  } catch (e) {
+    alert(e.message);
+  } finally {
+    btn.textContent = 'Generate';
+    btn.disabled = false;
+  }
 }
 
 async function approveArticle() {

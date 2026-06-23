@@ -109,6 +109,7 @@ Client onboarding (Railway UI)
 - [ ] Add custom domain to Resend (remove sandbox restriction)
 - [ ] Content delivery to client website / LinkedIn (not just email)
 - [ ] Regenerate single topic button in UI (without running full scheduler)
+- [ ] Mobile experience — admin UI is desktop-only, needs responsive sidebar + layout
 
 ---
 
