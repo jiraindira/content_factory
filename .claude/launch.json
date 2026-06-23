@@ -4,8 +4,8 @@
     {
       "name": "onboarding",
       "runtimeExecutable": "poetry",
-      "runtimeArgs": ["run", "uvicorn", "onboarding_app:app", "--host", "localhost", "--port", "8502"],
-      "port": 8502
+      "runtimeArgs": ["run", "uvicorn", "onboarding_app:app", "--host", "localhost", "--port", "8503"],
+      "port": 8503
     }
   ]
 }

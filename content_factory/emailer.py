@@ -106,6 +106,43 @@ def send_review_email(
     return response["id"]
 
 
+def send_new_submission_email(*, submission: dict) -> str:
+    """Notify operator that a new client intake was submitted."""
+    if not OPERATOR_EMAIL:
+        raise ValueError("OPERATOR_EMAIL is not set in .env")
+
+    name = submission.get("client_name", "Unknown")
+    email = submission.get("client_email", "")
+    role = submission.get("brand_archetype", "").replace("_", " ").title()
+    about = submission.get("about", "")
+    review_url = f"{REVIEW_UI_URL}/admin"
+
+    html = f"""
+    <!DOCTYPE html><html><head>{_base_style()}</head><body>
+    <div class="banner">
+      ✦ New client intake submitted<br/>
+      <small>Review and activate at: <a href="{review_url}">{review_url}</a></small>
+    </div>
+    <h2 style="margin-top:0">{name}</h2>
+    <div class="meta">
+      <strong>Email:</strong> {email} &nbsp;·&nbsp;
+      <strong>Role:</strong> {role}
+    </div>
+    <p><strong>What they write about:</strong><br/>{about}</p>
+    <div class="footer">Content Factory · New submission notification</div>
+    </body></html>
+    """
+
+    params: resend.Emails.SendParams = {
+        "from": FROM_ADDRESS,
+        "to": [OPERATOR_EMAIL],
+        "subject": f"New intake: {name}",
+        "html": html,
+    }
+    response = resend.Emails.send(params)
+    return response["id"]
+
+
 def send_delivery_email(
     *,
     client_name: str,

@@ -139,15 +139,26 @@
   <aside class="w-64 bg-white border-r border-gray-200 flex flex-col flex-shrink-0">
     <div class="p-5 border-b border-gray-200">
       <div class="text-xs font-semibold text-indigo-600 uppercase tracking-widest mb-1">Content Factory</div>
-      <h1 class="text-base font-bold text-gray-900">Client Onboarding</h1>
+      <h1 class="text-base font-bold text-gray-900">Admin</h1>
     </div>
     <div class="p-4 flex-1 overflow-y-auto">
+      <button onclick="showSubmissions()"
+        class="w-full mb-3 py-2 px-3 rounded-md text-sm font-semibold text-gray-700 border border-gray-200 hover:bg-gray-50 transition flex items-center justify-between">
+        <span>📥 Submissions</span>
+        <span id="submissions-badge" class="hidden bg-indigo-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full"></span>
+      </button>
       <button onclick="newClient()"
         class="w-full mb-4 py-2 px-3 rounded-md border-2 border-dashed border-indigo-300 text-indigo-600 text-sm font-semibold hover:bg-indigo-50 transition">
         + New Client
       </button>
       <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2 px-1">Existing clients</div>
       <div id="client-list" class="space-y-0.5"></div>
+      <div class="mt-auto pt-4 border-t border-gray-100">
+        <a href="/auth/logout"
+          class="block w-full py-2 px-3 rounded-md text-sm text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition text-center">
+          Sign out
+        </a>
+      </div>
       <div id="client-actions" class="hidden mt-4 pt-4 border-t border-gray-100 space-y-2">
         <button onclick="showTopics()"
           class="w-full py-2 px-3 rounded-md text-sm font-semibold text-indigo-600 border border-indigo-200 hover:bg-indigo-50 transition">
@@ -497,6 +508,70 @@
 
       </div><!-- /review-area -->
 
+      <!-- ── Submissions panel ───────────────────────────────────────── -->
+      <div id="submissions-area" class="hidden">
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <button onclick="showForm()" class="text-sm text-indigo-600 hover:underline mb-1 block">← Back to clients</button>
+            <h2 class="text-xl font-bold text-gray-900">Intake submissions</h2>
+            <p class="text-sm text-gray-500 mt-0.5">Review and activate new client questionnaires.</p>
+          </div>
+        </div>
+
+        <div id="submissions-list" class="space-y-3 mb-6"></div>
+
+        <!-- Activation panel -->
+        <div id="activation-panel" class="hidden section-card">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-bold text-gray-900">Activate client</h3>
+            <button onclick="closeActivation()" class="text-gray-300 hover:text-gray-500 text-2xl leading-none">×</button>
+          </div>
+          <div id="activation-summary" class="bg-gray-50 rounded-lg p-4 mb-5 text-sm text-gray-700 space-y-1"></div>
+          <div class="grid grid-cols-2 gap-4 mb-4">
+            <div>
+              <label class="field-label">Brand ID <span class="font-normal text-gray-400">(slug)</span></label>
+              <input type="text" id="act_brand_id" placeholder="e.g. alisa_amouage" />
+            </div>
+            <div>
+              <label class="field-label">Package size</label>
+              <div class="flex gap-2 mt-1">
+                <button type="button" class="act-pkg-btn slot-type-btn" data-val="8"  onclick="setActPkg(8)">8 articles</button>
+                <button type="button" class="act-pkg-btn slot-type-btn" data-val="16" onclick="setActPkg(16)">16</button>
+                <button type="button" class="act-pkg-btn slot-type-btn" data-val="24" onclick="setActPkg(24)">24</button>
+              </div>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-4 mb-4">
+            <div>
+              <label class="field-label">Cadence</label>
+              <div class="flex gap-2 mt-1">
+                <button type="button" class="act-cad-btn slot-type-btn active" data-val="weekly"       onclick="setActCad('weekly')">1× / week</button>
+                <button type="button" class="act-cad-btn slot-type-btn"        data-val="twice_weekly" onclick="setActCad('twice_weekly')">2× / week</button>
+              </div>
+            </div>
+            <div>
+              <label class="field-label">Time zone</label>
+              <select id="act_timezone">
+                <option value="UTC">UTC</option>
+                <option value="America/New_York">Eastern (US)</option>
+                <option value="America/Los_Angeles">Pacific (US)</option>
+                <option value="Europe/London">London</option>
+                <option value="Europe/Paris">Paris / CET</option>
+                <option value="Asia/Dubai">Dubai</option>
+              </select>
+            </div>
+          </div>
+          <div id="act-slots-wrap" class="mb-5">
+            <label class="field-label">Publish days & content type</label>
+            <div id="act-slots" class="space-y-2 mt-1"></div>
+          </div>
+          <button onclick="activateSubmission()"
+            class="w-full py-3 rounded-lg bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition text-sm">
+            Activate client
+          </button>
+        </div>
+      </div><!-- /submissions-area -->
+
     </div>
   </main>
 </div>
@@ -622,6 +697,12 @@ document.addEventListener("DOMContentLoaded", () => {
   renderSlots();
   updateRoleTip();
   loadClientList();
+  // load submissions badge
+  fetch('/api/submissions').then(r => r.ok ? r.json() : []).then(items => {
+    const pending = items.filter(i => i.status === 'submitted').length;
+    const badge = document.getElementById('submissions-badge');
+    if (badge) { badge.textContent = pending; badge.classList.toggle('hidden', pending === 0); }
+  });
 });
 
 // ── Render helpers ────────────────────────────────────────────────────────────
@@ -1051,6 +1132,153 @@ function setChips(containerId, vals) {
   });
 }
 
+// ── Submissions panel ─────────────────────────────────────────────────────────
+let activeSubmissionId = null;
+let actCadence = 'weekly';
+let actPackage = null;
+let actSlots = [{ day: 'mon', type: 'long_blog' }];
+
+async function showSubmissions() {
+  showForm();
+  document.getElementById('form-area').classList.add('hidden');
+  document.getElementById('submissions-area').classList.remove('hidden');
+  await loadSubmissionsList();
+}
+
+async function loadSubmissionsList() {
+  const res = await fetch('/api/submissions');
+  if (!res.ok) return;
+  const items = await res.json();
+  renderSubmissionsList(items);
+  const pending = items.filter(i => i.status === 'submitted').length;
+  const badge = document.getElementById('submissions-badge');
+  badge.textContent = pending;
+  badge.classList.toggle('hidden', pending === 0);
+}
+
+function renderSubmissionsList(items) {
+  const el = document.getElementById('submissions-list');
+  if (!items.length) {
+    el.innerHTML = '<p class="text-sm text-gray-400 text-center py-8">No submissions yet.</p>';
+    return;
+  }
+  el.innerHTML = items.map(s => {
+    const cfg = s.status === 'activated'
+      ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
+      : 'bg-amber-100 text-amber-700 border-amber-200';
+    const label = s.status === 'activated' ? 'Activated' : 'Pending';
+    const role = (s.brand_archetype || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    return `
+      <div class="section-card !py-3 !px-4 flex items-center gap-4 ${s.status === 'submitted' ? 'cursor-pointer hover:border-indigo-300' : ''} transition"
+           ${s.status === 'submitted' ? `onclick="openActivation('${s.id}')"` : ''}>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-semibold text-gray-900">${s.client_name || 'Unknown'}</div>
+          <div class="text-xs text-gray-400 mt-0.5">${s.client_email} · ${role}</div>
+        </div>
+        <span class="text-xs font-semibold px-2.5 py-1 rounded-full border whitespace-nowrap ${cfg}">${label}</span>
+      </div>`;
+  }).join('');
+}
+
+async function openActivation(subId) {
+  activeSubmissionId = subId;
+  const res = await fetch(`/api/submissions/${subId}`);
+  if (!res.ok) return;
+  const sub = await res.json();
+
+  // Summary
+  const summary = document.getElementById('activation-summary');
+  summary.innerHTML = [
+    `<div><strong>Name:</strong> ${sub.client_name || ''}</div>`,
+    `<div><strong>Email:</strong> ${sub.client_email || ''}</div>`,
+    `<div><strong>Role:</strong> ${(sub.brand_archetype || '').replace(/_/g, ' ')}</div>`,
+    `<div><strong>About:</strong> ${sub.about || ''}</div>`,
+    `<div><strong>Audience:</strong> ${(sub.audience || '').replace(/_/g, ' ')}</div>`,
+    `<div><strong>Platform:</strong> ${sub.platform || ''}</div>`,
+    `<div><strong>Tone:</strong> ${(sub.tone || '').replace(/_/g, ' ')}</div>`,
+  ].join('');
+
+  // Pre-fill brand_id from name
+  const slug = (sub.client_name || '').toLowerCase().replace(/[^\w\s]/g, '').replace(/\s+/g, '_');
+  document.getElementById('act_brand_id').value = slug;
+
+  actPackage = null;
+  actCadence = 'weekly';
+  actSlots = [{ day: 'mon', type: 'long_blog' }];
+  document.querySelectorAll('.act-pkg-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.act-cad-btn').forEach(b => b.classList.toggle('active', b.dataset.val === 'weekly'));
+  renderActSlots();
+  document.getElementById('activation-panel').classList.remove('hidden');
+  document.getElementById('activation-panel').scrollIntoView({ behavior: 'smooth' });
+}
+
+function closeActivation() {
+  activeSubmissionId = null;
+  document.getElementById('activation-panel').classList.add('hidden');
+}
+
+function setActPkg(n) {
+  actPackage = n;
+  document.querySelectorAll('.act-pkg-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.val) === n));
+}
+
+function setActCad(val) {
+  actCadence = val;
+  document.querySelectorAll('.act-cad-btn').forEach(b => b.classList.toggle('active', b.dataset.val === val));
+  const n = val === 'twice_weekly' ? 2 : 1;
+  while (actSlots.length < n) actSlots.push({ day: DAYS[actSlots.length % 7], type: 'short_snippet' });
+  actSlots = actSlots.slice(0, n);
+  renderActSlots();
+}
+
+function renderActSlots() {
+  const el = document.getElementById('act-slots');
+  el.innerHTML = actSlots.map((slot, i) => `
+    <div class="flex gap-2 items-center">
+      <select style="width:160px" onchange="actSlots[${i}].day = this.value">
+        ${DAYS.map(d => `<option value="${d}" ${slot.day === d ? 'selected' : ''}>${DAY_LABELS[d]}</option>`).join('')}
+      </select>
+      <button type="button" class="slot-type-btn ${slot.type === 'long_blog' ? 'active' : ''}"
+        onclick="setActSlotType(${i}, 'long_blog', this)">Long blog</button>
+      <button type="button" class="slot-type-btn ${slot.type === 'short_snippet' ? 'active' : ''}"
+        onclick="setActSlotType(${i}, 'short_snippet', this)">Short snippet</button>
+    </div>`).join('');
+}
+
+function setActSlotType(i, type, btn) {
+  actSlots[i].type = type;
+  const row = btn.closest('.flex');
+  row.querySelectorAll('.slot-type-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+async function activateSubmission() {
+  if (!activeSubmissionId) return;
+  const brand_id = document.getElementById('act_brand_id').value.trim();
+  if (!brand_id) { alert('Brand ID is required.'); return; }
+  if (!actPackage) { alert('Please select a package size.'); return; }
+
+  const payload = {
+    brand_id,
+    package_size: actPackage,
+    publication_cadence: actCadence,
+    content_slots: actSlots,
+    time_zone: document.getElementById('act_timezone').value,
+  };
+
+  const res = await fetch(`/api/submissions/${activeSubmissionId}/activate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) { showToast('error-toast'); return; }
+  closeActivation();
+  await loadSubmissionsList();
+  await loadClientList();
+  showToast('toast');
+}
+
 // ── Review panel ─────────────────────────────────────────────────────────────
 let generatedItems = [];
 let activeRunId = null;
@@ -1059,6 +1287,7 @@ function showForm() {
   document.getElementById("form-area").classList.remove("hidden");
   document.getElementById("topics-area").classList.add("hidden");
   document.getElementById("review-area").classList.add("hidden");
+  document.getElementById("submissions-area").classList.add("hidden");
 }
 
 async function showReview() {

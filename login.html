@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Content Factory — Admin Login</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 font-sans flex items-center justify-center min-h-screen">
+
+  <div class="w-full max-w-sm">
+    <div class="text-center mb-8">
+      <div class="font-bold text-gray-900 text-lg mb-1">✦ Content Factory</div>
+      <p class="text-sm text-gray-400">Admin access</p>
+    </div>
+
+    <div class="bg-white border border-gray-200 rounded-xl p-8 shadow-sm">
+      <h1 class="text-xl font-bold text-gray-900 mb-6">Sign in</h1>
+
+      <div id="error-msg" class="hidden bg-red-50 border border-red-200 text-red-600 text-sm rounded-md px-4 py-3 mb-4"></div>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+          <input type="text" id="username" autocomplete="username"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+            placeholder="admin" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+          <input type="password" id="password" autocomplete="current-password"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+            placeholder="••••••••" />
+        </div>
+        <button onclick="login()" id="login-btn"
+          class="w-full bg-indigo-600 text-white font-semibold py-2.5 rounded-md hover:bg-indigo-700 transition text-sm">
+          Sign in
+        </button>
+      </div>
+    </div>
+
+    <p class="text-center text-xs text-gray-400 mt-6">
+      <a href="/" class="hover:text-gray-600">← Back to homepage</a>
+    </p>
+  </div>
+
+  <script>
+    // Allow Enter key to submit
+    document.addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+
+    async function login() {
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+      const btn = document.getElementById('login-btn');
+      const err = document.getElementById('error-msg');
+
+      if (!username || !password) {
+        showError('Please enter your username and password.');
+        return;
+      }
+
+      btn.textContent = 'Signing in…';
+      btn.disabled = true;
+      err.classList.add('hidden');
+
+      try {
+        const res = await fetch('/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password }),
+        });
+
+        if (res.ok) {
+          window.location.href = '/admin';
+        } else {
+          showError('Invalid username or password.');
+          btn.textContent = 'Sign in';
+          btn.disabled = false;
+        }
+      } catch {
+        showError('Something went wrong. Please try again.');
+        btn.textContent = 'Sign in';
+        btn.disabled = false;
+      }
+    }
+
+    function showError(msg) {
+      const el = document.getElementById('error-msg');
+      el.textContent = msg;
+      el.classList.remove('hidden');
+    }
+  </script>
+
+</body>
+</html>

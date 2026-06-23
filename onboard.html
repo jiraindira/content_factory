@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Content Factory — Start your content plan</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .card-opt {
+      cursor: pointer; border: 2px solid #e5e7eb; border-radius: 0.5rem;
+      padding: 0.75rem 1rem; transition: all 0.15s; background: white;
+    }
+    .card-opt:hover { border-color: #6366f1; background: #f5f3ff; }
+    .card-opt.selected { border-color: #6366f1; background: #eef2ff; }
+    .card-opt.selected .opt-dot { background: #6366f1; }
+    .opt-dot {
+      width: 14px; height: 14px; border-radius: 50%;
+      border: 2px solid #6366f1; flex-shrink: 0; margin-top: 3px;
+      transition: background 0.15s;
+    }
+    .section-card { background: white; border-radius: 0.75rem; border: 1px solid #e5e7eb; padding: 1.75rem 2rem; margin-bottom: 1.5rem; }
+    input[type=text], input[type=email], input[type=url], textarea, select {
+      width: 100%; border: 1px solid #d1d5db; border-radius: 0.375rem;
+      padding: 0.5rem 0.75rem; font-size: 0.9rem; outline: none; transition: border 0.15s;
+    }
+    input:focus, textarea:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+    label.field-label { display: block; font-size: 0.8rem; font-weight: 600; color: #374151; margin-bottom: 0.3rem; }
+    .step-num {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 1.75rem; height: 1.75rem; border-radius: 50%;
+      background: #eef2ff; color: #4338ca; font-size: 0.8rem; font-weight: 700;
+      margin-right: 0.6rem; flex-shrink: 0;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 font-sans text-gray-900">
+
+  <!-- Nav -->
+  <nav class="bg-white border-b border-gray-100 px-6 py-4">
+    <div class="max-w-2xl mx-auto flex items-center justify-between">
+      <a href="/" class="font-bold text-gray-900 tracking-tight">✦ Content Factory</a>
+      <a href="/" class="text-sm text-gray-400 hover:text-gray-600 transition">← Back</a>
+    </div>
+  </nav>
+
+  <!-- Success screen (hidden until submit) -->
+  <div id="success-screen" class="hidden min-h-screen flex items-center justify-center px-6">
+    <div class="text-center max-w-md">
+      <div class="text-5xl mb-6">✦</div>
+      <h2 class="text-2xl font-bold text-gray-900 mb-3">You're all set!</h2>
+      <p class="text-gray-500 mb-8">We've received your questionnaire and will be in touch shortly to confirm your content plan.</p>
+      <a href="/" class="inline-block bg-indigo-600 text-white font-semibold px-6 py-3 rounded-lg hover:bg-indigo-700 transition">
+        Back to homepage
+      </a>
+    </div>
+  </div>
+
+  <!-- Form -->
+  <div id="form-wrap" class="max-w-2xl mx-auto py-10 px-6">
+
+    <div class="mb-10">
+      <h1 class="text-2xl font-bold text-gray-900 mb-2">Start your content plan</h1>
+      <p class="text-gray-500">Answer a few questions so we can write in your voice. Takes about 5 minutes.</p>
+    </div>
+
+    <!-- 1. Your details -->
+    <div class="section-card">
+      <div class="flex items-start mb-4">
+        <span class="step-num">1</span>
+        <div>
+          <h2 class="font-bold text-gray-900">About you</h2>
+          <p class="text-sm text-gray-500 mt-0.5">The basics so we know who we're writing for.</p>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-4 mb-4">
+        <div>
+          <label class="field-label">Your name</label>
+          <input type="text" id="client_name" placeholder="e.g. Alisa Amouage" />
+        </div>
+        <div>
+          <label class="field-label">Your email</label>
+          <input type="email" id="client_email" placeholder="you@example.com" />
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-4 mb-4">
+        <div>
+          <label class="field-label">Your website <span class="font-normal text-gray-400">(optional)</span></label>
+          <input type="url" id="website_url" placeholder="https://yoursite.com" />
+        </div>
+        <div>
+          <label class="field-label">Creator role</label>
+          <select id="brand_archetype" onchange="updateRoleTip()">
+            <option value="mentor_coach">Mentor / Coach</option>
+            <option value="product_ranker">Product Ranker</option>
+            <option value="product_guide">Product Guide</option>
+            <option value="reviewer">Reviewer</option>
+            <option value="travel_guide">Travel Guide</option>
+          </select>
+          <p id="role-tip" class="text-xs text-indigo-600 mt-1.5"></p>
+        </div>
+      </div>
+      <div>
+        <label class="field-label">What do you write about?</label>
+        <textarea id="about" rows="3" placeholder="e.g. Voice leadership and executive presence for senior leaders — how to communicate with authority and confidence in high-stakes situations."></textarea>
+      </div>
+    </div>
+
+    <!-- 2. Your audience -->
+    <div class="section-card">
+      <div class="flex items-start mb-4">
+        <span class="step-num">2</span>
+        <div>
+          <h2 class="font-bold text-gray-900">Who are you writing for?</h2>
+          <p class="text-sm text-gray-500 mt-0.5">Pick your primary audience.</p>
+        </div>
+      </div>
+      <div id="audience-opts" class="space-y-2"></div>
+      <div class="mt-4">
+        <label class="field-label">Any nuance? Who must feel "this is for me"?</label>
+        <input type="text" id="audience_context" placeholder="e.g. Mid-level leaders preparing for their first C-suite role" />
+      </div>
+    </div>
+
+    <!-- 3. Platform -->
+    <div class="section-card">
+      <div class="flex items-start mb-4">
+        <span class="step-num">3</span>
+        <div>
+          <h2 class="font-bold text-gray-900">Where will this content live?</h2>
+          <p class="text-sm text-gray-500 mt-0.5">This affects length, structure, and tone.</p>
+        </div>
+      </div>
+      <div id="platform-opts" class="space-y-2"></div>
+    </div>
+
+    <!-- 4. Tone -->
+    <div class="section-card">
+      <div class="flex items-start mb-4">
+        <span class="step-num">4</span>
+        <div>
+          <h2 class="font-bold text-gray-900">Tone calibration</h2>
+          <p class="text-sm text-gray-500 mt-0.5">Which lane should your voice sit in?</p>
+        </div>
+      </div>
+      <div id="tone-opts" class="space-y-2 mb-4"></div>
+      <div id="custom-tone-wrap" class="hidden">
+        <label class="field-label">Describe your blend</label>
+        <textarea id="custom_tone" rows="2" placeholder="e.g. Calm but slightly playful, never corporate, always grounded in evidence…"></textarea>
+      </div>
+      <div class="mt-4 flex flex-wrap items-center gap-3">
+        <label class="field-label mb-0 text-sm">Explicitly reference science / research?</label>
+        <div class="flex gap-2" id="sci-btns">
+          <button type="button" onclick="setSci('explicit_when_credibility_helpful')" data-val="explicit_when_credibility_helpful"
+            class="sci-btn px-3 py-1.5 rounded border-2 border-gray-200 text-xs font-semibold bg-white hover:border-indigo-400 transition">Yes, when it helps</button>
+          <button type="button" onclick="setSci('explicit_often')" data-val="explicit_often"
+            class="sci-btn px-3 py-1.5 rounded border-2 border-gray-200 text-xs font-semibold bg-white hover:border-indigo-400 transition">Yes, often</button>
+          <button type="button" onclick="setSci('implied')" data-val="implied"
+            class="sci-btn px-3 py-1.5 rounded border-2 border-gray-200 text-xs font-semibold bg-white hover:border-indigo-400 transition active-sci">Keep it implied</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. Personal presence -->
+    <div class="section-card">
+      <div class="flex items-start mb-4">
+        <span class="step-num">5</span>
+        <div>
+          <h2 class="font-bold text-gray-900">Personal presence</h2>
+          <p class="text-sm text-gray-500 mt-0.5">How visible are you in the writing?</p>
+        </div>
+      </div>
+      <div id="presence-opts" class="space-y-2"></div>
+    </div>
+
+    <!-- 6. Commercial stance -->
+    <div class="section-card">
+      <div class="flex items-start mb-4">
+        <span class="step-num">6</span>
+        <div>
+          <h2 class="font-bold text-gray-900">Relationship to selling</h2>
+          <p class="text-sm text-gray-500 mt-0.5">How overt should the commercial angle be?</p>
+        </div>
+      </div>
+      <div id="commercial-opts" class="space-y-2"></div>
+    </div>
+
+    <!-- Submit -->
+    <div class="pb-16">
+      <div id="submit-error" class="hidden bg-red-50 border border-red-200 text-red-600 text-sm rounded-md px-4 py-3 mb-4"></div>
+      <button onclick="submitForm()" id="submit-btn"
+        class="w-full bg-indigo-600 text-white font-semibold py-4 rounded-lg hover:bg-indigo-700 transition text-base">
+        Submit my questionnaire →
+      </button>
+      <p class="text-xs text-gray-400 text-center mt-3">We'll review your answers and get in touch within 24 hours.</p>
+    </div>
+
+  </div><!-- /form-wrap -->
+
+<script>
+const ROLE_TIPS = {
+  mentor_coach: "Shares frameworks, lessons, and personal growth advice.",
+  product_ranker: "Publishes best-of lists, top 10s, and comparisons.",
+  product_guide: "Deep expert on one specific product or niche.",
+  reviewer: "Opinionated evaluations of specific things.",
+  travel_guide: "Destination and experience-led storytelling.",
+};
+
+const AUDIENCE_OPTS = [
+  { value: "c_suite_senior_leaders",       label: "C-suite & senior leaders" },
+  { value: "entrepreneurs_founders",        label: "Entrepreneurs & founders" },
+  { value: "coaches_consultants_speakers",  label: "Coaches, consultants & speakers" },
+  { value: "everyday_consumers_shoppers",   label: "Everyday consumers & shoppers" },
+  { value: "hobbyists_enthusiasts",         label: "Hobbyists & enthusiasts" },
+  { value: "travelers_experience_seekers",  label: "Travelers & experience seekers" },
+  { value: "professionals_specific_field",  label: "Professionals in a specific field" },
+];
+
+const PLATFORM_OPTS = [
+  { value: "linkedin_only", label: "LinkedIn posts only", desc: "Scroll-first, conversational, shorter form" },
+  { value: "blog_only",     label: "Blog articles only",  desc: "Evergreen, SEO-friendly, long form" },
+  { value: "both",          label: "Both — blog + LinkedIn adaptation", desc: "Full article as primary, LinkedIn as a shortened version" },
+];
+
+const TONE_OPTS = [
+  { value: "calm_authoritative",  label: "Calm, authoritative, science-led",    example: "Research on vocal load consistently shows that executives who speak under sustained stress compress their dynamic range — often without realising it." },
+  { value: "warm_reflective",     label: "Warm, reflective, quietly confident",  example: "There's a moment before a high-stakes conversation where most leaders tighten. I've watched it happen hundreds of times. The voice narrows before the room does." },
+  { value: "direct_insight_dense",label: "Direct, sharp, insight-dense",         example: "Most executive voice coaching fixes symptoms. The problem isn't delivery. It's the belief system underneath it." },
+  { value: "practical_expert",    label: "Conversational but expert",            example: "Here's what nobody tells you about confidence: it sounds different than you think it does." },
+  { value: "minimalist_executive",label: "Executive and minimal",                example: "Clarity is not a communication style. It is a leadership decision." },
+  { value: "custom",              label: "A distinct blend — I'll describe it",  example: null },
+];
+
+const PRESENCE_OPTS = [
+  { value: "first_person_frequent",  label: "First-person, personal",        desc: '"In my work with leaders…"' },
+  { value: "first_person_occasional",label: "Occasional personal anecdotes",  desc: "Mostly insight-led, personal moments used sparingly" },
+  { value: "insight_only",           label: "No personal anecdotes — insight only", desc: "The idea is the hero, not the person" },
+  { value: "third_person",           label: "Third-person brand voice",       desc: "Fully brand-led, no personal perspective" },
+];
+
+const COMMERCIAL_OPTS = [
+  { value: "invisible",       label: "Pure value, no selling",                desc: "Never reference services or products" },
+  { value: "soft_authority",  label: "Soft authority building",               desc: '"This is what I work on" — implied expertise only' },
+  { value: "gentle_cta",      label: "Gentle CTA at the end",                 desc: "One low-pressure invitation at the close" },
+  { value: "clear_invitation",label: "Clear invitation to work together",     desc: "Direct ask — book a call, join the programme, etc." },
+];
+
+let sciExplicitness = "implied";
+
+function renderOpts(containerId, opts, group) {
+  document.getElementById(containerId).innerHTML = opts.map(o => `
+    <div class="card-opt" data-val="${o.value}" data-group="${group}" onclick="selectOpt(this, '${group}')">
+      <div class="flex items-start gap-3">
+        <div class="opt-dot mt-0.5"></div>
+        <div class="flex-1">
+          <div class="text-sm font-semibold text-gray-800">${o.label}</div>
+          ${o.desc ? `<div class="text-xs text-gray-500 mt-0.5">${o.desc}</div>` : ''}
+          ${o.example ? `<div class="text-xs text-gray-400 italic mt-1.5 border-l-2 border-gray-200 pl-2">"${o.example}"</div>` : ''}
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function selectOpt(el, group) {
+  document.querySelectorAll(`[data-group="${group}"]`).forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+  if (group === 'tone') {
+    document.getElementById('custom-tone-wrap').classList.toggle('hidden', el.dataset.val !== 'custom');
+  }
+}
+
+function getSelected(group) {
+  return document.querySelector(`[data-group="${group}"].selected`)?.dataset.val || null;
+}
+
+function setSci(val) {
+  sciExplicitness = val;
+  document.querySelectorAll('.sci-btn').forEach(b => {
+    b.classList.toggle('border-indigo-500', b.dataset.val === val);
+    b.classList.toggle('bg-indigo-50', b.dataset.val === val);
+    b.classList.toggle('text-indigo-700', b.dataset.val === val);
+    b.classList.toggle('border-gray-200', b.dataset.val !== val);
+  });
+}
+
+function updateRoleTip() {
+  document.getElementById('role-tip').textContent = ROLE_TIPS[document.getElementById('brand_archetype').value] || '';
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  renderOpts('audience-opts',  AUDIENCE_OPTS,  'audience');
+  renderOpts('platform-opts',  PLATFORM_OPTS,  'platform');
+  renderOpts('tone-opts',      TONE_OPTS,       'tone');
+  renderOpts('presence-opts',  PRESENCE_OPTS,  'presence');
+  renderOpts('commercial-opts',COMMERCIAL_OPTS,'commercial');
+  updateRoleTip();
+  setSci('implied');
+});
+
+async function submitForm() {
+  const btn = document.getElementById('submit-btn');
+  const errEl = document.getElementById('submit-error');
+  errEl.classList.add('hidden');
+
+  const name  = document.getElementById('client_name').value.trim();
+  const email = document.getElementById('client_email').value.trim();
+  const about = document.getElementById('about').value.trim();
+
+  if (!name)  { showErr('Please enter your name.'); return; }
+  if (!email) { showErr('Please enter your email address.'); return; }
+  if (!about) { showErr('Please tell us what you write about.'); return; }
+  if (!getSelected('audience'))  { showErr('Please select your primary audience.'); return; }
+  if (!getSelected('platform'))  { showErr('Please select where your content will live.'); return; }
+  if (!getSelected('tone'))      { showErr('Please select a tone.'); return; }
+  if (!getSelected('presence'))  { showErr('Please select your personal presence.'); return; }
+  if (!getSelected('commercial')){ showErr('Please select your commercial stance.'); return; }
+
+  btn.textContent = 'Submitting…';
+  btn.disabled = true;
+
+  const data = {
+    client_name:      name,
+    client_email:     email,
+    website_url:      document.getElementById('website_url').value.trim(),
+    brand_archetype:  document.getElementById('brand_archetype').value,
+    about,
+    audience:         getSelected('audience'),
+    audience_context: document.getElementById('audience_context').value.trim(),
+    platform:         getSelected('platform'),
+    tone:             getSelected('tone'),
+    custom_tone:      document.getElementById('custom_tone').value.trim(),
+    science_explicitness: sciExplicitness,
+    personal_presence:   getSelected('presence'),
+    commercial_stance:   getSelected('commercial'),
+  };
+
+  try {
+    const res = await fetch('/api/submissions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    document.getElementById('form-wrap').classList.add('hidden');
+    document.getElementById('success-screen').classList.remove('hidden');
+  } catch (e) {
+    showErr('Something went wrong. Please try again.');
+    btn.textContent = 'Submit my questionnaire →';
+    btn.disabled = false;
+  }
+}
+
+function showErr(msg) {
+  const el = document.getElementById('submit-error');
+  el.textContent = msg;
+  el.classList.remove('hidden');
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+</script>
+</body>
+</html>
