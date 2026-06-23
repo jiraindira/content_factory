@@ -314,15 +314,21 @@ class Cadence(SchemaBase):
 
     @model_validator(mode="after")
     def _validate_custom(self) -> "Cadence":
-        if self.publication_cadence == PublicationCadence.custom and not self.preferred_publish_days:
-            raise ValueError("cadence.preferred_publish_days is required when publication_cadence=custom")
         return self
+
+
+class ContentSlot(SchemaBase):
+    day: Weekday
+    type: str  # "long_blog" | "short_snippet"
 
 
 class BrandProfile(SchemaBase):
     brand_id: str
+    client_name: Optional[str] = None
+    client_email: Optional[str] = None
     brand_archetype: BrandArchetype
-    package_size: Optional[PackageSize] = None
+    package_size: Optional[int] = None
+    content_slots: List[ContentSlot] = Field(default_factory=list)
 
     brand_sources: BrandSources
 

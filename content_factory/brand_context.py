@@ -305,9 +305,15 @@ def build_brand_context_artifact(
                 )
             )
 
-    failures = [s for s in fetched if not s.ok]
-    if failures:
-        msg = "\n".join(f"- {s.source_id}: {s.error}" for s in failures)
+    required_purposes = {p.value for p in brand.brand_sources.require_at_least_one_of_purposes}
+    hard_failures = [s for s in fetched if not s.ok and s.purpose in required_purposes]
+    soft_failures = [s for s in fetched if not s.ok and s.purpose not in required_purposes]
+    if soft_failures:
+        import warnings
+        for s in soft_failures:
+            warnings.warn(f"Brand source skipped ({s.source_id}): {s.error}")
+    if hard_failures:
+        msg = "\n".join(f"- {s.source_id}: {s.error}" for s in hard_failures)
         raise ValueError(f"Brand source ingestion failed:\n{msg}")
 
     signals = _merge_signals(extracted)

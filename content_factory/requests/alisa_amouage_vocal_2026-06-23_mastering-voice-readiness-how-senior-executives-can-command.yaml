@@ -1,0 +1,16 @@
+brand_id: alisa_amouage_vocal
+publish:
+  publish_date: '2026-06-23'
+intent: thought_leadership
+form: core_insight_essay
+domain: leadership
+topic:
+  mode: manual
+  value: 'Mastering Voice Readiness: How Senior Executives Can Command Attention Before
+    Every Public Engagement'
+delivery_target:
+  destination: hosted_by_us
+  channel: blog_article
+products:
+  mode: none
+  items: []

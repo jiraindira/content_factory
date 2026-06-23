@@ -113,6 +113,13 @@
       z-index: 999;
       box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     }
+    .prose h1 { font-size: 1.4rem; font-weight: 700; margin: 1.2rem 0 0.6rem; }
+    .prose h2 { font-size: 1.15rem; font-weight: 700; margin: 1.4rem 0 0.5rem; color: #111827; }
+    .prose h3 { font-size: 1rem; font-weight: 600; margin: 1.2rem 0 0.4rem; }
+    .prose p  { margin: 0.7rem 0; line-height: 1.75; }
+    .prose strong { font-weight: 600; }
+    .prose em { font-style: italic; }
+    .prose hr { border: none; border-top: 1px solid #e5e7eb; margin: 1.5rem 0; }
     #error-toast {
       position: fixed; bottom: 2rem; right: 2rem;
       background: #dc2626; color: white;
@@ -145,6 +152,11 @@
         <button onclick="showTopics()"
           class="w-full py-2 px-3 rounded-md text-sm font-semibold text-indigo-600 border border-indigo-200 hover:bg-indigo-50 transition">
           ✦ Topics
+        </button>
+        <button onclick="showReview()"
+          class="w-full py-2 px-3 rounded-md text-sm font-semibold text-indigo-600 border border-indigo-200 hover:bg-indigo-50 transition flex items-center justify-between">
+          <span>Review content</span>
+          <span id="review-badge" class="hidden bg-amber-400 text-white text-xs font-bold px-1.5 py-0.5 rounded-full"></span>
         </button>
         <button onclick="deleteClient()"
           class="w-full py-2 px-3 rounded-md text-sm font-semibold text-red-500 border border-red-200 hover:bg-red-50 transition">
@@ -437,12 +449,62 @@
 
       </div><!-- /topics-area -->
 
+      <!-- ── Review panel ────────────────────────────────────────────── -->
+      <div id="review-area" class="hidden">
+
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <button onclick="showForm()" class="text-sm text-indigo-600 hover:underline mb-1 block">← Back to profile</button>
+            <h2 class="text-xl font-bold text-gray-900">Review content — <span id="review-client-name"></span></h2>
+            <p class="text-sm text-gray-500 mt-0.5">Approve to send to the client, or reject to put the topic back in the queue.</p>
+          </div>
+        </div>
+
+        <!-- Article list -->
+        <div id="review-list" class="space-y-3 mb-6"></div>
+
+        <!-- Article reader (shown when an article is selected) -->
+        <div id="article-reader" class="hidden">
+          <div class="section-card mb-4">
+            <div class="flex items-start justify-between mb-4">
+              <div>
+                <span id="reader-slot-badge" class="text-xs font-semibold uppercase tracking-wide text-gray-400"></span>
+                <h3 id="reader-title" class="text-lg font-bold text-gray-900 mt-1"></h3>
+              </div>
+              <button onclick="closeReader()" class="text-gray-300 hover:text-gray-500 text-2xl leading-none ml-4">×</button>
+            </div>
+            <div id="reader-body" class="prose text-sm text-gray-700 leading-relaxed"></div>
+          </div>
+
+          <!-- Action bar -->
+          <div class="section-card">
+            <div class="flex items-center justify-between">
+              <div id="reject-form" class="flex items-center gap-3 flex-1 mr-4">
+                <input type="text" id="rejection-note" placeholder="Optional note (why rejected)…"
+                  class="flex-1 text-sm" style="max-width:340px"/>
+                <button onclick="rejectArticle()"
+                  class="py-2 px-4 rounded-md border border-red-200 text-red-500 text-sm font-semibold hover:bg-red-50 transition">
+                  Reject
+                </button>
+              </div>
+              <button onclick="approveArticle()"
+                class="py-2 px-6 rounded-md bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition whitespace-nowrap">
+                ✓ Approve &amp; send to client
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /review-area -->
+
     </div>
   </main>
 </div>
 
 <div id="toast">✓ Client profile saved</div>
 <div id="delete-toast" style="position:fixed;bottom:2rem;right:2rem;background:#374151;color:white;padding:0.75rem 1.5rem;border-radius:0.5rem;font-weight:500;display:none;z-index:999;">Client deleted</div>
+<div id="approve-toast" style="position:fixed;bottom:2rem;right:2rem;background:#059669;color:white;padding:0.75rem 1.5rem;border-radius:0.5rem;font-weight:500;display:none;z-index:999;">✓ Approved &amp; sent to client</div>
+<div id="reject-toast" style="position:fixed;bottom:2rem;right:2rem;background:#374151;color:white;padding:0.75rem 1.5rem;border-radius:0.5rem;font-weight:500;display:none;z-index:999;">Topic returned to queue</div>
 <div id="error-toast">⚠ Error saving — check console</div>
 
 <script>
@@ -718,6 +780,15 @@ async function loadClient(brandId) {
   const ci = document.getElementById(`ci-${brandId}`);
   if (ci) ci.classList.add('active');
   document.getElementById('client-actions').classList.remove('hidden');
+  // load review badge count
+  fetch(`/api/brands/${brandId}/generated`)
+    .then(r => r.ok ? r.json() : [])
+    .then(items => {
+      const pending = items.filter(i => i.status === 'pending_review').length;
+      const badge = document.getElementById('review-badge');
+      badge.textContent = pending;
+      badge.classList.toggle('hidden', pending === 0);
+    });
 }
 
 function newClient() {
@@ -980,18 +1051,138 @@ function setChips(containerId, vals) {
   });
 }
 
-// ── Topic review ──────────────────────────────────────────────────────────────
-let topicTitles = [];
+// ── Review panel ─────────────────────────────────────────────────────────────
+let generatedItems = [];
+let activeRunId = null;
 
 function showForm() {
   document.getElementById("form-area").classList.remove("hidden");
   document.getElementById("topics-area").classList.add("hidden");
+  document.getElementById("review-area").classList.add("hidden");
 }
+
+async function showReview() {
+  if (!currentBrandId) return;
+  document.getElementById("form-area").classList.add("hidden");
+  document.getElementById("topics-area").classList.add("hidden");
+  document.getElementById("review-area").classList.remove("hidden");
+  document.getElementById("review-client-name").textContent =
+    document.getElementById("client_name").value || currentBrandId;
+  closeReader();
+  await loadGeneratedList();
+}
+
+async function loadGeneratedList() {
+  const res = await fetch(`/api/brands/${currentBrandId}/generated`);
+  generatedItems = res.ok ? await res.json() : [];
+  renderGeneratedList();
+  updateReviewBadge();
+}
+
+function renderGeneratedList() {
+  const el = document.getElementById("review-list");
+  if (!generatedItems.length) {
+    el.innerHTML = `<p class="text-sm text-gray-400 text-center py-8">No content generated yet.</p>`;
+    return;
+  }
+  el.innerHTML = generatedItems.map(item => {
+    const statusCfg = {
+      pending_review: { label: "Pending review", cls: "bg-amber-100 text-amber-700 border-amber-200" },
+      approved: { label: "Approved", cls: "bg-emerald-100 text-emerald-700 border-emerald-200" },
+      rejected: { label: "Rejected", cls: "bg-red-100 text-red-600 border-red-200" },
+    }[item.status] || { label: item.status, cls: "bg-gray-100 text-gray-500 border-gray-200" };
+
+    const typeLabel = item.slot_type === "short_snippet" ? "Short snippet" : "Long blog";
+    return `
+      <div class="section-card !py-3 !px-4 flex items-center gap-4 cursor-pointer hover:border-indigo-300 transition"
+           onclick="openArticle('${item.run_id}')">
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-semibold text-gray-900 truncate">${item.topic}</div>
+          <div class="text-xs text-gray-400 mt-0.5">${typeLabel} · ${item.generated_at}</div>
+        </div>
+        <span class="text-xs font-semibold px-2.5 py-1 rounded-full border whitespace-nowrap ${statusCfg.cls}">
+          ${statusCfg.label}
+        </span>
+      </div>`;
+  }).join('');
+}
+
+function updateReviewBadge() {
+  const pending = generatedItems.filter(i => i.status === "pending_review").length;
+  const badge = document.getElementById("review-badge");
+  if (pending > 0) {
+    badge.textContent = pending;
+    badge.classList.remove("hidden");
+  } else {
+    badge.classList.add("hidden");
+  }
+}
+
+async function openArticle(runId) {
+  activeRunId = runId;
+  const res = await fetch(`/api/brands/${currentBrandId}/generated/${runId}`);
+  if (!res.ok) return;
+  const data = await res.json();
+
+  document.getElementById("reader-title").textContent = data.topic || "";
+  document.getElementById("reader-slot-badge").textContent =
+    data.slot_type === "short_snippet" ? "Short snippet" : "Long blog";
+  document.getElementById("reader-body").innerHTML = mdToHtml(data.content || "");
+  document.getElementById("rejection-note").value = "";
+  document.getElementById("article-reader").classList.remove("hidden");
+  document.getElementById("article-reader").scrollIntoView({ behavior: "smooth" });
+}
+
+function closeReader() {
+  activeRunId = null;
+  document.getElementById("article-reader").classList.add("hidden");
+}
+
+async function approveArticle() {
+  if (!activeRunId) return;
+  const res = await fetch(`/api/brands/${currentBrandId}/generated/${activeRunId}/approve`, { method: "POST" });
+  if (!res.ok) { showToast("error-toast"); return; }
+  closeReader();
+  await loadGeneratedList();
+  showToast("approve-toast");
+}
+
+async function rejectArticle() {
+  if (!activeRunId) return;
+  const note = document.getElementById("rejection-note").value.trim();
+  const res = await fetch(`/api/brands/${currentBrandId}/generated/${activeRunId}/reject`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ note }),
+  });
+  if (!res.ok) { showToast("error-toast"); return; }
+  closeReader();
+  await loadGeneratedList();
+  showToast("reject-toast");
+}
+
+function mdToHtml(md) {
+  return md
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/^# (.+)$/gm, "<h1>$1</h1>")
+    .replace(/^## (.+)$/gm, "<h2>$1</h2>")
+    .replace(/^### (.+)$/gm, "<h3>$3</h3>")
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.+?)\*/g, "<em>$1</em>")
+    .replace(/^---$/gm, "<hr/>")
+    .replace(/\n\n/g, "</p><p>")
+    .replace(/^(?!<[h|p|h])/gm, "")
+    .split("\n").map(l => l.match(/^<(h[123]|hr|p)/) ? l : `<p>${l}</p>`).join("\n");
+}
+
+// ── Topic review ──────────────────────────────────────────────────────────────
+let topicTitles = [];
 
 async function showTopics() {
   if (!currentBrandId) return;
   document.getElementById("form-area").classList.add("hidden");
   document.getElementById("topics-area").classList.remove("hidden");
+  document.getElementById("review-area").classList.add("hidden");
 
   const name = document.getElementById("client_name").value || currentBrandId;
   document.getElementById("topics-client-name").textContent = name;

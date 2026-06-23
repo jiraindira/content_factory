@@ -1,0 +1,72 @@
+{
+  "artifact_version": "1.0",
+  "brand_id": "alisa_amouage_vocal",
+  "generated_at": "2026-06-23T12:56:13.735164+00:00",
+  "fetch_user_agent": "AIContentFactoryFetcher-1.0",
+  "sources": [
+    {
+      "source_id": "homepage",
+      "kind": "url",
+      "purpose": "homepage",
+      "ref": "https://www.alisaamouage.com/",
+      "fetched_at": "2026-06-23T12:56:12.788775+00:00",
+      "ok": true,
+      "sha256": "3be737bc7f41b80137be64f793c6575bf49d22d78620c680a588aeaed14e5bd2",
+      "bytes_length": 218585,
+      "http_status": 200,
+      "robots_allowed": true
+    },
+    {
+      "source_id": "linkedin",
+      "kind": "url",
+      "purpose": "linkedin_profile",
+      "ref": "https://www.linkedin.com/in/alisa-amouage/",
+      "fetched_at": "2026-06-23T12:56:13.330534+00:00",
+      "ok": false,
+      "error": "robots.txt disallows fetching this URL"
+    }
+  ],
+  "signals": {
+    "titles": [
+      "Alisa Amouage"
+    ],
+    "headings": [
+      "A Voice That Moves Hearts and Elevates Moments.",
+      "Performance Photos",
+      "Recent Performances"
+    ],
+    "descriptions": [],
+    "positioning_snippets": [
+      "A Voice That Moves Hearts and Elevates Moments.",
+      "Performance Photos",
+      "Recent Performances"
+    ],
+    "key_terms": [
+      "alisa",
+      "amouage",
+      "voice",
+      "hcmc",
+      "menu",
+      "her",
+      "readiness",
+      "programme",
+      "executive",
+      "coach",
+      "professional",
+      "singer",
+      "e-learning",
+      "courses",
+      "blog",
+      "contact",
+      "bar",
+      "amp",
+      "anniversary",
+      "open",
+      "close",
+      "performances",
+      "saigon",
+      "whisky",
+      "dinner"
+    ]
+  }
+}
