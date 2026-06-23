@@ -71,6 +71,7 @@ def send_review_email(
     if not OPERATOR_EMAIL:
         raise ValueError("OPERATOR_EMAIL is not set in .env")
 
+    topic_title = " ".join(topic_title.split())  # collapse any whitespace/newlines
     content_type = "Long blog" if slot_type == "long_blog" else "Short snippet"
     html_content = _md_to_html(content_markdown)
 
@@ -122,6 +123,7 @@ def send_delivery_email(
         raise ValueError("client_email is empty")
 
     # Detect sandbox: if client_email differs from operator, send to operator with a note
+    topic_title = " ".join(topic_title.split())
     sandbox = client_email.strip().lower() != OPERATOR_EMAIL.lower()
     to_address = OPERATOR_EMAIL if sandbox else client_email
     html_content = _md_to_html(content_markdown)
