@@ -1,0 +1,45 @@
+name: Content Scheduler
+
+on:
+  schedule:
+    # Runs at 7:00 AM UTC daily — adjust to match your clients' time zones
+    - cron: '0 7 * * *'
+  workflow_dispatch:
+    # Allow manual trigger from GitHub Actions UI (useful for testing)
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # needed to commit generated files back
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Poetry
+        run: pip install poetry==1.8.3
+
+      - name: Install dependencies
+        run: poetry install --no-root
+
+      - name: Run scheduler
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_MODEL: gpt-4.1-mini
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          OPERATOR_EMAIL: ${{ secrets.OPERATOR_EMAIL }}
+        run: poetry run python scheduler.py
+
+      - name: Commit generated content
+        run: |
+          git config user.name "Content Factory Bot"
+          git config user.email "bot@content-factory.ai"
+          git add content_factory/generated/ content_factory/topics/ content_factory/requests/ content_factory/artifacts/
+          git diff --staged --quiet && echo "Nothing to commit" || git commit -m "chore: scheduled content $(date +%Y-%m-%d)"
+          git push
