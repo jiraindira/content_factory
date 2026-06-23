@@ -159,9 +159,9 @@ def send_delivery_email(
     if not client_email:
         raise ValueError("client_email is empty")
 
-    # Detect sandbox: if client_email differs from operator, send to operator with a note
     topic_title = " ".join(topic_title.split())
-    sandbox = client_email.strip().lower() != OPERATOR_EMAIL.lower()
+    # Sandbox = still on resend.dev address; custom domain = send direct to client
+    sandbox = "resend.dev" in FROM_ADDRESS
     to_address = OPERATOR_EMAIL if sandbox else client_email
     html_content = _md_to_html(content_markdown)
 
