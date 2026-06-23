@@ -129,6 +129,9 @@
       display: none;
       z-index: 999;
     }
+    .tab-btn { padding: 0.5rem 1rem; font-size: 0.875rem; font-weight: 500; color: #6b7280; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s; cursor: pointer; background: none; border-top: none; border-left: none; border-right: none; }
+    .tab-btn:hover { color: #1f2937; }
+    .tab-btn.active { color: #4f46e5; border-bottom-color: #4f46e5; font-weight: 600; }
   </style>
 </head>
 <body class="bg-gray-50 font-sans text-gray-900">
@@ -139,7 +142,7 @@
   <aside class="w-64 bg-white border-r border-gray-200 flex flex-col flex-shrink-0">
     <div class="p-5 border-b border-gray-200">
       <div class="text-xs font-semibold text-indigo-600 uppercase tracking-widest mb-1">Content Factory</div>
-      <h1 class="text-base font-bold text-gray-900">Admin</h1>
+      <h1 class="text-base font-bold text-gray-900 cursor-pointer" onclick="showDashboard()">Admin</h1>
     </div>
     <div class="p-4 flex-1 overflow-y-auto">
       <button onclick="showSubmissions()"
@@ -159,27 +162,58 @@
           Sign out
         </a>
       </div>
-      <div id="client-actions" class="hidden mt-4 pt-4 border-t border-gray-100 space-y-2">
-        <button onclick="showTopics()"
-          class="w-full py-2 px-3 rounded-md text-sm font-semibold text-indigo-600 border border-indigo-200 hover:bg-indigo-50 transition">
-          ✦ Topics
-        </button>
-        <button onclick="showReview()"
-          class="w-full py-2 px-3 rounded-md text-sm font-semibold text-indigo-600 border border-indigo-200 hover:bg-indigo-50 transition flex items-center justify-between">
-          <span>Review content</span>
-          <span id="review-badge" class="hidden bg-amber-400 text-white text-xs font-bold px-1.5 py-0.5 rounded-full"></span>
-        </button>
-        <button onclick="deleteClient()"
-          class="w-full py-2 px-3 rounded-md text-sm font-semibold text-red-500 border border-red-200 hover:bg-red-50 transition">
-          Delete this client
-        </button>
-      </div>
     </div>
   </aside>
 
   <!-- Main -->
   <main class="flex-1 overflow-y-auto">
     <div class="max-w-2xl mx-auto py-10 px-6">
+
+      <!-- ── Dashboard ──────────────────────────────────────────────────── -->
+      <div id="dashboard-area" class="hidden">
+        <div class="mb-8">
+          <h2 id="dashboard-greeting" class="text-2xl font-bold text-gray-900 mb-1">Good morning</h2>
+          <p class="text-sm text-gray-500">Here's what needs your attention today.</p>
+        </div>
+
+        <!-- Summary cards -->
+        <div class="grid grid-cols-3 gap-4 mb-8" id="dashboard-cards">
+          <div class="section-card !mb-0 text-center">
+            <div id="dash-total" class="text-3xl font-bold text-indigo-600 mb-1">—</div>
+            <div class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Total clients</div>
+          </div>
+          <div class="section-card !mb-0 text-center">
+            <div id="dash-pending" class="text-3xl font-bold text-amber-500 mb-1">—</div>
+            <div class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Pending reviews</div>
+          </div>
+          <div class="section-card !mb-0 text-center">
+            <div id="dash-submissions" class="text-3xl font-bold text-indigo-400 mb-1">—</div>
+            <div class="text-xs font-semibold text-gray-500 uppercase tracking-wide">New submissions</div>
+          </div>
+        </div>
+
+        <!-- Needs attention -->
+        <div id="dash-attention-wrap">
+          <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">Needs attention</h3>
+          <div id="dash-attention-list" class="space-y-2"></div>
+        </div>
+      </div>
+
+      <!-- ── Client tab bar ─────────────────────────────────────────────── -->
+      <div id="client-tab-bar" class="hidden mb-6 border-b border-gray-200">
+        <div class="mb-4">
+          <h2 id="tab-client-name" class="text-xl font-bold text-gray-900"></h2>
+          <p id="tab-client-email" class="text-sm text-gray-500 mt-0.5"></p>
+        </div>
+        <div class="flex gap-1">
+          <button class="tab-btn" data-tab="profile" onclick="switchTab('profile')">Profile</button>
+          <button class="tab-btn" data-tab="topics" onclick="switchTab('topics')">Topics</button>
+          <button class="tab-btn" data-tab="content" onclick="switchTab('content')">
+            Content
+            <span id="content-tab-badge" class="hidden bg-amber-400 text-white text-xs font-bold px-1.5 py-0.5 rounded-full ml-1"></span>
+          </button>
+        </div>
+      </div>
 
       <div id="form-area">
 
@@ -420,8 +454,6 @@
 
         <div class="flex items-center justify-between mb-6">
           <div>
-            <button onclick="showForm()" class="text-sm text-indigo-600 hover:underline mb-1 block">← Back to profile</button>
-            <h2 class="text-xl font-bold text-gray-900">Topics for <span id="topics-client-name"></span></h2>
             <p class="text-sm text-gray-500 mt-0.5">Review and edit before approving. Once approved these are locked in for production.</p>
           </div>
           <div id="topics-status-badge"></div>
@@ -465,8 +497,6 @@
 
         <div class="flex items-center justify-between mb-6">
           <div>
-            <button onclick="showForm()" class="text-sm text-indigo-600 hover:underline mb-1 block">← Back to profile</button>
-            <h2 class="text-xl font-bold text-gray-900">Review content — <span id="review-client-name"></span></h2>
             <p class="text-sm text-gray-500 mt-0.5">Approve to send to the client, or reject to put the topic back in the queue.</p>
           </div>
         </div>
@@ -512,7 +542,7 @@
       <div id="submissions-area" class="hidden">
         <div class="flex items-center justify-between mb-6">
           <div>
-            <button onclick="showForm()" class="text-sm text-indigo-600 hover:underline mb-1 block">← Back to clients</button>
+            <button onclick="showDashboard()" class="text-sm text-indigo-600 hover:underline mb-1 block">← Back to dashboard</button>
             <h2 class="text-xl font-bold text-gray-900">Intake submissions</h2>
             <p class="text-sm text-gray-500 mt-0.5">Review and activate new client questionnaires.</p>
           </div>
@@ -686,6 +716,7 @@ let currentPackage = null;
 let sciExplicitness = "implied";
 let slots = [{ day: "mon", type: "long_blog" }];
 let currentBrandId = null;
+let currentTab = 'profile';
 
 // ── Init ─────────────────────────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", () => {
@@ -696,13 +727,7 @@ document.addEventListener("DOMContentLoaded", () => {
   renderCardOpts("commercial-opts", COMMERCIAL_OPTS, "commercial", false, true);
   renderSlots();
   updateRoleTip();
-  loadClientList();
-  // load submissions badge
-  fetch('/api/submissions').then(r => r.ok ? r.json() : []).then(items => {
-    const pending = items.filter(i => i.status === 'submitted').length;
-    const badge = document.getElementById('submissions-badge');
-    if (badge) { badge.textContent = pending; badge.classList.toggle('hidden', pending === 0); }
-  });
+  showDashboard();
 });
 
 // ── Render helpers ────────────────────────────────────────────────────────────
@@ -837,18 +862,138 @@ function toggleDisclaimer() {
   document.getElementById("disclaimer-fields").classList.toggle("hidden", !checked);
 }
 
-// ── Client list ───────────────────────────────────────────────────────────────
-async function loadClientList() {
-  const res = await fetch("/api/brands");
-  const brands = await res.json();
+// ── Tab switching ─────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tab === tab);
+  });
+  document.getElementById('form-area').classList.toggle('hidden', tab !== 'profile');
+  document.getElementById('topics-area').classList.toggle('hidden', tab !== 'topics');
+  document.getElementById('review-area').classList.toggle('hidden', tab !== 'content');
+  document.getElementById('submissions-area').classList.add('hidden');
+  document.getElementById('dashboard-area').classList.add('hidden');
+  document.getElementById('client-tab-bar').classList.remove('hidden');
+  if (tab === 'topics' && currentBrandId) _loadTopicsPanel();
+  if (tab === 'content' && currentBrandId) _loadReviewPanel();
+}
+
+async function _loadTopicsPanel() {
+  try {
+    const res = await fetch(`/api/brands/${currentBrandId}/topics`);
+    if (res.ok) {
+      const data = await res.json();
+      topicTitles = data.topics.map(t => t.title);
+      renderTopics();
+      renderTopicsStatus(data.status);
+      return;
+    }
+  } catch {}
+  topicTitles = [];
+  renderTopics();
+  renderTopicsStatus(null);
+}
+
+async function _loadReviewPanel() {
+  closeReader();
+  await loadGeneratedList();
+}
+
+// ── Dashboard ─────────────────────────────────────────────────────────────────
+function showDashboard() {
+  currentBrandId = null;
+  document.getElementById('dashboard-area').classList.remove('hidden');
+  document.getElementById('form-area').classList.add('hidden');
+  document.getElementById('topics-area').classList.add('hidden');
+  document.getElementById('review-area').classList.add('hidden');
+  document.getElementById('submissions-area').classList.add('hidden');
+  document.getElementById('client-tab-bar').classList.add('hidden');
+  document.querySelectorAll('.client-item').forEach(el => el.classList.remove('active'));
+  loadDashboard();
+}
+
+async function loadDashboard() {
+  // Greeting
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  document.getElementById('dashboard-greeting').textContent = greeting;
+
+  // Fetch status + submissions in parallel
+  const [statusRes, subRes] = await Promise.all([
+    fetch('/api/status'),
+    fetch('/api/submissions'),
+  ]);
+
+  const statusData = statusRes.ok ? await statusRes.json() : {};
+  const subItems = subRes.ok ? await subRes.json() : [];
+
+  // Update submissions badge
+  const pendingSubs = subItems.filter(i => i.status === 'submitted').length;
+  const subBadge = document.getElementById('submissions-badge');
+  if (subBadge) { subBadge.textContent = pendingSubs; subBadge.classList.toggle('hidden', pendingSubs === 0); }
+
+  // Summary cards
+  const totalClients = Object.keys(statusData).length;
+  const totalPendingReview = Object.values(statusData).reduce((sum, s) => sum + (s.pending_review_count || 0), 0);
+  document.getElementById('dash-total').textContent = totalClients;
+  document.getElementById('dash-pending').textContent = totalPendingReview;
+  document.getElementById('dash-submissions').textContent = pendingSubs;
+
+  // Render client list with badges
+  _renderClientList(statusData);
+
+  // Needs attention
+  const attnList = document.getElementById('dash-attention-list');
+  const attnItems = Object.entries(statusData).filter(([, s]) => s.pending_review_count > 0);
+  if (!attnItems.length) {
+    attnList.innerHTML = '<p class="text-sm text-gray-400">Nothing pending — you\'re all caught up.</p>';
+  } else {
+    attnList.innerHTML = attnItems.map(([bid, s]) => `
+      <div class="section-card !py-3 !px-4 flex items-center gap-4 cursor-pointer hover:border-indigo-300 transition"
+           onclick="loadClient('${bid}'); switchTab('content')">
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-semibold text-gray-900">${s.client_name || bid}</div>
+          <div class="text-xs text-gray-500 mt-0.5">${s.pending_review_count} article${s.pending_review_count !== 1 ? 's' : ''} pending review</div>
+        </div>
+        <span class="bg-amber-400 text-white text-xs font-bold px-2 py-1 rounded-full">${s.pending_review_count}</span>
+      </div>
+    `).join('');
+  }
+}
+
+function _renderClientList(statusData) {
   const el = document.getElementById("client-list");
+  const brands = Object.keys(statusData);
   if (!brands.length) {
     el.innerHTML = '<p class="text-xs text-gray-400 px-1">No clients yet</p>';
     return;
   }
-  el.innerHTML = brands.map(b => `
-    <div class="client-item ${b === currentBrandId ? 'active' : ''}" id="ci-${b}" onclick="loadClient('${b}')">${b}</div>
-  `).join('');
+  // Sort alphabetically by client_name
+  brands.sort((a, b) => {
+    const na = (statusData[a] && statusData[a].client_name) || a;
+    const nb = (statusData[b] && statusData[b].client_name) || b;
+    return na.localeCompare(nb);
+  });
+  el.innerHTML = brands.map(b => {
+    const s = statusData[b] || {};
+    const displayName = s.client_name || b;
+    const pendingCount = s.pending_review_count || 0;
+    return `
+      <div class="client-item flex items-center justify-between" id="ci-${b}" onclick="loadClient('${b}')">
+        <span class="text-sm truncate">${displayName}</span>
+        <div class="flex gap-1 items-center">
+          ${pendingCount > 0 ? `<span class="bg-amber-400 text-white text-xs font-bold w-4 h-4 rounded-full flex items-center justify-center">${pendingCount}</span>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ── Client list ───────────────────────────────────────────────────────────────
+async function loadClientList() {
+  const statusRes = await fetch('/api/status');
+  const statusData = statusRes.ok ? await statusRes.json() : {};
+  _renderClientList(statusData);
 }
 
 async function loadClient(brandId) {
@@ -860,24 +1005,26 @@ async function loadClient(brandId) {
   document.querySelectorAll('.client-item').forEach(el => el.classList.remove('active'));
   const ci = document.getElementById(`ci-${brandId}`);
   if (ci) ci.classList.add('active');
-  document.getElementById('client-actions').classList.remove('hidden');
-  // load review badge count
-  fetch(`/api/brands/${brandId}/generated`)
-    .then(r => r.ok ? r.json() : [])
-    .then(items => {
-      const pending = items.filter(i => i.status === 'pending_review').length;
-      const badge = document.getElementById('review-badge');
-      badge.textContent = pending;
-      badge.classList.toggle('hidden', pending === 0);
-    });
+
+  // Update tab bar
+  document.getElementById('tab-client-name').textContent = d.client_name || brandId;
+  document.getElementById('tab-client-email').textContent = d.client_email || '';
+
+  switchTab(currentTab);
 }
 
 function newClient() {
   currentBrandId = null;
   resetForm();
   document.querySelectorAll('.client-item').forEach(el => el.classList.remove('active'));
-  document.getElementById('client-actions').classList.add('hidden');
-  showForm();
+  // Show profile form without tab bar (new client has no brand_id yet)
+  document.getElementById('dashboard-area').classList.add('hidden');
+  document.getElementById('form-area').classList.remove('hidden');
+  document.getElementById('topics-area').classList.add('hidden');
+  document.getElementById('review-area').classList.add('hidden');
+  document.getElementById('submissions-area').classList.add('hidden');
+  document.getElementById('client-tab-bar').classList.add('hidden');
+  currentTab = 'profile';
 }
 
 async function deleteClient() {
@@ -887,9 +1034,9 @@ async function deleteClient() {
   if (!res.ok) { showToast('error-toast'); return; }
   currentBrandId = null;
   resetForm();
-  document.getElementById('client-actions').classList.add('hidden');
   loadClientList();
   showToast('delete-toast');
+  showDashboard();
 }
 
 // ── Populate form from loaded data ────────────────────────────────────────────
@@ -1107,6 +1254,13 @@ async function saveClient() {
     if (!res.ok) throw new Error(await res.text());
     currentBrandId = brand_id;
     showToast("toast");
+    // Show tab bar now that we have a brand_id
+    document.getElementById('tab-client-name').textContent = data.client_name || brand_id;
+    document.getElementById('tab-client-email').textContent = data.client_email || '';
+    document.getElementById('client-tab-bar').classList.remove('hidden');
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.tab === 'profile');
+    });
     loadClientList();
   } catch (e) {
     console.error(e);
@@ -1139,8 +1293,11 @@ let actPackage = null;
 let actSlots = [{ day: 'mon', type: 'long_blog' }];
 
 async function showSubmissions() {
-  showForm();
+  document.getElementById('dashboard-area').classList.add('hidden');
   document.getElementById('form-area').classList.add('hidden');
+  document.getElementById('topics-area').classList.add('hidden');
+  document.getElementById('review-area').classList.add('hidden');
+  document.getElementById('client-tab-bar').classList.add('hidden');
   document.getElementById('submissions-area').classList.remove('hidden');
   await loadSubmissionsList();
 }
@@ -1284,28 +1441,23 @@ let generatedItems = [];
 let activeRunId = null;
 
 function showForm() {
-  document.getElementById("form-area").classList.remove("hidden");
-  document.getElementById("topics-area").classList.add("hidden");
-  document.getElementById("review-area").classList.add("hidden");
-  document.getElementById("submissions-area").classList.add("hidden");
+  if (currentBrandId) {
+    switchTab('profile');
+  } else {
+    showDashboard();
+  }
 }
 
 async function showReview() {
   if (!currentBrandId) return;
-  document.getElementById("form-area").classList.add("hidden");
-  document.getElementById("topics-area").classList.add("hidden");
-  document.getElementById("review-area").classList.remove("hidden");
-  document.getElementById("review-client-name").textContent =
-    document.getElementById("client_name").value || currentBrandId;
-  closeReader();
-  await loadGeneratedList();
+  switchTab('content');
 }
 
 async function loadGeneratedList() {
   const res = await fetch(`/api/brands/${currentBrandId}/generated`);
   generatedItems = res.ok ? await res.json() : [];
   renderGeneratedList();
-  updateReviewBadge();
+  updateContentTabBadge();
 }
 
 function renderGeneratedList() {
@@ -1336,14 +1488,12 @@ function renderGeneratedList() {
   }).join('');
 }
 
-function updateReviewBadge() {
+function updateContentTabBadge() {
   const pending = generatedItems.filter(i => i.status === "pending_review").length;
-  const badge = document.getElementById("review-badge");
-  if (pending > 0) {
+  const badge = document.getElementById("content-tab-badge");
+  if (badge) {
     badge.textContent = pending;
-    badge.classList.remove("hidden");
-  } else {
-    badge.classList.add("hidden");
+    badge.classList.toggle('hidden', pending === 0);
   }
 }
 
@@ -1409,28 +1559,7 @@ let topicTitles = [];
 
 async function showTopics() {
   if (!currentBrandId) return;
-  document.getElementById("form-area").classList.add("hidden");
-  document.getElementById("topics-area").classList.remove("hidden");
-  document.getElementById("review-area").classList.add("hidden");
-
-  const name = document.getElementById("client_name").value || currentBrandId;
-  document.getElementById("topics-client-name").textContent = name;
-
-  // try loading existing topics
-  try {
-    const res = await fetch(`/api/brands/${currentBrandId}/topics`);
-    if (res.ok) {
-      const data = await res.json();
-      topicTitles = data.topics.map(t => t.title);
-      renderTopics();
-      renderTopicsStatus(data.status);
-      return;
-    }
-  } catch {}
-
-  topicTitles = [];
-  renderTopics();
-  renderTopicsStatus(null);
+  switchTab('topics');
 }
 
 function renderTopicsStatus(status) {

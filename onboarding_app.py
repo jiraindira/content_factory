@@ -416,6 +416,65 @@ async def reject_generated(brand_id: str, run_id: str, request: Request):
     return {"rejected": True}
 
 
+# ── Status endpoint ───────────────────────────────────────────────────────────
+@app.get("/api/status", dependencies=[Depends(api_auth)])
+def get_status():
+    result = {}
+
+    if not BRANDS_DIR.exists():
+        return result
+
+    for brand_path in BRANDS_DIR.glob("*.yaml"):
+        brand_id = brand_path.stem
+        try:
+            brand = yaml.safe_load(brand_path.read_text(encoding="utf-8")) or {}
+        except Exception:
+            brand = {}
+
+        client_name = brand.get("client_name", brand_id)
+
+        # Topics status
+        topics_path = TOPICS_DIR / f"{brand_id}.yaml"
+        topics_status = "none"
+        topics_remaining = 0
+        if topics_path.exists():
+            try:
+                td = yaml.safe_load(topics_path.read_text(encoding="utf-8")) or {}
+                raw_status = td.get("status", "")
+                if raw_status == "approved":
+                    topics_status = "approved"
+                else:
+                    topics_status = "pending_approval"
+                topics = td.get("topics", [])
+                topics_remaining = sum(
+                    1 for t in topics
+                    if t.get("status") not in ("generated", "sent")
+                )
+            except Exception:
+                pass
+
+        # Pending review count
+        pending_review_count = 0
+        gen_dir = GENERATED_DIR / brand_id
+        if gen_dir.exists():
+            for gen_path in gen_dir.glob("*.yaml"):
+                try:
+                    gd = yaml.safe_load(gen_path.read_text(encoding="utf-8")) or {}
+                    if gd.get("status") == "pending_review":
+                        pending_review_count += 1
+                except Exception:
+                    pass
+
+        result[brand_id] = {
+            "client_name": client_name,
+            "topics_status": topics_status,
+            "pending_review_count": pending_review_count,
+            "topics_remaining": topics_remaining,
+        }
+
+    return result
+
+
 # ── Entry point ───────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8502))
