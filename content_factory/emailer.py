@@ -106,6 +106,72 @@ def send_review_email(
     return response["id"]
 
 
+def send_welcome_email(*, brand: dict, topics: list[str]) -> str:
+    """Send welcome email to client with their approved topic list."""
+    if not OPERATOR_EMAIL:
+        raise ValueError("OPERATOR_EMAIL is not set in .env")
+
+    client_name = brand.get("client_name") or brand.get("brand_id", "")
+    client_email = brand.get("client_email", "")
+    if not client_email:
+        raise ValueError("client_email not set on brand profile")
+
+    sandbox = "resend.dev" in FROM_ADDRESS
+    to_address = OPERATOR_EMAIL if sandbox else client_email
+
+    slots = brand.get("content_slots", [])
+    cadence = brand.get("cadence", {})
+    freq = cadence.get("publication_cadence", "weekly")
+    freq_label = "twice a week" if freq == "twice_weekly" else "once a week"
+    days = [s.get("day", "").capitalize() for s in slots]
+    days_label = " and ".join(days) if days else "scheduled days"
+
+    package_size = brand.get("package_size", 8)
+
+    topics_html = "".join(
+        f'<li style="margin: 0.5rem 0; color: #374151;">{t}</li>'
+        for t in topics
+    )
+
+    html = f"""
+    <!DOCTYPE html><html><head>{_base_style()}</head><body>
+    <h2 style="margin-top:0">Your content plan is ready</h2>
+    <div class="meta"><strong>Prepared for:</strong> {client_name}</div>
+
+    <p>After reviewing your submission, we're pleased to confirm that we'd like to work with you.</p>
+
+    <p>We've prepared a tailored content plan based on your voice, audience, and goals.
+    Here's what we have lined up:</p>
+
+    <ol style="padding-left: 1.25rem; margin: 1.5rem 0;">
+      {topics_html}
+    </ol>
+
+    <p>Your articles will publish <strong>{freq_label}</strong> — every <strong>{days_label}</strong>.
+    That's <strong>{package_size} articles</strong> in total.</p>
+
+    <p>If you're happy to proceed, simply reply to this email and we'll get started.</p>
+
+    <p style="margin-top: 2rem;">— The Said By team</p>
+
+    <div class="footer">Said By · <a href="{REVIEW_UI_URL}">{REVIEW_UI_URL}</a></div>
+    </body></html>
+    """
+
+    subject = f"Your content plan is ready — {client_name}"
+    if sandbox:
+        subject = f"[SANDBOX → {client_email}] {subject}"
+
+    params: resend.Emails.SendParams = {
+        "from": FROM_ADDRESS,
+        "to": [to_address],
+        "subject": subject,
+        "html": html,
+    }
+    response = resend.Emails.send(params)
+    return response["id"]
+
+
 def send_new_submission_email(*, submission: dict) -> str:
     """Notify operator that a new client intake was submitted."""
     if not OPERATOR_EMAIL:

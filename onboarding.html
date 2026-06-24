@@ -206,6 +206,7 @@
           <p id="tab-client-email" class="text-sm text-gray-500 mt-0.5"></p>
         </div>
         <div class="flex gap-1">
+          <button class="tab-btn" data-tab="progress" onclick="switchTab('progress')">Progress</button>
           <button class="tab-btn" data-tab="profile" onclick="switchTab('profile')">Profile</button>
           <button class="tab-btn" data-tab="topics" onclick="switchTab('topics')">Topics</button>
           <button class="tab-btn" data-tab="content" onclick="switchTab('content')">
@@ -449,6 +450,11 @@
         </div>
 
       </div><!-- /form-area -->
+
+      <!-- ── Progress panel ─────────────────────────────────────────── -->
+      <div id="progress-area" class="hidden">
+        <div id="milestone-list" class="space-y-3"></div>
+      </div>
 
       <!-- ── Topic review panel ──────────────────────────────────────── -->
       <div id="topics-area" class="hidden">
@@ -895,11 +901,68 @@ function switchTab(tab) {
   document.getElementById('form-area').classList.toggle('hidden', tab !== 'profile');
   document.getElementById('topics-area').classList.toggle('hidden', tab !== 'topics');
   document.getElementById('review-area').classList.toggle('hidden', tab !== 'content');
+  document.getElementById('progress-area').classList.toggle('hidden', tab !== 'progress');
   document.getElementById('submissions-area').classList.add('hidden');
   document.getElementById('dashboard-area').classList.add('hidden');
   document.getElementById('client-tab-bar').classList.remove('hidden');
   if (tab === 'topics' && currentBrandId) _loadTopicsPanel();
   if (tab === 'content' && currentBrandId) _loadReviewPanel();
+  if (tab === 'progress' && currentBrandId) loadMilestones();
+}
+
+// ── Milestone tracker ─────────────────────────────────────────────────────────
+async function loadMilestones() {
+  const res = await fetch(`/api/brands/${currentBrandId}/milestones`);
+  if (!res.ok) return;
+  const data = await res.json();
+  renderMilestones(data);
+}
+
+function renderMilestones(data) {
+  const el = document.getElementById('milestone-list');
+  const statusCfg = {
+    done:        { icon: '✓', cls: 'bg-emerald-100 text-emerald-700', ring: 'border-emerald-300' },
+    action:      { icon: '→', cls: 'bg-amber-100 text-amber-700',   ring: 'border-amber-300' },
+    in_progress: { icon: '◑', cls: 'bg-indigo-100 text-indigo-700', ring: 'border-indigo-300' },
+    pending:     { icon: '○', cls: 'bg-gray-100 text-gray-400',     ring: 'border-gray-200' },
+    blocked:     { icon: '○', cls: 'bg-gray-100 text-gray-300',     ring: 'border-gray-100' },
+  };
+  const actionLabels = {
+    send_welcome:    { label: 'Send welcome email', fn: 'sendWelcomeEmail()' },
+    confirm_plan:    { label: 'Mark as confirmed',  fn: 'confirmPlan()' },
+    approve_topics:  { label: 'Go to Topics',       fn: "switchTab('topics')" },
+    generate_topics: { label: 'Generate topics',    fn: "switchTab('topics')" },
+  };
+
+  el.innerHTML = data.milestones.map(m => {
+    const cfg = statusCfg[m.status] || statusCfg.blocked;
+    const act = m.action && actionLabels[m.action];
+    return `
+    <div class="section-card !py-3.5 !px-4 flex items-center gap-4 border ${cfg.ring}">
+      <div class="w-7 h-7 rounded-full ${cfg.cls} flex items-center justify-center text-xs font-bold flex-shrink-0">${cfg.icon}</div>
+      <div class="flex-1 min-w-0">
+        <div class="text-sm font-semibold text-gray-900">${m.label}</div>
+        <div class="text-xs text-gray-400 mt-0.5">${m.description}</div>
+      </div>
+      ${act ? `<button onclick="${act.fn}" class="py-1.5 px-4 rounded-md bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 transition whitespace-nowrap">${act.label}</button>` : ''}
+    </div>`;
+  }).join('');
+}
+
+async function sendWelcomeEmail() {
+  const btn = event.target;
+  btn.textContent = 'Sending…'; btn.disabled = true;
+  const res = await fetch(`/api/brands/${currentBrandId}/welcome-email`, { method: 'POST' });
+  if (!res.ok) { showToast('error-toast'); btn.textContent = 'Send welcome email'; btn.disabled = false; return; }
+  showToast('toast');
+  await loadMilestones();
+}
+
+async function confirmPlan() {
+  const res = await fetch(`/api/brands/${currentBrandId}/confirm-plan`, { method: 'POST' });
+  if (!res.ok) { showToast('error-toast'); return; }
+  showToast('toast');
+  await loadMilestones();
 }
 
 async function _loadTopicsPanel() {

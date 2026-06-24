@@ -476,6 +476,95 @@ def get_status():
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────
+@app.get("/api/brands/{brand_id}/milestones", dependencies=[Depends(api_auth)])
+def get_milestones(brand_id: str):
+    brand_path = BRANDS_DIR / f"{brand_id}.yaml"
+    if not brand_path.exists():
+        raise HTTPException(status_code=404, detail="Brand not found")
+
+    brand = yaml.safe_load(brand_path.read_text(encoding="utf-8")) or {}
+    package_size = brand.get("package_size") or 8
+
+    # Topics
+    topics_path = TOPICS_DIR / f"{brand_id}.yaml"
+    topics_data = yaml.safe_load(topics_path.read_text(encoding="utf-8")) if topics_path.exists() else {}
+    topics_status = (topics_data or {}).get("status", "none")
+    topics_list = [(topics_data or {}).get("topics", [])]
+
+    # Generated articles
+    gen_dir = GENERATED_DIR / brand_id
+    articles_sent = 0
+    articles_total = 0
+    if gen_dir.exists():
+        for p in gen_dir.glob("*.yaml"):
+            d = yaml.safe_load(p.read_text(encoding="utf-8")) or {}
+            articles_total += 1
+            if d.get("status") == "approved":
+                articles_sent += 1
+
+    # Flags from brand YAML
+    welcome_sent = bool(brand.get("welcome_email_sent"))
+    plan_confirmed = bool(brand.get("plan_confirmed"))
+    renewal_sent = bool(brand.get("renewal_email_sent"))
+
+    def ms(id_, label, desc, status, action=None):
+        return {"id": id_, "label": label, "description": desc, "status": status, "action": action}
+
+    milestones = [
+        ms("onboarded",      "Client onboarded",    f"Brand profile saved for {brand.get('client_name', brand_id)}", "done"),
+        ms("topics_gen",     "Topics generated",    f"{len((topics_data or {}).get('topics', []))} topics created" if topics_status != "none" else "Not yet generated",
+           "done" if topics_status != "none" else "pending", None if topics_status != "none" else "generate_topics"),
+        ms("topics_approved","Topics approved",      "Content calendar locked in" if topics_status == "approved" else "Topics need approval",
+           "done" if topics_status == "approved" else ("action" if topics_status == "pending_approval" else "blocked"), None if topics_status == "approved" else "approve_topics"),
+        ms("welcome_email",  "Welcome email sent",  "Client notified of their plan" if welcome_sent else "Send topics + cadence to client",
+           "done" if welcome_sent else ("action" if topics_status == "approved" else "blocked"), None if welcome_sent else "send_welcome"),
+        ms("plan_confirmed", "Plan confirmed",       "Client replied to confirm" if plan_confirmed else "Awaiting client reply",
+           "done" if plan_confirmed else ("action" if welcome_sent else "blocked"), None if plan_confirmed else "confirm_plan"),
+        ms("articles",       f"Articles ({articles_sent}/{package_size})",
+           f"{articles_sent} of {package_size} articles approved and sent",
+           "done" if articles_sent >= package_size else ("in_progress" if articles_sent > 0 else "blocked")),
+        ms("renewal",        "Renewal email",        "Sent when 2 articles remain" if not renewal_sent else "Renewal email sent",
+           "done" if renewal_sent else ("action" if articles_sent >= package_size - 2 else "blocked"), None if renewal_sent else ("send_renewal" if articles_sent >= package_size - 2 else None)),
+    ]
+
+    return {"brand_id": brand_id, "package_size": package_size, "milestones": milestones}
+
+
+@app.post("/api/brands/{brand_id}/welcome-email", dependencies=[Depends(api_auth)])
+def send_welcome(brand_id: str):
+    brand_path = BRANDS_DIR / f"{brand_id}.yaml"
+    if not brand_path.exists():
+        raise HTTPException(status_code=404, detail="Brand not found")
+    brand = yaml.safe_load(brand_path.read_text(encoding="utf-8")) or {}
+
+    topics_path = TOPICS_DIR / f"{brand_id}.yaml"
+    if not topics_path.exists():
+        raise HTTPException(status_code=400, detail="No approved topics found")
+    topics_data = yaml.safe_load(topics_path.read_text(encoding="utf-8")) or {}
+    topic_titles = [t["title"] for t in topics_data.get("topics", [])]
+
+    from content_factory.emailer import send_welcome_email
+    email_id = send_welcome_email(brand=brand, topics=topic_titles)
+
+    brand["welcome_email_sent"] = True
+    with open(brand_path, "w", encoding="utf-8") as f:
+        yaml.dump(brand, f, allow_unicode=True, sort_keys=False)
+
+    return {"sent": True, "email_id": email_id}
+
+
+@app.post("/api/brands/{brand_id}/confirm-plan", dependencies=[Depends(api_auth)])
+def confirm_plan(brand_id: str):
+    brand_path = BRANDS_DIR / f"{brand_id}.yaml"
+    if not brand_path.exists():
+        raise HTTPException(status_code=404, detail="Brand not found")
+    brand = yaml.safe_load(brand_path.read_text(encoding="utf-8")) or {}
+    brand["plan_confirmed"] = True
+    with open(brand_path, "w", encoding="utf-8") as f:
+        yaml.dump(brand, f, allow_unicode=True, sort_keys=False)
+    return {"confirmed": True}
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8502))
     host = "0.0.0.0" if os.environ.get("PORT") else "localhost"
