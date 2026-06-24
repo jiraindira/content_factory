@@ -95,11 +95,19 @@ def _build_voice_block(brand: dict) -> str:
     return "\n".join(lines)
 
 
+def _samples_block(brand: dict) -> str:
+    samples = (brand.get("writing_samples") or "").strip()
+    if not samples:
+        return ""
+    return f"\n\nExamples of their actual writing (match this voice closely):\n\"\"\"\n{samples[:3000]}\n\"\"\""
+
+
 def write_long_blog(brand: dict, topic: str) -> str:
     """Generate a full blog article (~900-1200 words) as markdown."""
     about = ((brand.get("topic_policy") or {}).get("allowlist") or [""])[0]
     voice_block = _build_voice_block(brand)
     client_name = brand.get("client_name") or brand.get("brand_id", "")
+    samples_block = _samples_block(brand)
 
     system = f"""You are a world-class ghostwriter specialising in thought-leadership content.
 You write in the exact voice of the person you represent — not generically.
@@ -107,7 +115,7 @@ Return a JSON object with two keys:
   "title": the final article title (may refine the prompt title)
   "body": the full article in markdown (use ## for section headings, no H1)"""
 
-    user = f"""{voice_block}
+    user = f"""{voice_block}{samples_block}
 
 The client is: {client_name}
 What they write about: {about}
@@ -135,13 +143,14 @@ def write_short_snippet(brand: dict, topic: str) -> str:
     """Generate a short-form post (~200-280 words) as markdown."""
     voice_block = _build_voice_block(brand)
     client_name = brand.get("client_name") or brand.get("brand_id", "")
+    samples_block = _samples_block(brand)
 
     system = f"""You are a world-class ghostwriter specialising in short-form thought-leadership content.
 Return a JSON object with two keys:
   "title": a short, punchy headline
   "body": the post body in markdown (no headings — just flowing paragraphs)"""
 
-    user = f"""{voice_block}
+    user = f"""{voice_block}{samples_block}
 
 The client is: {client_name}
 

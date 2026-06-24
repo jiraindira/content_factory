@@ -259,6 +259,10 @@
             <label class="field-label">What do they write about?</label>
             <textarea id="topic_allowlist" rows="3" placeholder="e.g. Voice leadership and executive presence for senior leaders — how to communicate with authority, clarity, and confidence in high-stakes situations."></textarea>
           </div>
+          <div>
+            <label class="field-label">Writing samples <span class="font-normal text-gray-400">(paste LinkedIn posts or articles — used to calibrate their voice)</span></label>
+            <textarea id="writing_samples" rows="8" placeholder="Paste 2–4 of their best LinkedIn posts or articles here. The more authentic the better — threads, long-form posts, anything that shows how they actually write."></textarea>
+          </div>
         </div>
 
         <!-- ── 2. Brand sources ────────────────────────────────────────── -->
@@ -1173,6 +1177,7 @@ function populateForm(d) {
 
   const topics = (d.topic_policy && d.topic_policy.allowlist) || [];
   setVal("topic_allowlist", topics.join(" ").trim());
+  setVal("writing_samples", d.writing_samples || "");
 
   const disc = d.disclaimer_policy || {};
   document.getElementById("disclaimer_required").checked = !!disc.required;
@@ -1210,7 +1215,7 @@ function deriveCommercial(c) {
 
 function resetForm() {
   ["client_name","client_email","brand_id","source_website","source_linkedin",
-   "audience_context","topic_allowlist","disclaimer_text","custom_tone"].forEach(id => setVal(id, ""));
+   "audience_context","topic_allowlist","writing_samples","disclaimer_text","custom_tone"].forEach(id => setVal(id, ""));
   document.getElementById("brand_archetype").value = "mentor_coach";
   updateRoleTip();
   document.querySelectorAll(".card-opt").forEach(el => el.classList.remove("selected"));
@@ -1265,6 +1270,7 @@ async function saveClient() {
 
   const topicText = document.getElementById("topic_allowlist").value.trim();
   const topicLines = topicText ? [topicText] : ["General"];
+  const writingSamples = document.getElementById("writing_samples").value.trim();
 
   const publishDays = [...new Set(slots.map(s => s.day))];
   const cadenceVal = currentCadence === 1 ? "weekly" : "twice_weekly";
@@ -1330,6 +1336,7 @@ async function saveClient() {
 
     package_size: packageSize,
     content_slots: slots,
+    writing_samples: writingSamples || "",
   };
 
   try {
