@@ -11,10 +11,11 @@ from schemas.base import SchemaBase
 
 class BrandArchetype(str, Enum):
     mentor_coach = "mentor_coach"
-    product_ranker = "product_ranker"
-    product_guide = "product_guide"
+    industry_consultant = "industry_consultant"
+    corporate_firm = "corporate_firm"
+    thought_leader = "thought_leader"
     reviewer = "reviewer"
-    travel_guide = "travel_guide"
+    travel_lifestyle = "travel_lifestyle"
 
 
 class ContentIntent(str, Enum):

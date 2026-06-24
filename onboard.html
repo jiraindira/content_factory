@@ -86,13 +86,14 @@
           <input type="url" id="website_url" placeholder="https://yourwebsite.com" />
         </div>
         <div>
-          <label class="field-label">Creator role</label>
-          <select id="brand_archetype" onchange="updateRoleTip()">
+          <label class="field-label">Content style</label>
+          <select id="brand_archetype" onchange="onStyleChange()">
             <option value="mentor_coach">Mentor / Coach</option>
-            <option value="product_ranker">Product Ranker</option>
-            <option value="product_guide">Product Guide</option>
-            <option value="reviewer">Reviewer</option>
-            <option value="travel_guide">Travel Guide</option>
+            <option value="industry_consultant">Industry Expert / Consultant</option>
+            <option value="corporate_firm">Professional Services Firm</option>
+            <option value="thought_leader">Thought Leader</option>
+            <option value="reviewer">Reviewer / Critic</option>
+            <option value="travel_lifestyle">Travel & Lifestyle</option>
           </select>
           <p id="role-tip" class="text-xs text-indigo-600 mt-1.5"></p>
         </div>
@@ -109,13 +110,16 @@
         <span class="step-num">2</span>
         <div>
           <h2 class="font-bold text-gray-900">Who are you writing for?</h2>
-          <p class="text-sm text-gray-500 mt-0.5">Pick your primary audience.</p>
+          <p class="text-sm text-gray-500 mt-0.5">Be specific — the more precise, the better the writing.</p>
         </div>
       </div>
-      <div id="audience-opts" class="space-y-2"></div>
-      <div class="mt-4">
-        <label class="field-label">Any nuance? Who must feel "this is for me"?</label>
-        <input type="text" id="audience_context" placeholder="e.g. Mid-level leaders preparing for their first C-suite role" />
+      <div class="mb-5">
+        <label class="field-label">Describe your ideal reader</label>
+        <textarea id="audience_context" rows="2" placeholder="e.g. Senior lawyers and CFOs involved in complex cross-border M&A transactions who need defensible valuations"></textarea>
+      </div>
+      <div>
+        <label class="field-label text-gray-400 font-normal">General category</label>
+        <div id="audience-opts" class="space-y-2 mt-1"></div>
       </div>
     </div>
 
@@ -195,12 +199,58 @@
   </div><!-- /form-wrap -->
 
 <script>
-const ROLE_TIPS = {
-  mentor_coach: "Shares frameworks, lessons, and personal growth advice.",
-  product_ranker: "Publishes best-of lists, top 10s, and comparisons.",
-  product_guide: "Deep expert on one specific product or niche.",
-  reviewer: "Opinionated evaluations of specific things.",
-  travel_guide: "Destination and experience-led storytelling.",
+const STYLE_TIPS = {
+  mentor_coach:         "Personal brand — shares frameworks, lessons, and growth advice as an individual voice.",
+  industry_consultant:  "Individual expert — technical authority, market insight, B2B advisory.",
+  corporate_firm:       "Firm brand — professional services, sector expertise, company voice.",
+  thought_leader:       "Opinion & ideas — challenges thinking, shapes industry narrative.",
+  reviewer:             "Opinionated evaluations — gear, services, restaurants, places.",
+  travel_lifestyle:     "Destination and experience-led storytelling.",
+};
+
+const TONE_EXAMPLES = {
+  mentor_coach: {
+    calm_authoritative:   "Research on vocal load consistently shows that executives who speak under sustained stress compress their dynamic range — often without realising it.",
+    warm_reflective:      "There's a moment before a high-stakes conversation where most leaders tighten. I've watched it happen hundreds of times. The voice narrows before the room does.",
+    direct_insight_dense: "Most executive voice coaching fixes symptoms. The problem isn't delivery. It's the belief system underneath it.",
+    practical_expert:     "Here's what nobody tells you about confidence: it sounds different than you think it does.",
+    minimalist_executive: "Clarity is not a communication style. It is a leadership decision.",
+  },
+  industry_consultant: {
+    calm_authoritative:   "Valuation disputes in cross-border M&A transactions rarely come down to methodology — they come down to who controls the narrative of value.",
+    warm_reflective:      "Fifteen years of forensic work has taught me one thing: fraud doesn't announce itself. It hides in plain sight, in the assumptions everyone agrees not to question.",
+    direct_insight_dense: "Most fraud goes undetected not because it's hidden well, but because no one is incentivised to look.",
+    practical_expert:     "Here's what most boards get wrong about forensic accounting: they call in the experts after the damage is done, not before.",
+    minimalist_executive: "Risk is not what you can see. It's what your current reporting is designed not to show you.",
+  },
+  corporate_firm: {
+    calm_authoritative:   "Our approach to business valuation integrates financial modelling with sector-specific intelligence, producing defensible conclusions that hold up under scrutiny.",
+    warm_reflective:      "Every engagement starts with the same question: what does the client actually need to understand — not just what they've asked for?",
+    direct_insight_dense: "The firms that survive complex transactions are the ones that defined their value before they needed to defend it.",
+    practical_expert:     "When a deal is under pressure, speed matters — but not more than accuracy. The two don't have to conflict.",
+    minimalist_executive: "We exist to give clarity where there is complexity.",
+  },
+  thought_leader: {
+    calm_authoritative:   "The future of work isn't being shaped by technology alone — it's being shaped by leaders willing to redesign the contract between organisations and people.",
+    warm_reflective:      "I've spent a lot of time in rooms where the wrong questions were being asked. The most valuable thing I can do is name the right one.",
+    direct_insight_dense: "Most strategy fails at implementation not because the strategy was wrong, but because the organisation wasn't designed to execute it.",
+    practical_expert:     "You don't need a transformation programme. You need to change three things and actually do them.",
+    minimalist_executive: "The best leaders I know have one thing in common: they know what they're not going to do.",
+  },
+  reviewer: {
+    calm_authoritative:   "The 2024 model represents a genuine step forward in thermal management — not the marketing claim, but the measurable outcome.",
+    warm_reflective:      "I've tested a lot of gear that promises to change how you work. This one quietly delivered.",
+    direct_insight_dense: "Skip the flagship. The mid-range model is better in every way that actually matters.",
+    practical_expert:     "After three weeks of daily use, here's what held up and what didn't.",
+    minimalist_executive: "It does one thing. It does it perfectly.",
+  },
+  travel_lifestyle: {
+    calm_authoritative:   "The Faroe Islands are not a destination for comfort-seekers. They are a destination for people who want to feel genuinely small.",
+    warm_reflective:      "I arrived in Tbilisi not knowing what I was looking for. I left knowing I'd been somewhere real.",
+    direct_insight_dense: "Everyone goes to Kyoto in spring. Go in November. You'll have it to yourself.",
+    practical_expert:     "Three days in Lisbon is enough to fall in love. A week is enough to understand it.",
+    minimalist_executive: "Some places change you. Cappadocia is one of them.",
+  },
 };
 
 const AUDIENCE_OPTS = [
@@ -219,13 +269,13 @@ const PLATFORM_OPTS = [
   { value: "both",          label: "Both — blog + LinkedIn adaptation", desc: "Full article as primary, LinkedIn as a shortened version" },
 ];
 
-const TONE_OPTS = [
-  { value: "calm_authoritative",  label: "Calm, authoritative, science-led",    example: "Research on vocal load consistently shows that executives who speak under sustained stress compress their dynamic range — often without realising it." },
-  { value: "warm_reflective",     label: "Warm, reflective, quietly confident",  example: "There's a moment before a high-stakes conversation where most leaders tighten. I've watched it happen hundreds of times. The voice narrows before the room does." },
-  { value: "direct_insight_dense",label: "Direct, sharp, insight-dense",         example: "Most executive voice coaching fixes symptoms. The problem isn't delivery. It's the belief system underneath it." },
-  { value: "practical_expert",    label: "Conversational but expert",            example: "Here's what nobody tells you about confidence: it sounds different than you think it does." },
-  { value: "minimalist_executive",label: "Executive and minimal",                example: "Clarity is not a communication style. It is a leadership decision." },
-  { value: "custom",              label: "A distinct blend — I'll describe it",  example: null },
+const TONE_BASE = [
+  { value: "calm_authoritative",   label: "Calm, authoritative, evidence-led" },
+  { value: "warm_reflective",      label: "Warm, reflective, quietly confident" },
+  { value: "direct_insight_dense", label: "Direct, sharp, insight-dense" },
+  { value: "practical_expert",     label: "Conversational but expert" },
+  { value: "minimalist_executive", label: "Executive and minimal" },
+  { value: "custom",               label: "A distinct blend — I'll describe it" },
 ];
 
 const PRESENCE_OPTS = [
@@ -280,17 +330,35 @@ function setSci(val) {
   });
 }
 
-function updateRoleTip() {
-  document.getElementById('role-tip').textContent = ROLE_TIPS[document.getElementById('brand_archetype').value] || '';
+function onStyleChange() {
+  const style = document.getElementById('brand_archetype').value;
+  document.getElementById('role-tip').textContent = STYLE_TIPS[style] || '';
+  renderToneOpts(style);
+}
+
+function renderToneOpts(style) {
+  const examples = TONE_EXAMPLES[style] || TONE_EXAMPLES['mentor_coach'];
+  const opts = TONE_BASE.map(t => ({ ...t, example: examples[t.value] || null }));
+  const el = document.getElementById('tone-opts');
+  const selected = getSelected('tone');
+  el.innerHTML = opts.map(o => `
+    <div class="card-opt ${selected === o.value ? 'selected' : ''}" data-val="${o.value}" data-group="tone" onclick="selectOpt(this, 'tone')">
+      <div class="flex items-start gap-3">
+        <div class="opt-dot mt-0.5"></div>
+        <div class="flex-1">
+          <div class="text-sm font-semibold text-gray-800">${o.label}</div>
+          ${o.example ? `<div class="text-xs text-gray-400 italic mt-1.5 border-l-2 border-gray-200 pl-2">"${o.example}"</div>` : ''}
+        </div>
+      </div>
+    </div>`).join('');
 }
 
 document.addEventListener('DOMContentLoaded', () => {
   renderOpts('audience-opts',  AUDIENCE_OPTS,  'audience');
   renderOpts('platform-opts',  PLATFORM_OPTS,  'platform');
-  renderOpts('tone-opts',      TONE_OPTS,       'tone');
   renderOpts('presence-opts',  PRESENCE_OPTS,  'presence');
   renderOpts('commercial-opts',COMMERCIAL_OPTS,'commercial');
-  updateRoleTip();
+  onStyleChange();  // renders tone opts + tip for default style
   setSci('implied');
 });
 
@@ -303,10 +371,11 @@ async function submitForm() {
   const email = document.getElementById('client_email').value.trim();
   const about = document.getElementById('about').value.trim();
 
-  if (!name)  { showErr('Please enter your name.'); return; }
-  if (!email) { showErr('Please enter your email address.'); return; }
-  if (!about) { showErr('Please tell us what you write about.'); return; }
-  if (!getSelected('audience'))  { showErr('Please select your primary audience.'); return; }
+  const audienceContext = document.getElementById('audience_context').value.trim();
+  if (!name)          { showErr('Please enter your name.'); return; }
+  if (!email)         { showErr('Please enter your email address.'); return; }
+  if (!about)         { showErr('Please tell us what you write about.'); return; }
+  if (!audienceContext){ showErr('Please describe your ideal reader.'); return; }
   if (!getSelected('platform'))  { showErr('Please select where your content will live.'); return; }
   if (!getSelected('tone'))      { showErr('Please select a tone.'); return; }
   if (!getSelected('presence'))  { showErr('Please select your personal presence.'); return; }

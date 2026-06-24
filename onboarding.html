@@ -242,13 +242,14 @@
               <input type="text" id="brand_id" placeholder="e.g. alisa_amouage" />
             </div>
             <div>
-              <label class="field-label">Creator role</label>
+              <label class="field-label">Content style</label>
               <select id="brand_archetype" onchange="updateRoleTip()">
                 <option value="mentor_coach">Mentor / Coach</option>
-                <option value="product_ranker">Product Ranker</option>
-                <option value="product_guide">Product Guide</option>
-                <option value="reviewer">Reviewer</option>
-                <option value="travel_guide">Travel Guide</option>
+                <option value="industry_consultant">Industry Expert / Consultant</option>
+                <option value="corporate_firm">Professional Services Firm</option>
+                <option value="thought_leader">Thought Leader</option>
+                <option value="reviewer">Reviewer / Critic</option>
+                <option value="travel_lifestyle">Travel & Lifestyle</option>
               </select>
               <p id="role-tip" class="text-xs text-indigo-600 mt-1.5"></p>
             </div>
@@ -637,11 +638,12 @@
 <script>
 // ── Data ────────────────────────────────────────────────────────────────────
 const ROLE_TIPS = {
-  mentor_coach: "Shares frameworks, lessons, and personal growth advice. Speaks like a trusted teacher or consultant.",
-  product_ranker: "Publishes best-of lists, top 10s, and category comparisons. Authority comes from breadth of research.",
-  product_guide: "Deep expert on one specific product or niche. Readers come for the definitive word on that thing.",
-  reviewer: "Opinionated evaluations of specific things — restaurants, gear, hotels, cities. Voice is personal and direct.",
-  travel_guide: "Destination and experience-led storytelling. Paints a picture of places and inspires the reader to go.",
+  mentor_coach:        "Personal brand — shares frameworks, lessons, and growth advice as an individual voice.",
+  industry_consultant: "Individual expert — technical authority, market insight, B2B advisory.",
+  corporate_firm:      "Firm brand — professional services, sector expertise, company voice.",
+  thought_leader:      "Opinion & ideas — challenges thinking, shapes industry narrative.",
+  reviewer:            "Opinionated evaluations — gear, services, restaurants, places.",
+  travel_lifestyle:    "Destination and experience-led storytelling.",
 };
 
 const AUDIENCE_OPTS = [

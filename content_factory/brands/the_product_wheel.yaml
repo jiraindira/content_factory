@@ -1,5 +1,5 @@
 brand_id: the_product_wheel
-brand_archetype: product_ranker
+brand_archetype: reviewer
 
 brand_sources:
   require_at_least_one_of_purposes:

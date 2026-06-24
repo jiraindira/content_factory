@@ -1,5 +1,5 @@
 brand_id: everyday_buying_guide
-brand_archetype: trusted_guide
+brand_archetype: reviewer
 
 brand_sources:
   require_at_least_one_of_purposes: [homepage, linkedin_profile]
