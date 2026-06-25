@@ -112,6 +112,7 @@ def send_welcome_email(*, brand: dict, topics: list[str]) -> str:
         raise ValueError("OPERATOR_EMAIL is not set in .env")
 
     client_name = brand.get("client_name") or brand.get("brand_id", "")
+    first_name = client_name.split()[0] if client_name else "there"
     client_email = brand.get("client_email", "")
     if not client_email:
         raise ValueError("client_email not set on brand profile")
@@ -124,41 +125,76 @@ def send_welcome_email(*, brand: dict, topics: list[str]) -> str:
     freq = cadence.get("publication_cadence", "weekly")
     freq_label = "twice a week" if freq == "twice_weekly" else "once a week"
     days = [s.get("day", "").capitalize() for s in slots]
-    days_label = " and ".join(days) if days else "scheduled days"
-
+    days_label = " and ".join(days) if days else "your scheduled days"
     package_size = brand.get("package_size", 8)
 
+    # Pull niche + audience for personalisation
+    about = ((brand.get("topic_policy") or {}).get("allowlist") or [""])[0]
+    audience_ctx = (brand.get("audience") or {}).get("audience_context", "")
+
+    # Build topics list — clean quotes before rendering
+    def clean(t: str) -> str:
+        return t.replace('‘', "'").replace('’', "'").replace('“', '"').replace('”', '"')
+
     topics_html = "".join(
-        f'<li style="margin: 0.5rem 0; color: #374151;">{t}</li>'
+        f'<li style="margin:0.6rem 0;color:#374151;line-height:1.5">{clean(t)}</li>'
         for t in topics
     )
 
-    html = f"""
-    <!DOCTYPE html><html><head>{_base_style()}</head><body>
-    <h2 style="margin-top:0">Your content plan is ready</h2>
-    <div class="meta"><strong>Prepared for:</strong> {client_name}</div>
+    # Personalised intro line based on what they write about
+    niche_line = ""
+    if about:
+        niche_line = f'<p style="color:#4b5563;font-style:italic;border-left:3px solid #6366f1;padding-left:1rem;margin:1.5rem 0">{clean(about)}</p>'
 
-    <p>After reviewing your submission, we're pleased to confirm that we'd like to work with you.</p>
+    html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width"/>
+  <style>
+    body {{ font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 40px 24px; color: #1f2937; line-height: 1.8; background: #fff; }}
+    h1 {{ font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem; color: #111827; }}
+    p {{ margin: 1rem 0; font-size: 1rem; }}
+    ol {{ padding-left: 1.25rem; margin: 1.5rem 0; }}
+    strong {{ color: #111827; }}
+    .divider {{ border: none; border-top: 1px solid #e5e7eb; margin: 2rem 0; }}
+    .footer {{ font-size: 0.75rem; color: #9ca3af; margin-top: 3rem; }}
+    .badge {{ display: inline-block; background: #eef2ff; color: #4338ca; font-size: 0.75rem; font-weight: 600; padding: 0.2rem 0.6rem; border-radius: 999px; font-family: sans-serif; letter-spacing: 0.05em; text-transform: uppercase; }}
+  </style>
+</head>
+<body>
+  <p><span class="badge">Said By</span></p>
 
-    <p>We've prepared a tailored content plan based on your voice, audience, and goals.
-    Here's what we have lined up:</p>
+  <h1>{first_name} — you're in.</h1>
 
-    <ol style="padding-left: 1.25rem; margin: 1.5rem 0;">
-      {topics_html}
-    </ol>
+  <p>We've reviewed your submission and we want to be direct: <strong>this is exactly the kind of work we love doing.</strong></p>
 
-    <p>Your articles will publish <strong>{freq_label}</strong> — every <strong>{days_label}</strong>.
-    That's <strong>{package_size} articles</strong> in total.</p>
+  {niche_line}
 
-    <p>If you're happy to proceed, simply reply to this email and we'll get started.</p>
+  <p>Your voice, your audience{f', your focus on {audience_ctx}' if audience_ctx else ''} — it's a compelling brief. And we're ready to run with it.</p>
 
-    <p style="margin-top: 2rem;">— The Said By team</p>
+  <hr class="divider"/>
 
-    <div class="footer">Said By · <a href="{REVIEW_UI_URL}">{REVIEW_UI_URL}</a></div>
-    </body></html>
-    """
+  <p><strong>Here's your content plan — {package_size} articles:</strong></p>
 
-    subject = f"Your content plan is ready — {client_name}"
+  <ol>{topics_html}</ol>
+
+  <p>These will go out <strong>{freq_label}</strong>, every <strong>{days_label}</strong>. Each piece written in your voice, sent to you for approval before it goes anywhere.</p>
+
+  <hr class="divider"/>
+
+  <p><strong>Ready to get started?</strong></p>
+  <p>Simply reply to this email to confirm and we'll kick things off. The first article will be in your inbox before you know it.</p>
+
+  <p style="margin-top:2.5rem">We're genuinely excited about this one.</p>
+
+  <p>— Jiraindira<br/><span style="color:#9ca3af;font-size:0.9rem">Said By</span></p>
+
+  <div class="footer">Said By · <a href="{REVIEW_UI_URL}" style="color:#6366f1">{REVIEW_UI_URL}</a></div>
+</body>
+</html>"""
+
+    subject = f"{first_name} — your content plan is confirmed"
     if sandbox:
         subject = f"[SANDBOX → {client_email}] {subject}"
 
