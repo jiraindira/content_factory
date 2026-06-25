@@ -14,7 +14,7 @@ import yaml
 import sys
 sys.path.insert(0, str(Path(__file__).parent))
 
-from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -83,8 +83,17 @@ def admin_page(request: Request):
 
 
 # ── Submissions (public write, admin read) ────────────────────────────────────
+def _sync(path: Path, msg: str = ""):
+    from content_factory.github_sync import sync_file
+    sync_file(path, msg)
+
+def _delete(path: Path, msg: str = ""):
+    from content_factory.github_sync import delete_file
+    delete_file(path, msg)
+
+
 @app.post("/api/submissions")
-async def create_submission(request: Request):
+async def create_submission(request: Request, bg: BackgroundTasks):
     data = await request.json()
     if not data.get("client_email"):
         raise HTTPException(status_code=400, detail="client_email is required")
@@ -98,6 +107,8 @@ async def create_submission(request: Request):
     path = SUBMISSIONS_DIR / f"{sub_id}.yaml"
     with open(path, "w", encoding="utf-8") as f:
         yaml.dump(data, f, allow_unicode=True, sort_keys=False)
+
+    bg.add_task(_sync, path, f"feat: new submission {sub_id}")
 
     # Email operator
     try:
@@ -136,7 +147,7 @@ def get_submission(sub_id: str):
 
 
 @app.post("/api/submissions/{sub_id}/activate", dependencies=[Depends(api_auth)])
-async def activate_submission(sub_id: str, request: Request):
+async def activate_submission(sub_id: str, request: Request, bg: BackgroundTasks):
     """Convert a submission into a full brand profile."""
     path = SUBMISSIONS_DIR / f"{sub_id}.yaml"
     if not path.exists():
@@ -247,6 +258,9 @@ async def activate_submission(sub_id: str, request: Request):
     with open(path, "w", encoding="utf-8") as f:
         yaml.dump(sub, f, allow_unicode=True, sort_keys=False)
 
+    bg.add_task(_sync, brand_path, f"feat: activate client {brand_id}")
+    bg.add_task(_sync, path, f"chore: mark submission {sub_id} activated")
+
     return {"activated": True, "brand_id": brand_id}
 
 
@@ -268,16 +282,17 @@ def get_brand(brand_id: str):
 
 
 @app.delete("/api/brands/{brand_id}", dependencies=[Depends(api_auth)])
-def delete_brand(brand_id: str):
+def delete_brand(brand_id: str, bg: BackgroundTasks):
     path = BRANDS_DIR / f"{brand_id}.yaml"
     if not path.exists():
         raise HTTPException(status_code=404, detail="Brand not found")
+    bg.add_task(_delete, path, f"chore: delete brand {brand_id}")
     path.unlink()
     return {"deleted": brand_id}
 
 
 @app.post("/api/brands", dependencies=[Depends(api_auth)])
-async def save_brand(request: Request):
+async def save_brand(request: Request, bg: BackgroundTasks):
     data = await request.json()
     brand_id = (data.get("brand_id") or "").strip()
     if not brand_id:
@@ -286,6 +301,7 @@ async def save_brand(request: Request):
     path = BRANDS_DIR / f"{brand_id}.yaml"
     with open(path, "w", encoding="utf-8") as f:
         yaml.dump(data, f, allow_unicode=True, sort_keys=False)
+    bg.add_task(_sync, path, f"chore: update brand {brand_id}")
     return {"saved": str(path)}
 
 
@@ -318,13 +334,15 @@ def generate_content(brand_id: str, slot_type: str = "long_blog"):
 
 
 @app.post("/api/brands/{brand_id}/topics/approve", dependencies=[Depends(api_auth)])
-async def approve_topics_endpoint(brand_id: str, request: Request):
+async def approve_topics_endpoint(brand_id: str, request: Request, bg: BackgroundTasks):
     from content_factory.topic_generator import save_topics
     body = await request.json()
     titles = body.get("titles", [])
     if not titles:
         raise HTTPException(status_code=400, detail="titles required")
-    return save_topics(brand_id, titles, status="approved")
+    result = save_topics(brand_id, titles, status="approved")
+    bg.add_task(_sync, TOPICS_DIR / f"{brand_id}.yaml", f"chore: approve topics {brand_id}")
+    return result
 
 
 @app.get("/api/brands/{brand_id}/generated", dependencies=[Depends(api_auth)])
@@ -354,7 +372,7 @@ def get_generated(brand_id: str, run_id: str):
 
 
 @app.post("/api/brands/{brand_id}/generated/{run_id}/approve", dependencies=[Depends(api_auth)])
-def approve_generated(brand_id: str, run_id: str):
+def approve_generated(brand_id: str, run_id: str, bg: BackgroundTasks):
     path = GENERATED_DIR / brand_id / f"{run_id}.yaml"
     if not path.exists():
         raise HTTPException(status_code=404, detail="Generated content not found")
@@ -388,11 +406,13 @@ def approve_generated(brand_id: str, run_id: str):
         with open(topics_path, "w", encoding="utf-8") as f:
             yaml.dump(td, f, allow_unicode=True, sort_keys=False)
 
+    bg.add_task(_sync, path, f"chore: approve content {run_id}")
+    bg.add_task(_sync, topics_path, f"chore: mark topic sent {brand_id}")
     return {"approved": True, "email_id": email_id}
 
 
 @app.post("/api/brands/{brand_id}/generated/{run_id}/reject", dependencies=[Depends(api_auth)])
-async def reject_generated(brand_id: str, run_id: str, request: Request):
+async def reject_generated(brand_id: str, run_id: str, request: Request, bg: BackgroundTasks):
     path = GENERATED_DIR / brand_id / f"{run_id}.yaml"
     if not path.exists():
         raise HTTPException(status_code=404, detail="Generated content not found")
@@ -413,6 +433,9 @@ async def reject_generated(brand_id: str, run_id: str, request: Request):
         with open(topics_path, "w", encoding="utf-8") as f:
             yaml.dump(td, f, allow_unicode=True, sort_keys=False)
 
+    bg.add_task(_sync, path, f"chore: reject content {run_id}")
+    if topics_path.exists():
+        bg.add_task(_sync, topics_path, f"chore: return topic to queue {brand_id}")
     return {"rejected": True}
 
 
@@ -531,7 +554,7 @@ def get_milestones(brand_id: str):
 
 
 @app.post("/api/brands/{brand_id}/welcome-email", dependencies=[Depends(api_auth)])
-def send_welcome(brand_id: str):
+def send_welcome(brand_id: str, bg: BackgroundTasks):
     brand_path = BRANDS_DIR / f"{brand_id}.yaml"
     if not brand_path.exists():
         raise HTTPException(status_code=404, detail="Brand not found")
@@ -549,12 +572,13 @@ def send_welcome(brand_id: str):
     brand["welcome_email_sent"] = True
     with open(brand_path, "w", encoding="utf-8") as f:
         yaml.dump(brand, f, allow_unicode=True, sort_keys=False)
+    bg.add_task(_sync, brand_path, f"chore: welcome email sent {brand_id}")
 
     return {"sent": True, "email_id": email_id}
 
 
 @app.post("/api/brands/{brand_id}/confirm-plan", dependencies=[Depends(api_auth)])
-def confirm_plan(brand_id: str):
+def confirm_plan(brand_id: str, bg: BackgroundTasks):
     brand_path = BRANDS_DIR / f"{brand_id}.yaml"
     if not brand_path.exists():
         raise HTTPException(status_code=404, detail="Brand not found")
@@ -562,6 +586,7 @@ def confirm_plan(brand_id: str):
     brand["plan_confirmed"] = True
     with open(brand_path, "w", encoding="utf-8") as f:
         yaml.dump(brand, f, allow_unicode=True, sort_keys=False)
+    bg.add_task(_sync, brand_path, f"chore: plan confirmed {brand_id}")
     return {"confirmed": True}
 
 
