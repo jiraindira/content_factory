@@ -106,10 +106,8 @@ Client onboarding (Railway UI)
 
 ## To-do
 - [ ] Cross-client "All content" overview (see all articles across clients in one view)
-- [ ] Add custom domain to Resend (remove sandbox restriction)
 - [ ] Content delivery to client website / LinkedIn (not just email)
 - [ ] Regenerate single topic button in UI (without running full scheduler)
-- [ ] Mobile experience — admin UI is desktop-only, needs responsive sidebar + layout
 
 ---
 
