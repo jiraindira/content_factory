@@ -384,8 +384,7 @@ def send_delivery_email(
   </p>
 
   <p style="font-family:sans-serif;margin-top:2rem">
-    — Jiraindira<br/>
-    <span style="color:#9ca3af;font-size:0.85rem">Said By</span>
+    — The Said By Team
   </p>
 
   <div class="footer">Said By · Ghostwriting for {client_name}</div>
