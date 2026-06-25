@@ -310,46 +310,96 @@ def send_delivery_email(
     topic_title: str,
     content_markdown: str,
     slot_type: str = "long_blog",
+    article_number: int | None = None,
+    package_size: int | None = None,
+    next_publish_day: str | None = None,
 ) -> str:
-    """Send approved content to the client. Returns Resend message ID.
-
-    In sandbox mode (no custom domain), Resend only allows sending to the
-    operator's own address. We route there with a forwarding note.
-    """
+    """Send approved content to the client. Returns Resend message ID."""
     if not client_email:
         raise ValueError("client_email is empty")
 
     topic_title = " ".join(topic_title.split())
-    # Sandbox = still on resend.dev address; custom domain = send direct to client
+    first_name = client_name.split()[0] if client_name else client_name
+    content_type = "long-form article" if slot_type == "long_blog" else "short post"
+
     sandbox = "resend.dev" in FROM_ADDRESS
     to_address = OPERATOR_EMAIL if sandbox else client_email
     html_content = _md_to_html(content_markdown)
 
     sandbox_banner = ""
     if sandbox:
-        sandbox_banner = f"""
-        <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:6px;padding:12px 16px;margin-bottom:24px;font-size:0.8rem;color:#92400e;">
-          <strong>Sandbox mode</strong> — This would be sent to <strong>{client_email}</strong>.
-          Forward manually or verify a domain at resend.com/domains to send directly.
+        sandbox_banner = f"""<div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:6px;padding:12px 16px;margin-bottom:24px;font-size:0.8rem;color:#92400e;font-family:sans-serif">
+          <strong>Sandbox</strong> — would go to <strong>{_clean(client_email)}</strong>
         </div>"""
 
-    html = f"""
-    <!DOCTYPE html><html><head>{_base_style()}</head><body>
-    {sandbox_banner}
-    <h1>{topic_title}</h1>
-    <div class="content">
-      {html_content}
-    </div>
-    <div class="footer">
-      Delivered by Content Factory · For: {client_name} ({client_email})
-    </div>
-    </body></html>
-    """
+    # Progress note
+    progress_note = ""
+    if article_number and package_size:
+        next_line = f" Your next piece is coming on <strong>{next_publish_day}</strong>." if next_publish_day else ""
+        progress_note = f"""
+        <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:16px 20px;margin:2rem 0;font-family:sans-serif;font-size:0.85rem;color:#374151;line-height:1.6">
+          📬 &nbsp;This is your <strong>article {article_number} of {package_size}</strong> — you're {round(article_number/package_size*100)}% through your content plan.{next_line}
+        </div>"""
+
+    html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width"/>
+  <style>
+    body {{ font-family: Georgia, serif; max-width: 680px; margin: 0 auto; padding: 32px 24px; color: #1f2937; background:#fff; line-height:1.8; }}
+    h1 {{ font-size: 1.5rem; font-weight: 700; margin: 1.5rem 0 0.5rem; line-height: 1.3; }}
+    h2 {{ font-size: 1.2rem; font-weight: 700; margin: 1.8rem 0 0.4rem; }}
+    h3 {{ font-size: 1rem; font-weight: 600; margin: 1.4rem 0 0.3rem; }}
+    p  {{ margin: 0.9rem 0; }}
+    .divider {{ border:none; border-top:1px solid #e5e7eb; margin:2rem 0; }}
+    .footer {{ font-size:0.72rem; color:#9ca3af; margin-top:3rem; border-top:1px solid #f3f4f6; padding-top:1rem; font-family:sans-serif; }}
+  </style>
+</head>
+<body>
+  {sandbox_banner}
+
+  <p style="font-family:sans-serif;font-size:0.8rem;color:#6b7280;margin-bottom:0.25rem">
+    <strong style="color:#4f46e5">✦ Said By</strong>
+  </p>
+
+  <p style="font-family:sans-serif;font-size:1.1rem;font-weight:600;color:#111827;margin:0 0 0.25rem">
+    Hi {first_name}! 👋
+  </p>
+
+  <p style="font-family:sans-serif;color:#374151;margin:0 0 1.5rem">
+    Your latest {content_type} is ready — this one is on <strong>{_clean(topic_title)}</strong>. Take a read and let us know what you think.
+  </p>
+
+  <hr class="divider"/>
+
+  {html_content}
+
+  <hr class="divider"/>
+
+  {progress_note}
+
+  <p style="font-family:sans-serif;font-size:0.9rem;color:#374151;margin-top:1.5rem">
+    As always, feel free to reply with any feedback — we love hearing from you.
+  </p>
+
+  <p style="font-family:sans-serif;margin-top:2rem">
+    — Jiraindira<br/>
+    <span style="color:#9ca3af;font-size:0.85rem">Said By</span>
+  </p>
+
+  <div class="footer">Said By · Ghostwriting for {client_name}</div>
+</body>
+</html>"""
+
+    subject = f"Your latest article is ready, {first_name}!"
+    if sandbox:
+        subject = f"[SANDBOX → {client_email}] {subject}"
 
     params: resend.Emails.SendParams = {
         "from": FROM_ADDRESS,
         "to": [to_address],
-        "subject": f"[{client_name}] {topic_title}" if sandbox else topic_title,
+        "subject": subject,
         "html": html,
     }
     response = resend.Emails.send(params)

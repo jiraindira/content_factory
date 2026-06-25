@@ -387,10 +387,32 @@ def approve_generated(brand_id: str, run_id: str, bg: BackgroundTasks):
         raise HTTPException(status_code=400, detail="client_email not set on brand profile")
 
     from content_factory.emailer import send_delivery_email
+
+    # Article progress
+    topics_path2 = TOPICS_DIR / f"{brand_id}.yaml"
+    topics_d = yaml.safe_load(topics_path2.read_text(encoding="utf-8")) if topics_path2.exists() else {}
+    sent_count = sum(1 for t in (topics_d or {}).get("topics", []) if t.get("status") == "sent") + 1
+    pkg_size = brand.get("package_size")
+
+    # Next publish day
+    slots = brand.get("content_slots", [])
+    day_names = {"mon":"Monday","tue":"Tuesday","wed":"Wednesday","thu":"Thursday","fri":"Friday","sat":"Saturday","sun":"Sunday"}
+    weekdays = ["mon","tue","wed","thu","fri","sat","sun"]
+    from datetime import date as _date
+    today_idx = _date.today().weekday()
+    next_day = None
+    for offset in range(1, 8):
+        day_key = weekdays[(today_idx + offset) % 7]
+        if any(s.get("day") == day_key for s in slots):
+            next_day = day_names[day_key]
+            break
+
     email_id = send_delivery_email(
         client_name=client_name, client_email=client_email,
         topic_title=data.get("topic", ""), content_markdown=data.get("content", ""),
         slot_type=data.get("slot_type", "long_blog"),
+        article_number=sent_count, package_size=pkg_size,
+        next_publish_day=next_day,
     )
 
     data["status"] = "approved"
