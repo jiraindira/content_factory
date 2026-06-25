@@ -263,6 +263,13 @@
             <label class="field-label">Writing samples <span class="font-normal text-gray-400">(paste LinkedIn posts or articles — used to calibrate their voice)</span></label>
             <textarea id="writing_samples" rows="8" placeholder="Paste 2–4 of their best LinkedIn posts or articles here. The more authentic the better — threads, long-form posts, anything that shows how they actually write."></textarea>
           </div>
+          <div>
+            <label class="field-label">AI model <span class="font-normal text-gray-400">(used to generate content for this client)</span></label>
+            <select id="llm_provider">
+              <option value="claude">Claude Sonnet — recommended</option>
+              <option value="openai">OpenAI GPT</option>
+            </select>
+          </div>
         </div>
 
         <!-- ── 2. Brand sources ────────────────────────────────────────── -->
@@ -1178,6 +1185,7 @@ function populateForm(d) {
   const topics = (d.topic_policy && d.topic_policy.allowlist) || [];
   setVal("topic_allowlist", topics.join(" ").trim());
   setVal("writing_samples", d.writing_samples || "");
+  document.getElementById("llm_provider").value = d.llm_provider || "claude";
 
   const disc = d.disclaimer_policy || {};
   document.getElementById("disclaimer_required").checked = !!disc.required;
@@ -1216,6 +1224,7 @@ function deriveCommercial(c) {
 function resetForm() {
   ["client_name","client_email","brand_id","source_website","source_linkedin",
    "audience_context","topic_allowlist","writing_samples","disclaimer_text","custom_tone"].forEach(id => setVal(id, ""));
+  document.getElementById("llm_provider").value = "claude";
   document.getElementById("brand_archetype").value = "mentor_coach";
   updateRoleTip();
   document.querySelectorAll(".card-opt").forEach(el => el.classList.remove("selected"));
@@ -1337,6 +1346,7 @@ async function saveClient() {
     package_size: packageSize,
     content_slots: slots,
     writing_samples: writingSamples || "",
+    llm_provider: document.getElementById("llm_provider").value,
   };
 
   try {
