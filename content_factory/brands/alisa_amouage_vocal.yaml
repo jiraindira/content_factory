@@ -71,3 +71,4 @@ content_slots:
   type: short_snippet
 - day: fri
   type: long_blog
+welcome_email_sent: true
