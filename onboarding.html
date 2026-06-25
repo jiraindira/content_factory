@@ -467,8 +467,16 @@
         </div>
 
         <!-- Save -->
-        <div class="pb-16">
+        <div class="pb-4">
           <button id="save-btn" onclick="saveClient()">Save client profile</button>
+        </div>
+
+        <!-- Danger zone — only shown for existing clients -->
+        <div id="delete-zone" class="hidden pb-16 pt-4 text-center">
+          <button onclick="deleteClient()"
+            class="text-sm text-red-400 hover:text-red-600 transition underline underline-offset-2">
+            Delete this client
+          </button>
         </div>
 
       </div><!-- /form-area -->
@@ -1134,6 +1142,7 @@ async function loadClient(brandId) {
   document.getElementById('tab-client-name').textContent = d.client_name || brandId;
   document.getElementById('tab-client-email').textContent = d.client_email || '';
 
+  document.getElementById('delete-zone').classList.remove('hidden');
   switchTab(currentTab);
 }
 
@@ -1141,6 +1150,7 @@ function newClient() {
   closeSidebar();
   currentBrandId = null;
   resetForm();
+  document.getElementById('delete-zone').classList.add('hidden');
   document.querySelectorAll('.client-item').forEach(el => el.classList.remove('active'));
   // Show profile form without tab bar (new client has no brand_id yet)
   document.getElementById('dashboard-area').classList.add('hidden');
