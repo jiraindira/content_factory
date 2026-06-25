@@ -76,7 +76,7 @@ def apply_copy_editor_to_artifact_if_applicable(
 
     try:
         from agents.copy_editor_agent import CopyEditorAgent, CopyEditorConfig
-        from integrations.openai_adapters import OpenAIJsonLLM
+        from integrations.openai_adapters import make_llm
     except Exception:
         return False
 
@@ -102,7 +102,7 @@ def apply_copy_editor_to_artifact_if_applicable(
 
     picks_payload = [{"pick_id": p.pick_id, "body": ""} for p in artifact.products]
 
-    editor = CopyEditorAgent(llm=OpenAIJsonLLM(), config=CopyEditorConfig(max_changes=25, max_pick_sentences=4))
+    editor = CopyEditorAgent(llm=make_llm(brand.model_dump()), config=CopyEditorConfig(max_changes=25, max_pick_sentences=4))
     edited = editor.run(
         title=title,
         audience=audience,

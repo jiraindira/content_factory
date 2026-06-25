@@ -9,7 +9,7 @@ from pathlib import Path
 
 import yaml
 
-from integrations.openai_adapters import OpenAIJsonLLM
+from integrations.openai_adapters import make_llm
 
 TOPICS_DIR = Path(__file__).parent / "topics"
 
@@ -79,7 +79,7 @@ No explanation, no numbering, no extra text."""
 
 def generate_topics(brand: dict) -> list[str]:
     n = int(brand.get("package_size") or 8)
-    llm = OpenAIJsonLLM()
+    llm = make_llm(brand)
     result = llm.complete_json(
         system="You are a senior content strategist. Return only valid JSON.",
         user=_build_prompt(brand, n),

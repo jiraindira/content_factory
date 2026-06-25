@@ -5,12 +5,27 @@ import json
 import os
 import urllib.request
 from io import BytesIO
-from typing import Any
+from typing import TYPE_CHECKING, Any, Union
 
 from dotenv import load_dotenv
 from openai import OpenAI
 
 load_dotenv()
+
+if TYPE_CHECKING:
+    from integrations.claude_adapters import ClaudeJsonLLM
+
+
+def make_llm(brand: dict | None = None) -> "Union[OpenAIJsonLLM, ClaudeJsonLLM]":
+    """Return the right LLM adapter based on the brand's llm_provider setting.
+
+    Defaults to Claude when no brand is provided or llm_provider is unset.
+    """
+    provider = (brand or {}).get("llm_provider", "claude")
+    if provider == "openai":
+        return OpenAIJsonLLM()
+    from integrations.claude_adapters import ClaudeJsonLLM
+    return ClaudeJsonLLM()
 
 try:
     # Pillow is optional at import-time, but required for image post-processing.

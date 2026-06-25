@@ -6,7 +6,7 @@ using the voice, tone, audience, and persona captured at onboarding.
 """
 from __future__ import annotations
 
-from integrations.openai_adapters import OpenAIJsonLLM
+from integrations.openai_adapters import make_llm
 
 PERSONA_DESCRIPTIONS = {
     "calm_authoritative": "calm, measured, and authoritative — grounded in evidence, never hyperbolic",
@@ -132,7 +132,7 @@ Requirements:
 - No fluff, no corporate-speak, no filler transitions
 - The insight should feel earned, not obvious"""
 
-    llm = OpenAIJsonLLM()
+    llm = make_llm(brand)
     result = llm.complete_json(system=system, user=user)
     title = result.get("title", topic)
     body = result.get("body", "")
@@ -165,7 +165,7 @@ Requirements:
 - No hashtags
 - Feels human, not AI-generated"""
 
-    llm = OpenAIJsonLLM()
+    llm = make_llm(brand)
     result = llm.complete_json(system=system, user=user)
     title = result.get("title", topic)
     body = result.get("body", "")

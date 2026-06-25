@@ -323,11 +323,17 @@ class ContentSlot(SchemaBase):
     type: str  # "long_blog" | "short_snippet"
 
 
+class LLMProvider(str, Enum):
+    claude = "claude"
+    openai = "openai"
+
+
 class BrandProfile(SchemaBase):
     brand_id: str
     client_name: Optional[str] = None
     client_email: Optional[str] = None
     brand_archetype: BrandArchetype
+    llm_provider: LLMProvider = LLMProvider.claude
     package_size: Optional[int] = None
     content_slots: List[ContentSlot] = Field(default_factory=list)
 
