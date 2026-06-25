@@ -105,9 +105,25 @@ Client onboarding (Railway UI)
 - [x] Public client intake form (/onboard) with submission → operator email → activate flow
 
 ## To-do
-- [ ] Cross-client "All content" overview (see all articles across clients in one view)
-- [ ] Content delivery to client website / LinkedIn (not just email)
-- [ ] Regenerate single topic button in UI (without running full scheduler)
+
+### Business priorities (do before more building)
+- [ ] Set pricing on saidby.co homepage
+- [ ] Confirm Alisa as first paying client — send welcome email, activate scheduler
+- [ ] Pitch 2–3 people in network who fit the profile
+- [ ] Define renewal flow — what happens after package ends? (revenue)
+- [ ] Simple client portal — read-only view of content plan + delivered articles
+
+### Marketing — Said By produces content for Said By
+- [ ] Create saidby brand profile in admin (eat your own dog food)
+- [ ] Generate topics: why businesses need consistent content, staying relevant, being remembered
+- [ ] Automate LinkedIn + Instagram posts via scheduler
+- [ ] LinkedIn publishing integration (post directly, not just email)
+
+### Product (build after first 3 paying clients)
+- [ ] Cross-client "All content" overview
+- [ ] Regenerate single topic button
+- [ ] Monthly summary email to clients
+- [ ] Content delivery to LinkedIn / client website directly
 
 ---
 
