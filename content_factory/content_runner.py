@@ -158,6 +158,11 @@ def run_for_brand(brand_id: str, slot_type: str = "long_blog") -> dict:
     # Mark topic as generated
     _mark_topic_generated(brand_id, topic["id"])
 
+    # Work out article number for context
+    topics_data = yaml.safe_load((TOPICS_DIR / f"{brand_id}.yaml").read_text()) or {} if (TOPICS_DIR / f"{brand_id}.yaml").exists() else {}
+    sent_count = sum(1 for t in topics_data.get("topics", []) if t.get("status") in ("generated", "sent"))
+    package_size = brand_dict.get("package_size")
+
     # Email to operator for review
     client_name = brand_dict.get("client_name") or brand_id
     email_id = send_review_email(
@@ -166,6 +171,9 @@ def run_for_brand(brand_id: str, slot_type: str = "long_blog") -> dict:
         topic_title=topic_title,
         content_markdown=markdown,
         slot_type=slot_type,
+        brand=brand_dict,
+        article_number=sent_count,
+        package_size=package_size,
     )
     print(f"[{brand_id}] Review email sent: {email_id}")
 
