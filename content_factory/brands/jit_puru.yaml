@@ -2,7 +2,6 @@ brand_id: jit_puru
 client_name: Jit Puru
 client_email: jit@jitpuru.com
 brand_archetype: mentor_coach
-package_size: 8
 brand_sources:
   require_at_least_one_of_purposes:
   - homepage
@@ -10,7 +9,7 @@ brand_sources:
   - source_id: homepage
     kind: url
     purpose: homepage
-    ref: https://example.com
+    ref: https://www.rishitabooks.com/books/the-sales-rejection-paradox
 domains_supported:
 - leadership
 domain_primary: leadership
@@ -62,6 +61,9 @@ cadence:
   preferred_publish_days:
   - mon
   time_zone: UTC
+package_size: 8
 content_slots:
 - day: mon
   type: long_blog
+writing_samples: ''
+llm_provider: claude
