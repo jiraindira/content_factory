@@ -1,0 +1,67 @@
+brand_id: jit_puru
+client_name: Jit Puru
+client_email: jit@jitpuru.com
+brand_archetype: mentor_coach
+package_size: 8
+brand_sources:
+  require_at_least_one_of_purposes:
+  - homepage
+  sources:
+  - source_id: homepage
+    kind: url
+    purpose: homepage
+    ref: https://example.com
+domains_supported:
+- leadership
+domain_primary: leadership
+audience:
+  primary_audience: professionals_specific_field
+  audience_sophistication: medium
+  audience_context: People in sales, financial planners, insurance agents, real estate
+    agents, people in direct sales, etc…
+content_strategy:
+  allowed_intents:
+  - thought_leadership
+  allowed_product_recommendation_forms: []
+  allowed_thought_leadership_forms: []
+  default_content_depth: long
+topic_policy:
+  allowlist:
+  - How people in sales can deal with demotivation from feeling rejected. It’s based
+    on m book The Sales-Rejection Paradox.
+persona_by_domain:
+  leadership:
+    primary_persona: warm_reflective
+    persona_modifiers:
+    - none
+    science_explicitness: implied
+    personal_presence: occasional_personal_anecdotes
+    narration_mode: first_person_allowed
+commercial_policy:
+  commercial_posture: soft_recommendation
+  cta_policy: soft_authority_signature_line
+  prohibited_behaviors:
+  - fake_scarcity
+  - hype_superlatives
+  - pressure_language
+disclaimer_policy:
+  required: false
+  disclaimer_text: ''
+  locations: []
+delivery_policy:
+  delivery_channels:
+  - blog_article
+  - social_longform
+  delivery_destinations:
+  - hosted_by_us
+  - linkedin
+  delivery_strategy: canonical_plus_short_social
+  auto_publish: false
+cadence:
+  publication_cadence: weekly
+  preferred_publish_days:
+  - mon
+  time_zone: UTC
+content_slots:
+- day: mon
+  type: long_blog
