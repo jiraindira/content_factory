@@ -1,0 +1,67 @@
+brand_id: kamenii
+client_name: Kamenii
+client_email: camz75@gmail.com
+brand_archetype: mentor_coach
+package_size: 8
+brand_sources:
+  require_at_least_one_of_purposes:
+  - homepage
+  sources:
+  - source_id: homepage
+    kind: url
+    purpose: homepage
+    ref: https://example.com
+domains_supported:
+- leadership
+domain_primary: leadership
+audience:
+  primary_audience: everyday_consumers_shoppers
+  audience_sophistication: medium
+  audience_context: Senior corporate individuals with high disposable income who are
+    looking for quick results as they have minimal time
+content_strategy:
+  allowed_intents:
+  - thought_leadership
+  allowed_product_recommendation_forms: []
+  allowed_thought_leadership_forms: []
+  default_content_depth: long
+topic_policy:
+  allowlist:
+  - Personal coaching using NLP, Timeline therapy and hypnotherapy practices for faster
+    and effective results
+persona_by_domain:
+  leadership:
+    primary_persona: warm_reflective
+    persona_modifiers:
+    - none
+    science_explicitness: explicit_when_credibility_helpful
+    personal_presence: frequent_personal_anecdotes
+    narration_mode: first_person_preferred
+commercial_policy:
+  commercial_posture: explicit_cta
+  cta_policy: clear_invitation
+  prohibited_behaviors:
+  - fake_scarcity
+  - hype_superlatives
+  - pressure_language
+disclaimer_policy:
+  required: false
+  disclaimer_text: ''
+  locations: []
+delivery_policy:
+  delivery_channels:
+  - blog_article
+  - social_longform
+  delivery_destinations:
+  - hosted_by_us
+  - linkedin
+  delivery_strategy: canonical_plus_short_social
+  auto_publish: false
+cadence:
+  publication_cadence: weekly
+  preferred_publish_days:
+  - mon
+  time_zone: UTC
+content_slots:
+- day: mon
+  type: long_blog
