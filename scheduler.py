@@ -70,6 +70,11 @@ def run() -> int:
         brand = yaml.safe_load((BRANDS_DIR / f"{brand_id}.yaml").read_text(encoding="utf-8")) or {}
         client_name = brand.get("client_name") or brand_id
 
+        if not brand.get("plan_confirmed"):
+            print(f"[{client_name}] Plan not confirmed by client — skipping")
+            skipped += 1
+            continue
+
         slot = _slot_for_today(brand)
         if not slot:
             print(f"[{client_name}] Not scheduled today — skipping")

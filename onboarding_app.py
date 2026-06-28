@@ -261,7 +261,37 @@ async def activate_submission(sub_id: str, request: Request, bg: BackgroundTasks
     bg.add_task(_sync, brand_path, f"feat: activate client {brand_id}")
     bg.add_task(_sync, path, f"chore: mark submission {sub_id} activated")
 
-    return {"activated": True, "brand_id": brand_id}
+    # Auto-generate topics then send welcome email (topics required before email)
+    topics_generated = False
+    topic_titles = []
+    try:
+        from content_factory.topic_generator import generate_topics, save_topics
+        topic_titles = generate_topics(brand)
+        save_topics(brand_id, topic_titles, status="pending_approval")
+        topics_generated = True
+        bg.add_task(_sync, TOPICS_DIR / f"{brand_id}.yaml", f"feat: topics generated {brand_id}")
+    except Exception as e:
+        print(f"[activate] Topic generation failed for {brand_id}: {e}")
+
+    welcome_sent = False
+    if topics_generated and topic_titles:
+        try:
+            from content_factory.emailer import send_welcome_email
+            send_welcome_email(brand=brand, topics=topic_titles)
+            brand["welcome_email_sent"] = True
+            with open(brand_path, "w", encoding="utf-8") as f:
+                yaml.dump(brand, f, allow_unicode=True, sort_keys=False)
+            bg.add_task(_sync, brand_path, f"chore: welcome sent {brand_id}")
+            welcome_sent = True
+        except Exception as e:
+            print(f"[activate] Welcome email failed for {brand_id}: {e}")
+
+    return {
+        "activated": True,
+        "brand_id": brand_id,
+        "topics_generated": topics_generated,
+        "welcome_sent": welcome_sent,
+    }
 
 
 # ── Brands API (all admin-only) ───────────────────────────────────────────────

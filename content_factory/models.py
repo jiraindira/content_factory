@@ -11,6 +11,7 @@ from schemas.base import SchemaBase
 
 class BrandArchetype(str, Enum):
     mentor_coach = "mentor_coach"
+    author = "author"
     industry_consultant = "industry_consultant"
     corporate_firm = "corporate_firm"
     thought_leader = "thought_leader"

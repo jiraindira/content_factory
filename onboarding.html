@@ -257,6 +257,7 @@
               <label class="field-label">Content style</label>
               <select id="brand_archetype" onchange="updateRoleTip()">
                 <option value="mentor_coach">Mentor / Coach</option>
+                <option value="author">Author / Writer</option>
                 <option value="industry_consultant">Industry Expert / Consultant</option>
                 <option value="corporate_firm">Professional Services Firm</option>
                 <option value="thought_leader">Thought Leader</option>
@@ -688,6 +689,7 @@ function closeSidebar() {
 // ── Data ────────────────────────────────────────────────────────────────────
 const ROLE_TIPS = {
   mentor_coach:        "Personal brand — shares frameworks, lessons, and growth advice as an individual voice.",
+  author:              "Writer / Author — promotes ideas, books, and creative work through compelling content.",
   industry_consultant: "Individual expert — technical authority, market insight, B2B advisory.",
   corporate_firm:      "Firm brand — professional services, sector expertise, company voice.",
   thought_leader:      "Opinion & ideas — challenges thinking, shapes industry narrative.",
@@ -1557,6 +1559,9 @@ async function activateSubmission() {
   if (!brand_id) { alert('Brand ID is required.'); return; }
   if (!actPackage) { alert('Please select a package size.'); return; }
 
+  const btn = document.querySelector('#activation-panel button[onclick="activateSubmission()"]');
+  if (btn) { btn.textContent = 'Activating… generating topics…'; btn.disabled = true; }
+
   const payload = {
     brand_id,
     package_size: actPackage,
@@ -1571,11 +1576,24 @@ async function activateSubmission() {
     body: JSON.stringify(payload),
   });
 
-  if (!res.ok) { showToast('error-toast'); return; }
+  if (!res.ok) {
+    showToast('error-toast');
+    if (btn) { btn.textContent = 'Activate client'; btn.disabled = false; }
+    return;
+  }
+
+  const data = await res.json();
   closeActivation();
   await loadSubmissionsList();
   await loadClientList();
-  showToast('toast');
+
+  if (data.topics_generated && data.welcome_sent) {
+    showToast('toast');
+  } else if (data.topics_generated && !data.welcome_sent) {
+    alert(`Client activated and topics generated, but the welcome email failed — send it manually from the Progress tab.`);
+  } else {
+    alert(`Client activated, but topic generation failed — go to the Topics tab to generate them manually, then send the welcome email.`);
+  }
 }
 
 // ── Review panel ─────────────────────────────────────────────────────────────

@@ -89,6 +89,7 @@
           <label class="field-label">Content style</label>
           <select id="brand_archetype" onchange="onStyleChange()">
             <option value="mentor_coach">Mentor / Coach</option>
+            <option value="author">Author / Writer</option>
             <option value="industry_consultant">Industry Expert / Consultant</option>
             <option value="corporate_firm">Professional Services Firm</option>
             <option value="thought_leader">Thought Leader</option>
@@ -201,6 +202,7 @@
 <script>
 const STYLE_TIPS = {
   mentor_coach:         "Personal brand — shares frameworks, lessons, and growth advice as an individual voice.",
+  author:               "Writer / Author — promotes ideas, books, and creative work through compelling content.",
   industry_consultant:  "Individual expert — technical authority, market insight, B2B advisory.",
   corporate_firm:       "Firm brand — professional services, sector expertise, company voice.",
   thought_leader:       "Opinion & ideas — challenges thinking, shapes industry narrative.",
@@ -209,6 +211,13 @@ const STYLE_TIPS = {
 };
 
 const TONE_EXAMPLES = {
+  author: {
+    calm_authoritative:   "The best books don't just tell a story — they disrupt the reader's assumptions about what's possible.",
+    warm_reflective:      "I didn't set out to write a book. I set out to make sense of something I couldn't stop thinking about.",
+    direct_insight_dense: "Most authors write for readers. The best ones write for the reader who hasn't found the right book yet.",
+    practical_expert:     "Here's what nobody tells you about writing a book: the hardest part isn't the writing. It's deciding what to leave out.",
+    minimalist_executive: "A book is a conversation. Start it well.",
+  },
   mentor_coach: {
     calm_authoritative:   "Research on vocal load consistently shows that executives who speak under sustained stress compress their dynamic range — often without realising it.",
     warm_reflective:      "There's a moment before a high-stakes conversation where most leaders tighten. I've watched it happen hundreds of times. The voice narrows before the room does.",
