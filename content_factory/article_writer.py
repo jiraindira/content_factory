@@ -8,6 +8,16 @@ from __future__ import annotations
 
 from integrations.openai_adapters import make_llm
 
+_ARTICLE_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "title": {"type": "string"},
+        "body": {"type": "string"},
+    },
+    "required": ["title", "body"],
+    "additionalProperties": False,
+}
+
 PERSONA_DESCRIPTIONS = {
     "calm_authoritative": "calm, measured, and authoritative — grounded in evidence, never hyperbolic",
     "warm_reflective": "warm and reflective, quietly confident — like a trusted mentor sharing hard-won insight",
@@ -133,7 +143,10 @@ Requirements:
 - The insight should feel earned, not obvious"""
 
     llm = make_llm(brand)
-    result = llm.complete_json(system=system, user=user)
+    result = llm.complete_json(
+        system=system, user=user, schema=_ARTICLE_SCHEMA,
+        reference_document=(brand.get("reference_text") or None),
+    )
     title = result.get("title", topic)
     body = result.get("body", "")
     return f"# {title}\n\n{body}"
@@ -166,7 +179,10 @@ Requirements:
 - Feels human, not AI-generated"""
 
     llm = make_llm(brand)
-    result = llm.complete_json(system=system, user=user)
+    result = llm.complete_json(
+        system=system, user=user, schema=_ARTICLE_SCHEMA,
+        reference_document=(brand.get("reference_text") or None),
+    )
     title = result.get("title", topic)
     body = result.get("body", "")
     return f"# {title}\n\n{body}"

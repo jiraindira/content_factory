@@ -77,12 +77,24 @@ Return ONLY a JSON object with a single key "topics" whose value is an array of 
 No explanation, no numbering, no extra text."""
 
 
+_TOPICS_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "topics": {"type": "array", "items": {"type": "string"}},
+    },
+    "required": ["topics"],
+    "additionalProperties": False,
+}
+
+
 def generate_topics(brand: dict) -> list[str]:
     n = int(brand.get("package_size") or 8)
     llm = make_llm(brand)
     result = llm.complete_json(
         system="You are a senior content strategist. Return only valid JSON.",
         user=_build_prompt(brand, n),
+        schema=_TOPICS_SCHEMA,
+        reference_document=(brand.get("reference_text") or None),
     )
     topics = result.get("topics", [])
     if not isinstance(topics, list):

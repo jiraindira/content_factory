@@ -30,6 +30,8 @@ jobs:
 
       - name: Run scheduler
         env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_MODEL: claude-sonnet-4-6
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_MODEL: gpt-4.1-mini
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
