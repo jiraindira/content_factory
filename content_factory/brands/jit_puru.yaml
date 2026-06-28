@@ -67,3 +67,4 @@ content_slots:
   type: long_blog
 writing_samples: ''
 llm_provider: claude
+welcome_email_sent: true
