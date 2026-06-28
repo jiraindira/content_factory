@@ -10,6 +10,7 @@ from pathlib import Path
 import yaml
 
 from integrations.openai_adapters import make_llm
+from content_factory.references import load_reference_text
 
 TOPICS_DIR = Path(__file__).parent / "topics"
 
@@ -94,7 +95,7 @@ def generate_topics(brand: dict) -> list[str]:
         system="You are a senior content strategist. Return only valid JSON.",
         user=_build_prompt(brand, n),
         schema=_TOPICS_SCHEMA,
-        reference_document=(brand.get("reference_text") or None),
+        reference_document=(brand.get("reference_text") or load_reference_text(brand.get("brand_id"))),
     )
     topics = result.get("topics", [])
     if not isinstance(topics, list):

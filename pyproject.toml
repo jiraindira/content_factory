@@ -21,6 +21,7 @@ fastapi = ">=0.110.0,<1.0.0"
 resend = "^2.32.2"
 itsdangerous = "^2.2.0"
 anthropic = "^0.112.0"
+pypdf = "^6.14.2"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

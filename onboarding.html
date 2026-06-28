@@ -276,6 +276,29 @@
             <textarea id="writing_samples" rows="8" placeholder="Paste 2–4 of their best LinkedIn posts or articles here. The more authentic the better — threads, long-form posts, anything that shows how they actually write."></textarea>
           </div>
           <div>
+            <label class="field-label">Reference material <span class="font-normal text-gray-400">(upload their book/manuscript as a PDF — content is grounded in it)</span></label>
+            <div id="reference-card" class="border border-dashed border-gray-300 rounded-lg p-4">
+              <p id="reference-hint" class="text-sm text-gray-400">Save the client first, then you can attach a book.</p>
+
+              <div id="reference-status" class="hidden items-center justify-between gap-3">
+                <div class="text-sm text-gray-700">
+                  📖 <span id="reference-stats" class="font-medium"></span>
+                </div>
+                <button type="button" onclick="removeReference()" class="text-xs text-red-400 hover:text-red-600 underline">Remove</button>
+              </div>
+
+              <div id="reference-upload" class="hidden">
+                <input type="file" id="reference-file" accept="application/pdf"
+                  class="block w-full text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100" />
+                <button type="button" id="reference-upload-btn" onclick="uploadReference()"
+                  class="mt-3 py-1.5 px-4 rounded-md bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 transition">
+                  Upload PDF
+                </button>
+                <p class="text-xs text-gray-400 mt-2">Text-based PDFs only (not scanned images). Large books are capped at ~150K tokens.</p>
+              </div>
+            </div>
+          </div>
+          <div>
             <label class="field-label">AI model <span class="font-normal text-gray-400">(used to generate content for this client)</span></label>
             <select id="llm_provider">
               <option value="claude">Claude Sonnet — recommended</option>
@@ -1145,7 +1168,63 @@ async function loadClient(brandId) {
   document.getElementById('tab-client-email').textContent = d.client_email || '';
 
   document.getElementById('delete-zone').classList.remove('hidden');
+  loadReference(brandId);
   switchTab(currentTab);
+}
+
+// ── Reference material (book) ─────────────────────────────────────────────────
+async function loadReference(brandId) {
+  const hint = document.getElementById('reference-hint');
+  const status = document.getElementById('reference-status');
+  const upload = document.getElementById('reference-upload');
+  if (!brandId) {
+    hint.classList.remove('hidden');
+    status.classList.add('hidden'); status.classList.remove('flex');
+    upload.classList.add('hidden');
+    return;
+  }
+  hint.classList.add('hidden');
+  const res = await fetch(`/api/brands/${brandId}/reference`);
+  const meta = res.ok ? await res.json() : { exists: false };
+  if (meta.exists) {
+    document.getElementById('reference-stats').textContent =
+      `${meta.word_count.toLocaleString()} words · ~${Math.round(meta.approx_tokens/1000)}K tokens${meta.truncated ? ' (capped)' : ''}`;
+    status.classList.remove('hidden'); status.classList.add('flex');
+    upload.classList.add('hidden');
+  } else {
+    status.classList.add('hidden'); status.classList.remove('flex');
+    upload.classList.remove('hidden');
+    document.getElementById('reference-file').value = '';
+  }
+}
+
+async function uploadReference() {
+  if (!currentBrandId) return;
+  const input = document.getElementById('reference-file');
+  if (!input.files.length) { alert('Choose a PDF first.'); return; }
+  const btn = document.getElementById('reference-upload-btn');
+  btn.textContent = 'Extracting…'; btn.disabled = true;
+  const fd = new FormData();
+  fd.append('file', input.files[0]);
+  try {
+    const res = await fetch(`/api/brands/${currentBrandId}/reference`, { method: 'POST', body: fd });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      alert(err.detail || 'Upload failed.');
+    } else {
+      await loadReference(currentBrandId);
+      showToast('toast');
+    }
+  } finally {
+    btn.textContent = 'Upload PDF'; btn.disabled = false;
+  }
+}
+
+async function removeReference() {
+  if (!currentBrandId) return;
+  if (!confirm('Remove this reference material?')) return;
+  await fetch(`/api/brands/${currentBrandId}/reference`, { method: 'DELETE' });
+  await loadReference(currentBrandId);
 }
 
 function newClient() {
@@ -1161,6 +1240,7 @@ function newClient() {
   document.getElementById('review-area').classList.add('hidden');
   document.getElementById('submissions-area').classList.add('hidden');
   document.getElementById('client-tab-bar').classList.add('hidden');
+  loadReference(null);
   currentTab = 'profile';
 }
 

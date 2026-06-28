@@ -7,6 +7,7 @@ using the voice, tone, audience, and persona captured at onboarding.
 from __future__ import annotations
 
 from integrations.openai_adapters import make_llm
+from content_factory.references import load_reference_text
 
 _ARTICLE_SCHEMA = {
     "type": "object",
@@ -145,7 +146,7 @@ Requirements:
     llm = make_llm(brand)
     result = llm.complete_json(
         system=system, user=user, schema=_ARTICLE_SCHEMA,
-        reference_document=(brand.get("reference_text") or None),
+        reference_document=(brand.get("reference_text") or load_reference_text(brand.get("brand_id"))),
     )
     title = result.get("title", topic)
     body = result.get("body", "")
@@ -181,7 +182,7 @@ Requirements:
     llm = make_llm(brand)
     result = llm.complete_json(
         system=system, user=user, schema=_ARTICLE_SCHEMA,
-        reference_document=(brand.get("reference_text") or None),
+        reference_document=(brand.get("reference_text") or load_reference_text(brand.get("brand_id"))),
     )
     title = result.get("title", topic)
     body = result.get("body", "")

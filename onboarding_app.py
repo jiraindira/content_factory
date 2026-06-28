@@ -14,7 +14,7 @@ import yaml
 import sys
 sys.path.insert(0, str(Path(__file__).parent))
 
-from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request
+from fastapi import BackgroundTasks, Depends, FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -333,6 +333,48 @@ async def save_brand(request: Request, bg: BackgroundTasks):
         yaml.dump(data, f, allow_unicode=True, sort_keys=False)
     bg.add_task(_sync, path, f"chore: update brand {brand_id}")
     return {"saved": str(path)}
+
+
+REFERENCES_DIR = Path(__file__).parent / "content_factory" / "references"
+
+
+@app.get("/api/brands/{brand_id}/reference", dependencies=[Depends(api_auth)])
+def get_reference(brand_id: str):
+    from content_factory.references import reference_meta
+    return reference_meta(brand_id)
+
+
+@app.post("/api/brands/{brand_id}/reference", dependencies=[Depends(api_auth)])
+async def upload_reference(brand_id: str, bg: BackgroundTasks, file: UploadFile = File(...)):
+    from content_factory.references import extract_pdf_text, save_reference_text, reference_meta
+
+    if not (file.filename or "").lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Please upload a PDF file.")
+
+    data = await file.read()
+    try:
+        text = extract_pdf_text(data)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Could not read PDF: {e}")
+
+    if len(text.strip()) < 200:
+        raise HTTPException(
+            status_code=400,
+            detail="Almost no text could be extracted — the PDF may be scanned images rather than text.",
+        )
+
+    path = save_reference_text(brand_id, text)
+    bg.add_task(_sync, path, f"feat: reference material for {brand_id}")
+    return {"saved": True, **reference_meta(brand_id)}
+
+
+@app.delete("/api/brands/{brand_id}/reference", dependencies=[Depends(api_auth)])
+def delete_reference_endpoint(brand_id: str, bg: BackgroundTasks):
+    from content_factory.references import delete_reference, reference_path
+    path = reference_path(brand_id)
+    if delete_reference(brand_id):
+        bg.add_task(_delete, path, f"chore: remove reference for {brand_id}")
+    return {"deleted": True}
 
 
 @app.get("/api/brands/{brand_id}/topics", dependencies=[Depends(api_auth)])
