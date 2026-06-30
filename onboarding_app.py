@@ -206,6 +206,9 @@ async def activate_submission(sub_id: str, request: Request, bg: BackgroundTasks
         "client_email": sub.get("client_email", ""),
         "brand_archetype": sub.get("brand_archetype", "mentor_coach"),
         "package_size": body.get("package_size", 8),
+        "core_beliefs": sub.get("core_beliefs", ""),
+        "formative_experiences": sub.get("formative_experiences", ""),
+        "desired_outcome": sub.get("desired_outcome", ""),
         "brand_sources": {
             "require_at_least_one_of_purposes": ["homepage"],
             "sources": [{"source_id": "homepage", "kind": "url", "purpose": "homepage", "ref": sub.get("website_url", "")}]

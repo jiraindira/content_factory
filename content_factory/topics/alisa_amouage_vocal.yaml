@@ -1,7 +1,7 @@
 brand_id: alisa_amouage_vocal
-status: approved
+status: pending_approval
 generated_at: '2026-06-23'
-approved_at: '2026-06-23'
+approved_at: null
 topics:
 - id: 1
   title: 'Mastering Voice Readiness: How Senior Executives Can Command Attention Before
@@ -14,32 +14,26 @@ topics:
     Stakeholders'
   status: sent
 - id: 3
-  title: 'Executive Presence Under Pressure: Strategies to Maintain Poise When the
-
-    Spotlight Intensifies'
+  title: 'Why Knowing Your Subject Isn''t Enough: The Stage Presence Gap Most Senior
+    Leaders Never Close'
   status: pending
 - id: 4
-  title: 'The Myth of the ''Charismatic Leader'': Why Authenticity Outweighs Performance
-
-    in Executive Communication'
+  title: Your Voice Is an Instrument — Here's How Jazz Taught Me to Train C-Suite
+    Executives to Use Theirs
   status: pending
 - id: 5
-  title: 'Reframing Silence: How Thoughtful Pauses Enhance Your Influence on Stage
-
-    and in the Boardroom'
+  title: 'The Myth of the Natural Speaker: What Boards and Boardrooms Get Wrong About
+    Executive Presence'
   status: pending
 - id: 6
-  title: 'From Script to Spontaneity: Practical Techniques for Senior Leaders to Speak
-
-    Authentically Under Scrutiny'
+  title: 'Credible Confidence vs. Performative Confidence: How Senior Leaders Can
+    Tell the Difference (And Which One the Room Feels)'
   status: pending
 - id: 7
-  title: 'Challenging Conventional Wisdom: Why â€˜Always Be Confidentâ€™ Can Undermine
-
-    Your Leadership Impact'
+  title: Five Vocal Warm-Up Exercises Borrowed From the Stage That Will Change How
+    You Open Your Next Keynote
   status: pending
 - id: 8
-  title: 'The Subtle Art of Listening While Leading: Elevating Your Presence Through
-
-    Responsive Communication'
+  title: 'Under Pressure and On the Spot: How to Project Authority When the Stakes
+    Are High and the Room Is Watching'
   status: pending

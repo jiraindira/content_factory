@@ -105,10 +105,35 @@
       </div>
     </div>
 
-    <!-- 2. Your audience -->
+    <!-- 2. What you stand for -->
     <div class="section-card">
       <div class="flex items-start mb-4">
         <span class="step-num">2</span>
+        <div>
+          <h2 class="font-bold text-gray-900">What you stand for</h2>
+          <p class="text-sm text-gray-500 mt-0.5">This is the heart of your content — the substance we write from.</p>
+        </div>
+      </div>
+      <div class="space-y-5">
+        <div>
+          <label class="field-label">What are the 3–5 ideas or beliefs you wish more people understood?</label>
+          <textarea id="core_beliefs" rows="4" placeholder="These are the principles you find yourself repeating over and over. If your audience remembered only a handful of things from your work, what would they be?"></textarea>
+        </div>
+        <div>
+          <label class="field-label">What experiences shaped these beliefs?</label>
+          <textarea id="formative_experiences" rows="4" placeholder="Tell us about turning points, failures, surprising lessons, mentors, successes, or moments that changed how you think."></textarea>
+        </div>
+        <div>
+          <label class="field-label">What should every piece of content move people toward? <span class="font-normal text-gray-400">(optional)</span></label>
+          <textarea id="desired_outcome" rows="2" placeholder="The shift in thinking you want to create — e.g. think differently about leadership, question a common assumption, see their own work in a new light."></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Your audience -->
+    <div class="section-card">
+      <div class="flex items-start mb-4">
+        <span class="step-num">3</span>
         <div>
           <h2 class="font-bold text-gray-900">Who are you writing for?</h2>
           <p class="text-sm text-gray-500 mt-0.5">Be specific — the more precise, the better the writing.</p>
@@ -124,10 +149,10 @@
       </div>
     </div>
 
-    <!-- 3. Platform -->
+    <!-- 4. Platform -->
     <div class="section-card">
       <div class="flex items-start mb-4">
-        <span class="step-num">3</span>
+        <span class="step-num">4</span>
         <div>
           <h2 class="font-bold text-gray-900">Where will this content live?</h2>
           <p class="text-sm text-gray-500 mt-0.5">This affects length, structure, and tone.</p>
@@ -136,10 +161,10 @@
       <div id="platform-opts" class="space-y-2"></div>
     </div>
 
-    <!-- 4. Tone -->
+    <!-- 5. Tone -->
     <div class="section-card">
       <div class="flex items-start mb-4">
-        <span class="step-num">4</span>
+        <span class="step-num">5</span>
         <div>
           <h2 class="font-bold text-gray-900">Tone calibration</h2>
           <p class="text-sm text-gray-500 mt-0.5">Which lane should your voice sit in?</p>
@@ -163,10 +188,10 @@
       </div>
     </div>
 
-    <!-- 5. Personal presence -->
+    <!-- 6. Personal presence -->
     <div class="section-card">
       <div class="flex items-start mb-4">
-        <span class="step-num">5</span>
+        <span class="step-num">6</span>
         <div>
           <h2 class="font-bold text-gray-900">Personal presence</h2>
           <p class="text-sm text-gray-500 mt-0.5">How visible are you in the writing?</p>
@@ -175,10 +200,10 @@
       <div id="presence-opts" class="space-y-2"></div>
     </div>
 
-    <!-- 6. Commercial stance -->
+    <!-- 7. Commercial stance -->
     <div class="section-card">
       <div class="flex items-start mb-4">
-        <span class="step-num">6</span>
+        <span class="step-num">7</span>
         <div>
           <h2 class="font-bold text-gray-900">Relationship to selling</h2>
           <p class="text-sm text-gray-500 mt-0.5">How overt should the commercial angle be?</p>
@@ -380,10 +405,14 @@ async function submitForm() {
   const email = document.getElementById('client_email').value.trim();
   const about = document.getElementById('about').value.trim();
 
+  const coreBeliefs = document.getElementById('core_beliefs').value.trim();
+  const formativeExperiences = document.getElementById('formative_experiences').value.trim();
   const audienceContext = document.getElementById('audience_context').value.trim();
   if (!name)          { showErr('Please enter your name.'); return; }
   if (!email)         { showErr('Please enter your email address.'); return; }
   if (!about)         { showErr('Please tell us what you write about.'); return; }
+  if (!coreBeliefs)   { showErr('Please share the core ideas or beliefs you want to be known for.'); return; }
+  if (!formativeExperiences) { showErr('Please tell us about the experiences that shaped your beliefs.'); return; }
   if (!audienceContext){ showErr('Please describe your ideal reader.'); return; }
   if (!getSelected('platform'))  { showErr('Please select where your content will live.'); return; }
   if (!getSelected('tone'))      { showErr('Please select a tone.'); return; }
@@ -399,6 +428,9 @@ async function submitForm() {
     website_url:      document.getElementById('website_url').value.trim(),
     brand_archetype:  document.getElementById('brand_archetype').value,
     about,
+    core_beliefs:          coreBeliefs,
+    formative_experiences: formativeExperiences,
+    desired_outcome:       document.getElementById('desired_outcome').value.trim(),
     audience:         getSelected('audience'),
     audience_context: document.getElementById('audience_context').value.trim(),
     platform:         getSelected('platform'),

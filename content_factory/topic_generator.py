@@ -58,20 +58,42 @@ def _build_prompt(brand: dict, n: int) -> str:
     if aud_ctx:
         audience_line += f" — specifically {aud_ctx}"
 
+    beliefs = (brand.get("core_beliefs") or "").strip()
+    experiences = (brand.get("formative_experiences") or "").strip()
+    outcome = (brand.get("desired_outcome") or "").strip()
+
+    substance = ""
+    if beliefs:
+        substance += (
+            "\n\nCore beliefs the client wants their content to advance (use these as the "
+            "backbone — each topic should express, explore, or build on one of them):\n"
+            f"{beliefs}")
+    if experiences:
+        substance += (
+            "\n\nFormative experiences and stories they draw on (some may themselves be "
+            f"worth a piece):\n{experiences}")
+    if outcome:
+        substance += f"\n\nThe shift in thinking every piece should move readers toward: {outcome}"
+
+    grounding_line = (
+        "- Grounded in the client's actual beliefs and experiences above — not generic industry topics\n"
+        if (beliefs or experiences) else ""
+    )
+
     return f"""You are a senior content strategist planning a {n}-article content series.
 
 Client profile:
 - Creator role: {role}
 - Primary audience: {audience_line}
 - What they write about: {about}
-- Writing tone: {persona}
+- Writing tone: {persona}{substance}
 
 Generate exactly {n} article topic titles for this client.
 
 Each title must be:
 - Specific and compelling, not generic
 - Directly relevant to the audience's real concerns and daily challenges
-- Varied in angle across the series — include a mix of: practical how-to, reframing assumptions, insight-led pieces, myth-busting, and challenging conventional wisdom
+{grounding_line}- Varied in angle across the series — include a mix of: practical how-to, reframing assumptions, insight-led pieces, myth-busting, and challenging conventional wisdom
 - Written as a polished, publish-ready article title
 
 Return ONLY a JSON object with a single key "topics" whose value is an array of exactly {n} strings.

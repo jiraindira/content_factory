@@ -2,6 +2,14 @@ brand_id: alisa_amouage_vocal
 client_name: Alisa Amouge
 client_email: jirain@gmail.com
 brand_archetype: mentor_coach
+core_beliefs: |
+  1. Stage presence matters just as much as being a subject-matter expert. Knowing your material isn't enough — how you carry yourself and project your voice is what makes a leader credible and actually heard.
+  2. Voice projection is the key to presence, and it is a skill, not a gift. It can be practised and trained like any other.
+  3. Anyone can become a strong public speaker. It isn't reserved for naturals — with the right practice and training, every executive can learn to do it well.
+formative_experiences: |
+  I'm a jazz singer, and on stage clarity of voice and projection are everything — they're the difference between connecting with a room and losing it. Over time I realised that the exact exercises I use to train and warm up my own voice are remarkably relevant for C-suite executives giving talks and keynote presentations. That realisation became the foundation of how I coach leaders: treat the voice as an instrument you can train, and presence follows.
+desired_outcome: |
+  Help senior leaders see that public speaking and stage presence aren't innate gifts you either have or don't — they're skills anyone can build with practice and training.
 brand_sources:
   require_at_least_one_of_purposes:
   - homepage

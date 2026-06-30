@@ -113,12 +113,37 @@ def _samples_block(brand: dict) -> str:
     return f"\n\nExamples of their actual writing (match this voice closely):\n\"\"\"\n{samples[:3000]}\n\"\"\""
 
 
+def _substance_block(brand: dict) -> str:
+    """The client's own beliefs, stories, and intent captured at onboarding —
+    the raw material that keeps articles in their voice rather than generic."""
+    beliefs = (brand.get("core_beliefs") or "").strip()
+    experiences = (brand.get("formative_experiences") or "").strip()
+    outcome = (brand.get("desired_outcome") or "").strip()
+
+    parts: list[str] = []
+    if beliefs:
+        parts.append(
+            "Core beliefs they want their writing to advance (the article should "
+            f"reflect their point of view, not a neutral survey):\n{beliefs}")
+    if experiences:
+        parts.append(
+            "Formative experiences and stories they draw on (weave one in where it "
+            f"earns its place — never force or invent):\n{experiences}")
+    if outcome:
+        parts.append(f"The shift in thinking this piece should move the reader toward: {outcome}")
+
+    if not parts:
+        return ""
+    return "\n\n" + "\n\n".join(parts)
+
+
 def write_long_blog(brand: dict, topic: str) -> str:
     """Generate a full blog article (~900-1200 words) as markdown."""
     about = ((brand.get("topic_policy") or {}).get("allowlist") or [""])[0]
     voice_block = _build_voice_block(brand)
     client_name = brand.get("client_name") or brand.get("brand_id", "")
     samples_block = _samples_block(brand)
+    substance_block = _substance_block(brand)
 
     system = f"""You are a world-class ghostwriter specialising in thought-leadership content.
 You write in the exact voice of the person you represent — not generically.
@@ -129,7 +154,7 @@ Return a JSON object with two keys:
     user = f"""{voice_block}{samples_block}
 
 The client is: {client_name}
-What they write about: {about}
+What they write about: {about}{substance_block}
 
 Write a full thought-leadership article on this topic:
 "{topic}"
@@ -158,6 +183,7 @@ def write_short_snippet(brand: dict, topic: str) -> str:
     voice_block = _build_voice_block(brand)
     client_name = brand.get("client_name") or brand.get("brand_id", "")
     samples_block = _samples_block(brand)
+    substance_block = _substance_block(brand)
 
     system = f"""You are a world-class ghostwriter specialising in short-form thought-leadership content.
 Return a JSON object with two keys:
@@ -166,7 +192,7 @@ Return a JSON object with two keys:
 
     user = f"""{voice_block}{samples_block}
 
-The client is: {client_name}
+The client is: {client_name}{substance_block}
 
 Write a short-form post (~200-280 words) on this topic:
 "{topic}"

@@ -2,6 +2,18 @@ brand_id: jit_puru
 client_name: Jit Puru
 client_email: jit@jitpuru.com
 brand_archetype: mentor_coach
+core_beliefs: |
+  1. Rejection is not the end, and not a verdict on your worth — it's data. The goal isn't to bounce back from a "no," it's to bounce forward through it and let it fuel your growth.
+  2. Your skills might win the deal, but it's your "flame" — your motivation, will, and emotional resilience — that gets you back in the game. Protect that flame, because once it goes out it doesn't reignite on its own.
+  3. People love to buy, but they hate being sold to — and they buy into you before they buy your product. Trust and genuine connection come first; pushing and "Always Be Closing" is exactly what makes prospects run.
+  4. Your real function in sales is to help the customer with their needs, not just to fulfil your own. Serving beats extracting over the long run.
+  5. Your beliefs and the way you talk to yourself architect your results. Stagnation is often progress in disguise, and habits — not motivation alone — are what carry you through.
+formative_experiences: |
+  I started at 21 as an engineering assistant in Singapore, then spent seven and a half years as a flight attendant with Singapore Airlines. At 30 I switched careers again and, with few options and no clear direction, turned to sales — which taught me the industry doesn't discriminate; it only asks for willingness, perseverance, and the commitment to get better.
+  At 17 I sat in an insurance recruitment seminar where the director said, "Once you become an agent, everyone you know is a prospect — start with your closest friends and family." It repelled me, and it shaped a lifelong conviction that sales should be built on genuine relationships, not on seeing people as walking transactions.
+  Over the last decade-plus I've built Ideas & Inspiration (700k+ YouTube subscribers), hosted the podcast, and written my first book, You Deserve Happiness. A conversation with my mentor Ron Kaufman gave me the candle-flame metaphor for motivation that now sits at the heart of The Sales-Rejection Paradox. I wrote that book over two years, bit by bit, in the corners of Starbucks around the world — proof that you don't need the perfect setting, you just need to start.
+desired_outcome: |
+  Help salespeople see rejection not as a signal to stop or a judgment of their worth, but as an invitation to grow — and give them the mindset to keep their motivation alive so they keep showing up.
 brand_sources:
   require_at_least_one_of_purposes:
   - homepage
