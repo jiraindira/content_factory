@@ -272,6 +272,18 @@
             <textarea id="topic_allowlist" rows="3" placeholder="e.g. Voice leadership and executive presence for senior leaders — how to communicate with authority, clarity, and confidence in high-stakes situations."></textarea>
           </div>
           <div>
+            <label class="field-label">Core beliefs <span class="font-normal text-gray-400">(the 3–5 ideas they want more people to understand — the backbone of topic generation)</span></label>
+            <textarea id="core_beliefs" rows="4" placeholder="The principles they repeat over and over. If their audience remembered only a handful of things, what would they be?"></textarea>
+          </div>
+          <div>
+            <label class="field-label">Formative experiences <span class="font-normal text-gray-400">(stories the writer can ground articles in)</span></label>
+            <textarea id="formative_experiences" rows="4" placeholder="Turning points, failures, surprising lessons, mentors, successes — moments that shaped how they think."></textarea>
+          </div>
+          <div>
+            <label class="field-label">Desired outcome <span class="font-normal text-gray-400">(the shift in thinking every piece should create — optional)</span></label>
+            <textarea id="desired_outcome" rows="2" placeholder="e.g. see public speaking as a trainable skill, not an innate gift."></textarea>
+          </div>
+          <div>
             <label class="field-label">Writing samples <span class="font-normal text-gray-400">(paste LinkedIn posts or articles — used to calibrate their voice)</span></label>
             <textarea id="writing_samples" rows="8" placeholder="Paste 2–4 of their best LinkedIn posts or articles here. The more authentic the better — threads, long-form posts, anything that shows how they actually write."></textarea>
           </div>
@@ -1303,6 +1315,9 @@ function populateForm(d) {
 
   const topics = (d.topic_policy && d.topic_policy.allowlist) || [];
   setVal("topic_allowlist", topics.join(" ").trim());
+  setVal("core_beliefs", d.core_beliefs || "");
+  setVal("formative_experiences", d.formative_experiences || "");
+  setVal("desired_outcome", d.desired_outcome || "");
   setVal("writing_samples", d.writing_samples || "");
   document.getElementById("llm_provider").value = d.llm_provider || "claude";
 
@@ -1342,7 +1357,8 @@ function deriveCommercial(c) {
 
 function resetForm() {
   ["client_name","client_email","brand_id","source_website","source_linkedin",
-   "audience_context","topic_allowlist","writing_samples","disclaimer_text","custom_tone"].forEach(id => setVal(id, ""));
+   "audience_context","topic_allowlist","core_beliefs","formative_experiences","desired_outcome",
+   "writing_samples","disclaimer_text","custom_tone"].forEach(id => setVal(id, ""));
   document.getElementById("llm_provider").value = "claude";
   document.getElementById("brand_archetype").value = "mentor_coach";
   updateRoleTip();
@@ -1434,6 +1450,10 @@ async function saveClient() {
     },
 
     topic_policy: { allowlist: topicLines.length ? topicLines : ["General"] },
+
+    core_beliefs: document.getElementById("core_beliefs").value.trim(),
+    formative_experiences: document.getElementById("formative_experiences").value.trim(),
+    desired_outcome: document.getElementById("desired_outcome").value.trim(),
 
     persona_by_domain: personaByDomain,
 
@@ -1574,6 +1594,9 @@ async function openActivation(subId) {
     `<div><strong>Email:</strong> ${sub.client_email || ''}</div>`,
     `<div><strong>Role:</strong> ${(sub.brand_archetype || '').replace(/_/g, ' ')}</div>`,
     `<div><strong>About:</strong> ${sub.about || ''}</div>`,
+    sub.core_beliefs ? `<div><strong>Core beliefs:</strong> ${sub.core_beliefs}</div>` : '',
+    sub.formative_experiences ? `<div><strong>Experiences:</strong> ${sub.formative_experiences}</div>` : '',
+    sub.desired_outcome ? `<div><strong>Desired outcome:</strong> ${sub.desired_outcome}</div>` : '',
     `<div><strong>Audience:</strong> ${(sub.audience || '').replace(/_/g, ' ')}</div>`,
     `<div><strong>Platform:</strong> ${sub.platform || ''}</div>`,
     `<div><strong>Tone:</strong> ${(sub.tone || '').replace(/_/g, ' ')}</div>`,
