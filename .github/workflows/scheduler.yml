@@ -2,8 +2,13 @@ name: Content Scheduler
 
 on:
   schedule:
-    # Runs at 7:00 AM UTC daily — adjust to match your clients' time zones
-    - cron: '0 7 * * *'
+    # 02:00 and 04:00 UTC daily. Goal: content in the approval queue before 8am
+    # London (07:00 UTC in BST, 08:00 UTC in GMT), with plenty of slack for
+    # GitHub Actions' scheduling delay. The 04:00 run is a self-skipping catch-up:
+    # after a successful 02:00 run the slot's topic is already generated / pending
+    # review, so it only does work if the first run missed.
+    - cron: '0 2 * * *'
+    - cron: '0 4 * * *'
   workflow_dispatch:
     # Allow manual trigger from GitHub Actions UI (useful for testing)
 
@@ -39,6 +44,7 @@ jobs:
         run: poetry run python scheduler.py
 
       - name: Commit generated content
+        if: always()   # still commit successful articles even if the run is marked failed
         run: |
           git config user.name "Content Factory Bot"
           git config user.email "bot@content-factory.ai"

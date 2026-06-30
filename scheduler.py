@@ -12,6 +12,7 @@ If all three are clear it fires content generation.
 from __future__ import annotations
 
 import sys
+import time
 from datetime import date
 from pathlib import Path
 
@@ -52,6 +53,28 @@ def _has_approved_topics(brand_id: str) -> bool:
     return any(t.get("status") not in ("generated", "sent") for t in data.get("topics", []))
 
 
+def _generate_with_retry(brand_id: str, slot_type: str, attempts: int = 3) -> dict:
+    """Generate content, retrying transient failures with exponential backoff.
+
+    The SDK already retries connection/429/5xx at the API call; this is a second
+    layer around the whole pipeline so a blip anywhere recovers within one run.
+    """
+    from content_factory.content_runner import run_for_brand
+
+    last_err: Exception | None = None
+    for i in range(attempts):
+        try:
+            return run_for_brand(brand_id=brand_id, slot_type=slot_type)
+        except Exception as e:  # noqa: BLE001 — transient API/network errors
+            last_err = e
+            if i < attempts - 1:
+                wait = 5 * (2 ** i)  # 5s, 10s, 20s
+                print(f"   attempt {i + 1}/{attempts} failed: {e} — retrying in {wait}s")
+                time.sleep(wait)
+    assert last_err is not None
+    raise last_err
+
+
 def run() -> int:
     today_name = WEEKDAY_MAP[date.today().weekday()]
     print(f"=== Content Scheduler — {date.today()} ({today_name}) ===\n")
@@ -65,6 +88,7 @@ def run() -> int:
 
     generated = 0
     skipped = 0
+    failures: list[dict] = []
 
     for brand_id in brands:
         brand = yaml.safe_load((BRANDS_DIR / f"{brand_id}.yaml").read_text(encoding="utf-8")) or {}
@@ -95,19 +119,35 @@ def run() -> int:
         print(f"[{client_name}] Generating {slot_type}...")
 
         try:
-            from content_factory.content_runner import run_for_brand
-            result = run_for_brand(brand_id=brand_id, slot_type=slot_type)
+            result = _generate_with_retry(brand_id, slot_type)
             status = result.get("status", "unknown")
             topic = result.get("topic", "")[:70]
             print(f"[{client_name}] ✓ {status} — {topic}")
             generated += 1
         except Exception as e:
             import traceback
-            print(f"[{client_name}] ✗ ERROR: {e}")
+            print(f"[{client_name}] ✗ ERROR after retries: {e}")
             traceback.print_exc()
+            failures.append({
+                "brand_id": brand_id,
+                "client_name": client_name,
+                "slot_type": slot_type,
+                "error": str(e),
+            })
 
-    print(f"\n=== Done — generated: {generated}, skipped: {skipped} ===")
-    return 0 if generated >= 0 else 1
+    print(f"\n=== Done — generated: {generated}, skipped: {skipped}, failed: {len(failures)} ===")
+
+    # A failure must never be silent again: alert the operator and fail the run.
+    if failures:
+        try:
+            from content_factory.emailer import send_scheduler_alert_email
+            send_scheduler_alert_email(failures=failures, run_date=str(date.today()))
+            print(f"Alert email sent to operator for {len(failures)} failure(s).")
+        except Exception as e:
+            print(f"WARNING: could not send scheduler alert email: {e}")
+        return 1
+
+    return 0
 
 
 if __name__ == "__main__":

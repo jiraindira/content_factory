@@ -45,7 +45,13 @@ class ClaudeJsonLLM:
 
     def __init__(self, *, model: str | None = None, api_key: str | None = None) -> None:
         self.model = model or DEFAULT_MODEL
-        self.client = anthropic.Anthropic(api_key=api_key or os.environ.get("ANTHROPIC_API_KEY"))
+        # max_retries=4: the SDK auto-retries connection errors and 429/5xx with
+        # exponential backoff. Bumped from the default of 2 because the GitHub
+        # Actions scheduler occasionally hits transient connection blips to the API.
+        self.client = anthropic.Anthropic(
+            api_key=api_key or os.environ.get("ANTHROPIC_API_KEY"),
+            max_retries=4,
+        )
 
     def complete_json(
         self,

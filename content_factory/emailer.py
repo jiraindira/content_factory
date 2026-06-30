@@ -303,6 +303,55 @@ def send_new_submission_email(*, submission: dict) -> str:
     return response["id"]
 
 
+def send_scheduler_alert_email(*, failures: list[dict], run_date: str) -> str:
+    """Alert the operator when the scheduler failed to generate content for one or
+    more clients (after retries), so a transient error is never a silent miss."""
+    if not OPERATOR_EMAIL:
+        raise ValueError("OPERATOR_EMAIL is not set in .env")
+
+    review_url = f"{REVIEW_UI_URL}/admin"
+    rows = "".join(
+        "<tr>"
+        f"<td style='padding:4px 14px 4px 0;font-size:0.85rem;color:#111827'>{_clean(f.get('client_name',''))}</td>"
+        f"<td style='padding:4px 14px 4px 0;font-size:0.85rem;color:#6b7280'>{_clean(f.get('slot_type',''))}</td>"
+        f"<td style='padding:4px 0;font-size:0.8rem;color:#b91c1c'>{_clean(str(f.get('error','')))[:200]}</td>"
+        "</tr>"
+        for f in failures
+    )
+    names = ", ".join(f.get("client_name", "") for f in failures)
+
+    html = f"""
+    <!DOCTYPE html><html><head>{_base_style()}</head><body>
+    <div class="banner" style="background:#fef2f2;border-color:#fecaca">
+      &#9888; Scheduler could not generate content for {len(failures)} client(s)<br/>
+      <small>Generate manually at: <a href="{review_url}">{review_url}</a></small>
+    </div>
+    <h2 style="margin-top:0">Action needed &mdash; {run_date}</h2>
+    <p>The daily scheduler finished but failed (after retries) for the client(s) below.
+    Their article is <strong>not</strong> in your approval queue &mdash; use the manual
+    <em>Generate</em> button to produce it.</p>
+    <table style="border-collapse:collapse;margin:1rem 0">
+      <tr>
+        <th style='text-align:left;padding:4px 14px 4px 0;font-size:0.72rem;color:#6b7280;text-transform:uppercase'>Client</th>
+        <th style='text-align:left;padding:4px 14px 4px 0;font-size:0.72rem;color:#6b7280;text-transform:uppercase'>Slot</th>
+        <th style='text-align:left;font-size:0.72rem;color:#6b7280;text-transform:uppercase'>Error</th>
+      </tr>
+      {rows}
+    </table>
+    <div class="footer">Said By &middot; Scheduler alert</div>
+    </body></html>
+    """
+
+    params: resend.Emails.SendParams = {
+        "from": FROM_ADDRESS,
+        "to": [OPERATOR_EMAIL],
+        "subject": f"⚠ Scheduler failed for {names} — manual generate needed",
+        "html": html,
+    }
+    response = resend.Emails.send(params)
+    return response["id"]
+
+
 def send_delivery_email(
     *,
     client_name: str,
