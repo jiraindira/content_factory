@@ -9,14 +9,17 @@ An AI-powered ghostwriting service (brand: **Said By**, live at **saidby.co**) t
 
 ```
 Public homepage (saidby.co) → /onboard intake form (public)
+  → captures voice/audience settings + "What you stand for" (core beliefs,
+    formative experiences, desired outcome) — the substance generation grounds on
   → submission saved + operator emailed
   → operator reviews & ACTIVATES in /admin (protected)
       → auto-generates topics (Claude) + sends welcome email with topic list
   → operator marks "plan confirmed" once client replies
       → client added to scheduler (plan_confirmed gate)
-  → GitHub Actions scheduler (daily, 7am UTC)
+  → GitHub Actions scheduler (daily, 02:00 + 04:00 UTC — before 8am London)
       → for each confirmed client due today: picks next approved topic
       → generates article via Claude (voice-matched, optionally book-grounded)
+      → retries transient failures; emails operator an alert + fails the run if any client can't be generated
       → commits to repo + emails operator for review
   → Operator reviews in /admin
       → Approve → personalized delivery email to client (Resend)
@@ -74,7 +77,7 @@ Onboarded → Topics generated → Topics approved → Welcome email → **Plan 
 | Component | Where |
 |---|---|
 | Web app / admin UI | Railway → custom domain **saidby.co** (Cloudflare DNS) |
-| Scheduler | GitHub Actions (daily cron, 7am UTC) |
+| Scheduler | GitHub Actions (daily cron, 02:00 + 04:00 UTC) — retries + operator alert on failure |
 | LLM (text) | **Claude Sonnet 4.6** (Anthropic); OpenAI retained for images only |
 | Email | Resend, verified domain → sends from **hello@saidby.co** |
 | Repo | GitHub (`jiraindira/content_factory`) |
@@ -108,6 +111,8 @@ Onboarded → Topics generated → Topics approved → Welcome email → **Plan 
 - [x] Mobile-responsive admin
 - [x] **Migrated all text generation to Claude (Sonnet 4.6)**
 - [x] **PDF book upload + full-context grounding for author clients**
+- [x] **Intake "What you stand for"** — captures core beliefs, formative experiences, and desired outcome; threaded through activate → brand profile → topic generation (used as the topic backbone) + article writer (voice grounding). Existing clients (Jit, Alisa) backfilled.
+- [x] **Scheduler resilience** — per-client retries with backoff (SDK `max_retries=4`), operator alert email + non-zero exit on failure (no more silent misses), `if: always()` commit so good articles still persist. Cron moved to 02:00 + 04:00 UTC for pre-8am-London delivery.
 
 ## To-do
 
@@ -134,3 +139,4 @@ Onboarded → Topics generated → Topics approved → Welcome email → **Plan 
 - Book upload requires **text-based PDFs** (scanned-image PDFs extract almost nothing — guarded with an error)
 - LinkedIn blocked by robots.txt — brand context uses homepage only
 - Delivery emails: now send to real client addresses (Resend domain verified)
+- **Scheduler SLA:** target is content in the approval queue before **8am London** (operator approves on the morning train). GitHub Actions cron is best-effort and can run 60–100 min late, so the run is scheduled early (02:00 UTC) with a self-skipping 04:00 UTC catch-up. If delivery ever slips past 8am London, the next step is moving the cron to **Railway** (app already hosted there) for better punctuality.
