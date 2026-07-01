@@ -76,3 +76,4 @@ content_slots:
   type: long_blog
 writing_samples: ''
 llm_provider: claude
+plan_confirmed: true
