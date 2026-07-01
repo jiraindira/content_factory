@@ -31,6 +31,9 @@ topic_policy:
   allowlist:
   - Voice readiness for senior executives Executive presence under pressure Credible
     confidence vs performative confidence
+core_beliefs: ''
+formative_experiences: ''
+desired_outcome: ''
 persona_by_domain:
   leadership:
     primary_persona: warm_reflective
@@ -62,16 +65,14 @@ delivery_policy:
 cadence:
   publication_cadence: twice_weekly
   preferred_publish_days:
-  - wed
+  - thu
   - fri
   time_zone: Europe/London
 package_size: 8
 content_slots:
-- day: wed
+- day: thu
   type: short_snippet
 - day: fri
   type: long_blog
 writing_samples: ''
 llm_provider: claude
-welcome_email_sent: true
-plan_confirmed: true
