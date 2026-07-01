@@ -1,39 +1,31 @@
 brand_id: alisa_amouage_vocal
-status: pending_approval
+status: approved
 generated_at: '2026-06-23'
-approved_at: null
+approved_at: '2026-07-01'
 topics:
 - id: 1
   title: 'Mastering Voice Readiness: How Senior Executives Can Command Attention Before
 
     Every Public Engagement'
-  status: sent
 - id: 2
   title: 'Beyond Performance: Cultivating Credible Confidence That Resonates With
 
     Stakeholders'
-  status: sent
 - id: 3
   title: 'Why Knowing Your Subject Isn''t Enough: The Stage Presence Gap Most Senior
     Leaders Never Close'
-  status: pending
 - id: 4
   title: Your Voice Is an Instrument — Here's How Jazz Taught Me to Train C-Suite
     Executives to Use Theirs
-  status: pending
 - id: 5
   title: 'The Myth of the Natural Speaker: What Boards and Boardrooms Get Wrong About
     Executive Presence'
-  status: pending
 - id: 6
   title: 'Credible Confidence vs. Performative Confidence: How Senior Leaders Can
     Tell the Difference (And Which One the Room Feels)'
-  status: pending
 - id: 7
   title: Five Vocal Warm-Up Exercises Borrowed From the Stage That Will Change How
     You Open Your Next Keynote
-  status: pending
 - id: 8
   title: 'Under Pressure and On the Spot: How to Project Authority When the Stakes
     Are High and the Room Is Watching'
-  status: pending
