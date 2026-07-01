@@ -61,8 +61,9 @@ survive Railway's ephemeral filesystem and the scheduler can read them.
 ---
 
 ## Content packages & cadence
-- Packages: **8** (Starter, $296) / **16** (Standard, $512) / **24** (Premium, $672)
-- Per-article price descends with volume: **$37 / $32 / $28**. One-off package price (no subscription/checkout yet — payment handled offline). Deliberately the value leader vs the $99–$350/article done-for-you market.
+- Packages (list → launch price): **8** Starter $149 → **$99** · **16** Standard $299 → **$249** · **24** Premium $399 → **$349**
+- Launch discount: **$50 off each**, shown as a strikethrough. One-off package price (no checkout yet — payment handled offline).
+- **Free trial: 3 articles, no card** — lead magnet to pull prospects through the intake. Operator generates the 3 free pieces manually; no billing.
 - Cadence: **1× or 2× per week**
 - Slot types: `long_blog` (~900–1,200 words) · `short_snippet` (~200–280 words)
 
@@ -118,7 +119,7 @@ Onboarded → Topics generated → Topics approved → Welcome email → **Plan 
 ## To-do
 
 ### Business priorities (do before more building)
-- [x] Set pricing on saidby.co homepage — $296 / $512 / $672 ($37 / $32 / $28 per article)
+- [x] Set pricing on saidby.co homepage — list $149/$299/$399, launch $99/$249/$349 ($50 off), + 3-article free trial
 - [ ] Add conversion essentials before driving traffic: a sample article, who-it's-for section, and an FAQ (incl. "is this just ChatGPT?")
 - [ ] Onboard first paying clients (Alisa, Jit) — upload Jit's book, confirm plans
 - [ ] Pitch 2–3 people in network who fit the profile
