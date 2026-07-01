@@ -77,3 +77,4 @@ content_slots:
 writing_samples: ''
 llm_provider: claude
 plan_confirmed: true
+welcome_email_sent: true
