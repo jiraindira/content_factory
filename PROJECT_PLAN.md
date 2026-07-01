@@ -121,7 +121,7 @@ Onboarded → Topics generated → Topics approved → Welcome email → **Plan 
 
 ### Business priorities (do before more building)
 - [x] Set pricing on saidby.co homepage — list $99/$139/$169, launch $49/$89/$119 ($50 off), + 3-article free trial
-- [x] Homepage conversion sections: "Who it's for" (4 segments), "Not another AI content mill" before/after sample, and an FAQ (ChatGPT rebuttal, voice, ownership, trial, publishing limits)
+- [x] Homepage conversion sections: "Who it's for" (4 segments), "Not another AI content mill" before/after sample, a real client testimonial (Jit Puru, attribution factual), and an FAQ (ChatGPT rebuttal, voice, ownership, trial, publishing limits)
 - [ ] Onboard first paying clients (Alisa, Jit) — upload Jit's book, confirm plans
 - [ ] Pitch 2–3 people in network who fit the profile
 - [ ] Define renewal flow — what happens after a package ends? (revenue)
