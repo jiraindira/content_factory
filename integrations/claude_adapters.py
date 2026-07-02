@@ -48,8 +48,11 @@ class ClaudeJsonLLM:
         # max_retries=4: the SDK auto-retries connection errors and 429/5xx with
         # exponential backoff. Bumped from the default of 2 because the GitHub
         # Actions scheduler occasionally hits transient connection blips to the API.
+        # .strip() the key: a trailing newline in the env var / GitHub secret is an
+        # illegal HTTP header value and surfaces confusingly as APIConnectionError
+        # ("Illegal header value b'***\n'"), which no amount of retrying can fix.
         self.client = anthropic.Anthropic(
-            api_key=api_key or os.environ.get("ANTHROPIC_API_KEY"),
+            api_key=(api_key or os.environ.get("ANTHROPIC_API_KEY") or "").strip(),
             max_retries=4,
         )
 

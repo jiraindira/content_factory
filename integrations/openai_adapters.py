@@ -46,7 +46,7 @@ class OpenAIJsonLLM:
 
     def __init__(self, *, model: str | None = None, api_key: str | None = None) -> None:
         self.model = model or os.environ.get("OPENAI_MODEL", "gpt-4.1-mini")
-        self.client = OpenAI(api_key=api_key or os.environ.get("OPENAI_API_KEY"))
+        self.client = OpenAI(api_key=(api_key or os.environ.get("OPENAI_API_KEY") or "").strip())
 
     def complete_json(
         self,
@@ -115,7 +115,7 @@ class OpenAIImageGenerator:
     def __init__(self, *, model: str | None = None, api_key: str | None = None) -> None:
         self.model = model or os.environ.get("OPENAI_IMAGE_MODEL", "gpt-image-1")
         self.fallback_model = os.environ.get("OPENAI_IMAGE_MODEL_FALLBACK", "").strip() or None
-        self.client = OpenAI(api_key=api_key or os.environ.get("OPENAI_API_KEY"))
+        self.client = OpenAI(api_key=(api_key or os.environ.get("OPENAI_API_KEY") or "").strip())
 
     def generate(self, *, prompt: str, fmt: str = "webp", width: int, height: int) -> bytes:
         fmt_norm = (fmt or "webp").strip().lower()
