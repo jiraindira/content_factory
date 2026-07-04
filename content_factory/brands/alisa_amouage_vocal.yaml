@@ -65,16 +65,14 @@ delivery_policy:
 cadence:
   publication_cadence: twice_weekly
   preferred_publish_days:
-  - thu
-  - fri
+  - sun
+  - sat
   time_zone: Europe/London
 package_size: 8
 content_slots:
-- day: thu
+- day: sun
   type: short_snippet
-- day: fri
+- day: sat
   type: long_blog
 writing_samples: ''
 llm_provider: claude
-plan_confirmed: true
-welcome_email_sent: true
