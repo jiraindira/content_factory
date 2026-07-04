@@ -115,7 +115,7 @@ Onboarded → Topics generated → Topics approved → Welcome email → **Plan 
 - [x] **Migrated all text generation to Claude (Sonnet 4.6)**
 - [x] **PDF book upload + full-context grounding for author clients**
 - [x] **Intake "What you stand for"** — captures core beliefs, formative experiences, and desired outcome; threaded through activate → brand profile → topic generation (used as the topic backbone) + article writer (voice grounding). Existing clients (Jit, Alisa) backfilled.
-- [x] **Scheduler resilience** — per-client retries with backoff (SDK `max_retries=4`), operator alert email + non-zero exit on failure (no more silent misses), `if: always()` commit so good articles still persist. Cron moved to 02:00 + 04:00 UTC for pre-8am-London delivery.
+- [x] **Scheduler resilience** — per-client retries with backoff (SDK `max_retries=4`), operator alert email + non-zero exit on failure (no more silent misses), `if: always()` commit so good articles still persist. Cron moved to 02:00 + 04:00 UTC for pre-8am-London delivery. Env preflight refuses to run (exit 1) if required vars are missing or `FROM_EMAIL` points at the Resend sandbox. API keys are `.strip()`ed (a trailing newline in the secret was an illegal header → silent "connection error"). Actions env now sets `FROM_EMAIL`/`REVIEW_UI_URL` so review emails send from the verified domain, not the sandbox.
 
 ## To-do
 
