@@ -11,12 +11,23 @@ If all three are clear it fires content generation.
 """
 from __future__ import annotations
 
+import os
 import sys
 import time
 from datetime import date
 from pathlib import Path
 
 import yaml
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# Keep unicode output (✓, ⚠, —) from crashing on Windows' cp1252 console.
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
+except Exception:
+    pass
 
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -75,7 +86,48 @@ def _generate_with_retry(brand_id: str, slot_type: str, attempts: int = 3) -> di
     raise last_err
 
 
+def _preflight() -> list[str]:
+    """Validate required env before doing any work.
+
+    Runs on every invocation — even days no client is due — so a misconfiguration
+    (missing key, sandbox FROM address, etc.) fails loudly on the next run instead
+    of hiding until a generation silently doesn't deliver. Returns fatal problems;
+    prints non-fatal warnings inline.
+    """
+    problems: list[str] = []
+
+    # Required and non-empty (whitespace-only counts as empty).
+    for name in ("ANTHROPIC_API_KEY", "RESEND_API_KEY", "OPERATOR_EMAIL"):
+        raw = os.environ.get(name, "")
+        if not raw.strip():
+            problems.append(f"{name} is missing or empty")
+        elif raw != raw.strip():
+            print(f"⚠ preflight: {name} has surrounding whitespace (stripped at use — clean up the secret)")
+
+    # FROM_EMAIL must be set to the verified domain. Unset → emailer falls back to
+    # the Resend sandbox (onboarding@resend.dev), which is accepted but never
+    # delivered — the exact cause of the missing scheduled emails.
+    from_email = os.environ.get("FROM_EMAIL", "").strip()
+    if not from_email:
+        problems.append("FROM_EMAIL is not set (would fall back to Resend sandbox — emails won't deliver)")
+    elif "resend.dev" in from_email:
+        problems.append(f"FROM_EMAIL uses the Resend sandbox domain ({from_email!r}) — emails won't deliver; use your verified domain")
+
+    review_url = os.environ.get("REVIEW_UI_URL", "").strip()
+    if not review_url or "localhost" in review_url:
+        print(f"⚠ preflight: REVIEW_UI_URL is unset or localhost ({review_url!r}) — email links will be wrong")
+
+    return problems
+
+
 def run() -> int:
+    problems = _preflight()
+    if problems:
+        print("✗ Preflight failed — refusing to run:")
+        for p in problems:
+            print(f"   - {p}")
+        return 1
+
     today_name = WEEKDAY_MAP[date.today().weekday()]
     print(f"=== Content Scheduler — {date.today()} ({today_name}) ===\n")
 
