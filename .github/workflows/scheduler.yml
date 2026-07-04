@@ -41,6 +41,11 @@ jobs:
           OPENAI_MODEL: gpt-4.1-mini
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           OPERATOR_EMAIL: ${{ secrets.OPERATOR_EMAIL }}
+          # Without these, emails fall back to Resend's sandbox sender
+          # (onboarding@resend.dev), which Resend accepts but doesn't deliver to the
+          # inbox — the reason scheduled review emails never arrived. Match Railway.
+          FROM_EMAIL: "Said By <hello@saidby.co>"
+          REVIEW_UI_URL: "https://saidby.co"
         run: poetry run python scheduler.py
 
       - name: Commit generated content
