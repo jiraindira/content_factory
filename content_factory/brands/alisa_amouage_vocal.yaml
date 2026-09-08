@@ -66,15 +66,13 @@ cadence:
   publication_cadence: twice_weekly
   preferred_publish_days:
   - sun
-  - sat
+  - wed
   time_zone: Europe/London
 package_size: 8
 content_slots:
 - day: sun
   type: short_snippet
-- day: sat
+- day: wed
   type: long_blog
 writing_samples: ''
 llm_provider: claude
-welcome_email_sent: true
-plan_confirmed: true
