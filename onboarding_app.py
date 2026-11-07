@@ -82,6 +82,93 @@ def admin_page(request: Request):
     return FileResponse(Path(__file__).parent / "onboarding.html")
 
 
+# ── Client portal (email sign-in link, read-only) ─────────────────────────────
+_portal_login_sent: dict[str, float] = {}  # email → last send time (per-process throttle)
+PORTAL_RESEND_COOLDOWN = 60  # seconds
+
+
+def _portal_email(request: Request) -> str:
+    email = request.session.get("client_email")
+    if not email:
+        raise HTTPException(status_code=401, detail="Not signed in")
+    return email
+
+
+@app.get("/portal", response_class=HTMLResponse)
+def portal_page():
+    return FileResponse(Path(__file__).parent / "portal.html")
+
+
+@app.post("/api/portal/login")
+async def portal_request_link(request: Request):
+    """Email a sign-in link. Same answer whether or not the email is a client."""
+    import time
+    from content_factory.portal import email_is_known, make_login_token, normalize_email
+
+    body = await request.json()
+    email = normalize_email(body.get("email"))
+    if not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", email):
+        raise HTTPException(status_code=400, detail="Please enter a valid email address.")
+
+    now = time.time()
+    recently = now - _portal_login_sent.get(email, 0) < PORTAL_RESEND_COOLDOWN
+    if not recently and email_is_known(email, BRANDS_DIR, SUBMISSIONS_DIR):
+        _portal_login_sent[email] = now
+        link = f"{_base_url(request)}/portal/auth?token={make_login_token(email, SECRET_KEY)}"
+        try:
+            from content_factory.emailer import send_portal_login_email
+            send_portal_login_email(client_email=email, link=link)
+        except Exception as e:
+            print(f"[portal] sign-in email failed for {email}: {e}")
+    return {"sent": True}
+
+
+@app.get("/portal/auth")
+def portal_auth(request: Request, token: str = ""):
+    from content_factory.portal import read_login_token
+
+    email = read_login_token(token, SECRET_KEY)
+    if not email:
+        return RedirectResponse(url="/portal?error=expired", status_code=302)
+    request.session["client_email"] = email
+    return RedirectResponse(url="/portal", status_code=302)
+
+
+@app.get("/portal/logout")
+def portal_logout(request: Request):
+    request.session.pop("client_email", None)
+    return RedirectResponse(url="/portal", status_code=302)
+
+
+@app.get("/api/portal/me")
+def portal_me(request: Request):
+    from datetime import date as _date
+    from content_factory.portal import brand_overview, brands_for_email, open_submissions_for_email, submission_overview
+
+    email = _portal_email(request)
+    today_idx = _date.today().weekday()
+    return {
+        "email": email,
+        "brands": [brand_overview(b, TOPICS_DIR, GENERATED_DIR, today_idx) for b in brands_for_email(email, BRANDS_DIR)],
+        "submissions": [submission_overview(s) for s in open_submissions_for_email(email, SUBMISSIONS_DIR)],
+    }
+
+
+@app.get("/api/portal/articles/{brand_id}/{run_id}")
+def portal_article(brand_id: str, run_id: str, request: Request):
+    from content_factory.portal import article_for_client, brands_for_email
+
+    email = _portal_email(request)
+    if not any(b["brand_id"] == brand_id for b in brands_for_email(email, BRANDS_DIR)):
+        raise HTTPException(status_code=404, detail="Not found")
+    if not re.fullmatch(r"[\w.-]+", run_id):
+        raise HTTPException(status_code=404, detail="Not found")
+    article = article_for_client(brand_id, run_id, GENERATED_DIR)
+    if not article:
+        raise HTTPException(status_code=404, detail="Not found")
+    return article
+
+
 # ── Submissions (public write, admin read) ────────────────────────────────────
 def _sync(path: Path, msg: str = ""):
     from content_factory.github_sync import sync_file

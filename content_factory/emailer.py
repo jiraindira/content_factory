@@ -249,6 +249,8 @@ def send_welcome_email(*, brand: dict, topics: list[str]) -> str:
 
   <p><strong>Ready to get started?</strong></p>
   <p>Simply reply to this email to confirm and we'll kick things off. The first article will be in your inbox before you know it.</p>
+  <p style="font-size:0.9rem;color:#6b7280">You can follow your plan and read every delivered article any time in your
+    <a href="{REVIEW_UI_URL}/portal" style="color:#4f46e5">client portal</a> — just sign in with this email address.</p>
 
   <p style="margin-top:2.5rem">We're genuinely excited about this one.</p>
 
@@ -437,6 +439,8 @@ def send_delivery_email(
 
   <p style="font-family:sans-serif;font-size:0.9rem;color:#374151;margin-top:1.5rem">
     As always, feel free to reply with any feedback — we love hearing from you.
+    All your articles and your upcoming topics are in your
+    <a href="{REVIEW_UI_URL}/portal" style="color:#4f46e5;font-weight:600">client portal</a>.
   </p>
 
   <p style="font-family:sans-serif;margin-top:2rem">
@@ -513,7 +517,8 @@ def send_upgrade_email(*, brand: dict) -> str:
        If they sounded like you, let's keep going.</p>
     <p>Pick a package below. You'll pay securely on Stripe, and if you have a coupon code you can enter it at checkout.</p>
     <table style="width:100%;border-collapse:collapse;margin:1.5rem 0">{rows}</table>
-    <p>Want articles twice a week instead of once? Just reply and tell us — or ask anything else.</p>
+    <p>Want articles twice a week instead of once? Just reply and tell us — or ask anything else.
+       Your two preview pieces stay in your <a href="{REVIEW_UI_URL}/portal" style="color:#4f46e5">client portal</a>.</p>
     <p>— Jiraindira<br/><span style="color:#9ca3af;font-size:0.9rem">Said By</span></p>
     <div class="footer">Said By · <a href="{REVIEW_UI_URL}" style="color:#6366f1">{REVIEW_UI_URL}</a></div>
     </body></html>"""
@@ -545,4 +550,25 @@ def send_upgrade_paid_email(*, brand: dict) -> str:
         "from": FROM_ADDRESS, "to": [OPERATOR_EMAIL],
         "subject": f"Upgrade paid: {brand.get('client_name') or brand.get('brand_id')}", "html": html,
     })
+    return response["id"]
+
+
+def send_portal_login_email(*, client_email: str, link: str) -> str:
+    """Email a client their portal sign-in link."""
+    sandbox = "resend.dev" in FROM_ADDRESS
+    to_address = OPERATOR_EMAIL if sandbox else client_email
+    html = f"""<!DOCTYPE html><html><head>{_base_style()}</head><body>
+    <p style="font-family:sans-serif;font-size:0.8rem;color:#4f46e5;font-weight:700">&#10022; Said By</p>
+    <h1>Sign in to your client portal</h1>
+    <p>Click the button below to see your content plan and every article we've delivered.</p>
+    <p style="margin:2rem 0"><a href="{link}"
+      style="background:#4f46e5;color:#fff;text-decoration:none;padding:12px 22px;border-radius:8px;font-family:sans-serif;font-weight:600">
+      Open my portal</a></p>
+    <p style="font-size:0.85rem;color:#6b7280">This link works for 30 minutes. If you didn't ask for it, you can ignore this email.</p>
+    <div class="footer">Said By · <a href="{REVIEW_UI_URL}" style="color:#6366f1">{REVIEW_UI_URL}</a></div>
+    </body></html>"""
+    subject = "Your Said By sign-in link"
+    if sandbox:
+        subject = f"[SANDBOX → {client_email}] {subject}"
+    response = resend.Emails.send({"from": FROM_ADDRESS, "to": [to_address], "subject": subject, "html": html})
     return response["id"]

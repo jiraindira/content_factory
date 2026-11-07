@@ -39,6 +39,7 @@ survive Railway's ephemeral filesystem and the scheduler can read them.
 | `onboarding_app.py` | FastAPI backend — auth, all API endpoints, serves pages |
 | `index.html` / `login.html` / `onboard.html` | Public homepage / admin login / client intake form |
 | `onboarding.html` | Admin SPA — dashboard, Progress/Profile/Topics/Content tabs, submissions |
+| `portal.html` + `content_factory/portal.py` | **Client portal** (`/portal`) — email sign-in link, plan progress, topic calendar, delivered articles, free-preview upgrade |
 | `scheduler.py` | Daily scheduler — loops confirmed clients, fires generation |
 | `integrations/claude_adapters.py` | **Claude** LLM wrapper (Sonnet 4.6, structured JSON, cached book grounding) |
 | `integrations/openai_adapters.py` | `make_llm()` dispatch (defaults Claude); OpenAI kept for **images only** |
@@ -131,6 +132,7 @@ Onboarded → Topics generated → Topics approved → Welcome email → **Plan 
 ### Business priorities (do before more building)
 - [x] Set pricing on saidby.co homepage — list $99/$139/$169, launch $49/$89/$119 ($50 off), + free trial (now a 2-article free preview)
 - [x] **Intake v2 (2026-11-07)** — 4-step wizard with dropdowns (tone shows a live example), draft autosave, plan picker; free 2-article preview; Stripe Checkout with coupon codes; admin plan/payment badges + activation pre-fill; free-preview upgrade email
+- [x] **Client portal (2026-11-07)** — `/portal`, linked from homepage nav ("Client login") and the welcome/delivery/upgrade emails. Sign-in by emailed link (signed itsdangerous token, 30 min, deliberately not single-use so Gmail link-scanners can't burn it; same response for unknown emails; 60s per-email resend throttle). Read-only: plan + progress, stage ("waiting for your go-ahead" etc.), topic calendar, delivered (approved) articles with a reader + "Copy text", pending submissions with "Complete payment", upgrade options for free preview. Clients only ever see brands whose `client_email` matches their session email.
 - [ ] **Stripe go-live** — create account, add test keys + webhook on Railway, run a test purchase with a test promotion code, then switch to live keys
 - [x] Homepage conversion sections: "Who it's for" (4 segments), "Not another AI content mill" before/after sample, a real client testimonial (Jit Puru, attribution factual), and an FAQ (ChatGPT rebuttal, voice, ownership, trial, publishing limits)
 - [ ] Onboard first paying clients (Alisa, Jit) — upload Jit's book, confirm plans
@@ -144,7 +146,7 @@ Onboarded → Topics generated → Topics approved → Welcome email → **Plan 
 
 ### Product (after first paying clients)
 - [ ] Cross-client "All content" overview (chip queued)
-- [ ] Client portal — read-only view of plan + delivered articles
+- [ ] Portal v2 ideas: client approves topics / requests changes in the portal (replaces "reply to confirm"), self-serve renewal
 - [ ] Regenerate single topic button
 - [ ] OCR fallback for scanned-PDF books (currently text-PDF only)
 

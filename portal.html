@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Said By — Client portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
+  <style>
+    .card { background: white; border-radius: 0.75rem; border: 1px solid #e5e7eb; padding: 1.5rem; }
+    @media (max-width: 640px) { .card { padding: 1.1rem; } }
+    .prose { font-family: Georgia, serif; color: #1f2937; line-height: 1.8; }
+    .prose h1 { font-size: 1.6rem; font-weight: 700; line-height: 1.3; margin: 0 0 1rem; }
+    .prose h2 { font-size: 1.25rem; font-weight: 700; margin: 1.8rem 0 0.5rem; }
+    .prose h3 { font-size: 1.05rem; font-weight: 700; margin: 1.4rem 0 0.4rem; }
+    .prose p { margin: 0.9rem 0; }
+    .prose ul, .prose ol { margin: 0.9rem 0; padding-left: 1.4rem; }
+    .prose ul { list-style: disc; } .prose ol { list-style: decimal; }
+    .prose li { margin: 0.3rem 0; }
+    .prose blockquote { border-left: 3px solid #c7d2fe; padding-left: 1rem; color: #4b5563; font-style: italic; }
+    .prose a { color: #4f46e5; text-decoration: underline; }
+    .view { display: none; }
+    .view.active { display: block; }
+  </style>
+</head>
+<body class="bg-gray-50 font-sans text-gray-900">
+
+  <nav class="bg-white border-b border-gray-100 px-4 sm:px-6 py-4">
+    <div class="max-w-3xl mx-auto flex items-center justify-between gap-3">
+      <a href="/" class="font-bold text-gray-900 tracking-tight">✦ Said By <span class="font-normal text-gray-400 text-sm ml-1">Client portal</span></a>
+      <div id="nav-user" class="hidden text-sm text-gray-500 flex items-center gap-3 min-w-0">
+        <span id="nav-email" class="truncate hidden sm:inline"></span>
+        <a href="/portal/logout" class="text-gray-400 hover:text-gray-700 whitespace-nowrap">Sign out</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="max-w-3xl mx-auto px-4 sm:px-6 py-8">
+
+    <div id="view-loading" class="view active text-center text-gray-400 py-20">Loading…</div>
+
+    <!-- Sign in -->
+    <section id="view-login" class="view">
+      <div class="max-w-md mx-auto card mt-6">
+        <h1 class="text-xl font-bold mb-1">Sign in to your portal</h1>
+        <p class="text-sm text-gray-500 mb-5">Enter the email you signed up with and we'll send you a sign-in link. No password needed.</p>
+        <div id="login-expired" class="hidden bg-amber-50 border border-amber-200 text-amber-800 text-sm rounded-md px-3 py-2 mb-4">
+          That sign-in link has expired or isn't valid. Request a new one below.</div>
+        <form id="login-form" onsubmit="requestLink(event)">
+          <label for="login-email" class="block text-xs font-semibold text-gray-700 mb-1">Email</label>
+          <input id="login-email" type="email" required autocomplete="email" placeholder="your@email.com"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100" />
+          <p id="login-error" class="hidden text-sm text-red-600 mt-2"></p>
+          <button id="login-btn" class="w-full mt-4 bg-indigo-600 text-white font-semibold py-2.5 rounded-lg hover:bg-indigo-700 transition disabled:opacity-60">
+            Email me a sign-in link</button>
+        </form>
+        <div id="login-sent" class="hidden text-center py-2">
+          <div class="text-3xl mb-3">✉️</div>
+          <p class="font-semibold mb-1">Check your inbox</p>
+          <p class="text-sm text-gray-500">If <span id="sent-to" class="font-medium text-gray-700"></span> belongs to a Said By client, a sign-in link is on its way. It works for 30 minutes.</p>
+          <button onclick="resetLogin()" class="text-sm text-indigo-600 hover:underline mt-4">Use a different email</button>
+        </div>
+      </div>
+      <p class="text-center text-sm text-gray-400 mt-6">Not a client yet? <a href="/onboard" class="text-indigo-600 hover:underline">Start with a free preview →</a></p>
+    </section>
+
+    <!-- Dashboard -->
+    <section id="view-dashboard" class="view">
+      <h1 id="greeting" class="text-2xl font-bold mb-6"></h1>
+      <div id="submissions" class="space-y-3 mb-6"></div>
+      <div id="brands" class="space-y-8"></div>
+      <div id="empty" class="hidden card text-center text-gray-500 py-10">
+        We couldn't find a content plan for this email yet.
+        <a href="/onboard" class="block mt-3 text-indigo-600 font-semibold hover:underline">Start your content plan →</a>
+      </div>
+      <p class="text-xs text-gray-400 text-center mt-10">Questions or feedback? Just reply to any email from us.</p>
+    </section>
+
+    <!-- Article reader -->
+    <section id="view-article" class="view">
+      <div class="flex items-center justify-between gap-3 mb-4">
+        <button onclick="history.back()" class="text-sm text-indigo-600 hover:underline">← All articles</button>
+        <button id="copy-btn" onclick="copyArticle()" class="text-sm font-semibold border border-gray-300 bg-white rounded-lg px-3 py-1.5 hover:bg-gray-50">Copy text</button>
+      </div>
+      <article class="card sm:!p-10">
+        <div id="article-meta" class="text-xs text-gray-400 font-sans mb-4"></div>
+        <div id="article-body" class="prose"></div>
+      </article>
+    </section>
+  </main>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const money = c => "$" + (c / 100).toFixed(c % 100 ? 2 : 0);
+let me = null;
+let currentArticle = null;
+
+function show(view) {
+  document.querySelectorAll(".view").forEach(v => v.classList.toggle("active", v.id === "view-" + view));
+  window.scrollTo(0, 0);
+}
+
+// ── Sign in ──────────────────────────────────────────────────────────────────
+async function requestLink(e) {
+  e.preventDefault();
+  const email = $("login-email").value.trim();
+  const btn = $("login-btn");
+  btn.disabled = true; btn.textContent = "Sending…";
+  $("login-error").classList.add("hidden");
+  try {
+    const res = await fetch("/api/portal/login", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body.detail || "Something went wrong — please try again.");
+    $("sent-to").textContent = email;
+    $("login-form").classList.add("hidden");
+    $("login-expired").classList.add("hidden");
+    $("login-sent").classList.remove("hidden");
+  } catch (err) {
+    $("login-error").textContent = err.message;
+    $("login-error").classList.remove("hidden");
+  }
+  btn.disabled = false; btn.textContent = "Email me a sign-in link";
+}
+
+function resetLogin() {
+  $("login-sent").classList.add("hidden");
+  $("login-form").classList.remove("hidden");
+  $("login-email").focus();
+}
+
+// ── Dashboard ────────────────────────────────────────────────────────────────
+const STAGE = {
+  preparing_topics:      ["Preparing your topics", "bg-amber-50 text-amber-700 border-amber-200",
+                          "We're drafting your topic calendar. You'll get it by email shortly."],
+  awaiting_confirmation: ["Waiting for your go-ahead", "bg-amber-50 text-amber-700 border-amber-200",
+                          "Reply to our welcome email to confirm your topics and we'll start writing."],
+  in_progress:           ["In progress", "bg-indigo-50 text-indigo-700 border-indigo-200", ""],
+  complete:              ["Complete", "bg-emerald-50 text-emerald-700 border-emerald-200", ""],
+};
+
+function renderSubmissions(subs) {
+  $("submissions").innerHTML = subs.map(s => {
+    const unpaid = s.status === "awaiting_payment";
+    return `
+      <div class="card !py-4 flex flex-wrap items-center gap-3 ${unpaid ? "border-amber-200 bg-amber-50/40" : ""}">
+        <div class="flex-1 min-w-[12rem]">
+          <div class="font-semibold text-sm">${unpaid ? "Payment not completed" : "We're reviewing your questionnaire"}</div>
+          <div class="text-xs text-gray-500 mt-0.5">${esc(s.plan_label)} · submitted ${esc(s.submitted_at)}${unpaid ? "" : " · we'll email you within 24 hours"}</div>
+        </div>
+        ${unpaid ? `<button onclick="resumePayment('${esc(s.id)}', this)" class="bg-amber-600 text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-amber-700">Complete payment</button>` : ""}
+      </div>`;
+  }).join("");
+}
+
+function renderBrand(b) {
+  const [stageLabel, stageCls, stageNote] = STAGE[b.stage] || STAGE.in_progress;
+  const pct = b.package_size ? Math.min(100, Math.round(b.delivered / b.package_size * 100)) : 0;
+  const next = b.next_publish_day ? ` · next piece <strong>${esc(b.next_publish_day)}</strong>` : "";
+
+  const upgrade = b.upgrade_options.length ? `
+    <div class="card border-indigo-200 bg-indigo-50/50">
+      <div class="font-semibold mb-1">${b.stage === "complete" ? "Enjoyed your preview? Keep going." : "Like what you're reading? Pick a package any time."}</div>
+      <p class="text-sm text-gray-600 mb-4">Same voice, a steady stream of articles. Have a coupon? Enter it at checkout.</p>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        ${b.upgrade_options.map(p => `
+          <a href="/upgrade/${encodeURIComponent(b.brand_id)}?plan=${p.id}" class="block bg-white rounded-lg border border-gray-200 hover:border-indigo-400 p-3 transition">
+            <div class="flex items-baseline justify-between"><span class="font-semibold text-sm">${esc(p.label)}</span>
+              <span><strong>${money(p.price_cents)}</strong> <span class="text-xs text-gray-400 line-through">${money(p.list_price_cents)}</span></span></div>
+            <div class="text-xs text-gray-500 mt-0.5">${p.articles} articles</div>
+          </a>`).join("")}
+      </div>
+    </div>` : (b.upgrade_paid ? `
+    <div class="card !py-3 border-emerald-200 bg-emerald-50/50 text-sm text-emerald-800">
+      Thanks for upgrading to <strong>${esc(b.upgrade_plan_label || "a package")}</strong> — we're setting up your next batch of topics.</div>` : "");
+
+  const articles = b.articles.length ? b.articles.map(a => `
+      <li><a href="#a/${encodeURIComponent(b.brand_id)}/${encodeURIComponent(a.run_id)}" class="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition">
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-medium text-gray-900">${esc(a.title)}</div>
+          <div class="text-xs text-gray-400 mt-0.5">${esc(a.type)} · ${esc(a.date)}</div>
+        </div><span class="text-gray-300">›</span></a></li>`).join("")
+    : `<li class="px-4 py-6 text-sm text-gray-400 text-center">Your first article will appear here once it's delivered.</li>`;
+
+  const TOPIC_CLS = { "Delivered": "text-emerald-700 bg-emerald-50", "Being finalised": "text-indigo-700 bg-indigo-50", "Upcoming": "text-gray-500 bg-gray-100" };
+  const topics = b.topics.length ? `
+    <div class="card !p-0 overflow-hidden">
+      <div class="px-4 py-3 border-b border-gray-100 font-semibold text-sm">Topic calendar</div>
+      <ol class="divide-y divide-gray-100">
+        ${b.topics.map((t, i) => `
+          <li class="flex items-start gap-3 px-4 py-2.5">
+            <span class="text-xs text-gray-400 w-5 pt-0.5">${i + 1}</span>
+            <span class="flex-1 text-sm text-gray-700">${esc(t.title)}</span>
+            <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${TOPIC_CLS[t.status] || ""}">${esc(t.status)}</span>
+          </li>`).join("")}
+      </ol>
+    </div>` : "";
+
+  return `
+    <div class="space-y-4">
+      <div class="card">
+        <div class="flex flex-wrap items-start justify-between gap-2 mb-3">
+          <div>
+            <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide">${esc(b.plan_label)}</div>
+            <div class="text-lg font-bold">${b.delivered} of ${b.package_size} articles delivered</div>
+          </div>
+          <span class="text-xs font-semibold px-2.5 py-1 rounded-full border ${stageCls}">${stageLabel}</span>
+        </div>
+        <div class="h-2 bg-gray-100 rounded-full overflow-hidden mb-3"><div class="h-full bg-indigo-600 rounded-full" style="width:${pct}%"></div></div>
+        <div class="text-sm text-gray-500">${esc(b.cadence_label)}${b.publish_days.length ? " · " + esc(b.publish_days.join(" & ")) : ""}${next}</div>
+        ${stageNote ? `<p class="text-sm text-amber-700 mt-3">${stageNote}</p>` : ""}
+      </div>
+      ${upgrade}
+      <div class="card !p-0 overflow-hidden">
+        <div class="px-4 py-3 border-b border-gray-100 font-semibold text-sm">Delivered articles</div>
+        <ul class="divide-y divide-gray-100">${articles}</ul>
+      </div>
+      ${topics}
+    </div>`;
+}
+
+function renderDashboard() {
+  const name = me.brands[0]?.client_name?.split(" ")[0];
+  $("greeting").textContent = name ? `Hi ${name}` : "Your content";
+  renderSubmissions(me.submissions);
+  const multi = me.brands.length > 1;
+  $("brands").innerHTML = me.brands.map(b =>
+    (multi ? `<h2 class="font-semibold text-gray-500 text-sm mb-2">${esc(b.client_name || b.brand_id)}</h2>` : "") + renderBrand(b)
+  ).join("");
+  $("empty").classList.toggle("hidden", me.brands.length + me.submissions.length > 0);
+}
+
+async function resumePayment(id, btn) {
+  btn.disabled = true; btn.textContent = "Opening checkout…";
+  const res = await fetch(`/api/submissions/${encodeURIComponent(id)}/checkout`, { method: "POST" });
+  const body = await res.json().catch(() => ({}));
+  if (res.ok && body.checkout_url) { location.href = body.checkout_url; return; }
+  btn.disabled = false; btn.textContent = "Complete payment";
+  alert(body.detail || "Couldn't open checkout — please reply to our email and we'll sort it out.");
+}
+
+// ── Article reader ───────────────────────────────────────────────────────────
+async function openArticle(brandId, runId) {
+  show("loading");
+  const res = await fetch(`/api/portal/articles/${encodeURIComponent(brandId)}/${encodeURIComponent(runId)}`);
+  if (!res.ok) { location.hash = ""; return; }
+  currentArticle = await res.json();
+  $("article-meta").textContent = `${currentArticle.type} · ${currentArticle.date}`;
+  $("article-body").innerHTML = DOMPurify.sanitize(marked.parse(currentArticle.content));
+  $("copy-btn").textContent = "Copy text";
+  show("article");
+}
+
+async function copyArticle() {
+  try {
+    await navigator.clipboard.writeText(currentArticle.content);
+    $("copy-btn").textContent = "Copied ✓";
+  } catch (e) {
+    $("copy-btn").textContent = "Couldn't copy";
+  }
+}
+
+function route() {
+  const m = location.hash.match(/^#a\/([^/]+)\/(.+)$/);
+  if (m) openArticle(decodeURIComponent(m[1]), decodeURIComponent(m[2]));
+  else { renderDashboard(); show("dashboard"); }
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+document.addEventListener("DOMContentLoaded", async () => {
+  const params = new URLSearchParams(location.search);
+  const res = await fetch("/api/portal/me").catch(() => null);
+  if (!res || res.status === 401) {
+    if (params.get("error") === "expired") $("login-expired").classList.remove("hidden");
+    show("login");
+    return;
+  }
+  me = await res.json();
+  if (params.has("error")) history.replaceState(null, "", "/portal" + location.hash);
+  $("nav-email").textContent = me.email;
+  $("nav-user").classList.remove("hidden");
+  window.addEventListener("hashchange", route);
+  route();
+});
+</script>
+</body>
+</html>
