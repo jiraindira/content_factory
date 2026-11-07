@@ -1,83 +1,98 @@
 brand_id: the_product_wheel
+client_name: Jirain
+client_email: jirain@gmail.com
 brand_archetype: reviewer
-
 brand_sources:
   require_at_least_one_of_purposes:
-    - homepage
+  - homepage
   sources:
-    - source_id: homepage
-      kind: url
-      purpose: homepage
-      ref: https://theproductwheel.com
-
-# v1 uses an enum taxonomy (see content_factory/models.py Domain).
+  - source_id: homepage
+    kind: url
+    purpose: homepage
+    ref: https://theproductwheel.com
 domains_supported:
-  - tech
-  - home
-
-domain_primary: tech
-
+- leadership
+domain_primary: leadership
 audience:
   primary_audience: everyday_consumers_shoppers
   audience_sophistication: medium
-  audience_context: ""
-
+  audience_context: ''
 content_strategy:
   allowed_intents:
-    - product_recommendation
-  allowed_product_recommendation_forms:
-    - top_x_list
+  - thought_leadership
+  allowed_product_recommendation_forms: []
   allowed_thought_leadership_forms: []
-  default_content_depth: medium
-
+  default_content_depth: long
 topic_policy:
   allowlist:
-    - Travel gear and luggage
-    - Everyday carry and organization
-    - Home essentials and storage
-    - Tech accessories
+  - 'I run The Product Wheel, a buying guide site that helps people decide what to
+    buy faster. I narrow crowded categories like travel gear, home essentials and
+    tech accessories down to a few picks backed by research, and often by products
+    we''ve bought and used at home. Gifts are my main focus: I want to take the stress
+    out of finding something thoughtful for someone, whatever their age or interests.'
+core_beliefs: '1. There are plenty of products out there, and knowing which one to
+  pick can be time-consuming and nerve-wracking. Our goal is to simplify it and recommend
+  proven products, with a high likelihood that we''ve already bought them for our
+  own home.
 
+
+  2. You shouldn''t need to read 40 reviews to buy a suitcase. A short list of picks
+  you can trust beats an endless list of options.
+
+
+  3. Proven beats new. We''d rather recommend something that has held up through years
+  of real use than whatever launched last month.
+
+
+  4. Good gear earns its place by making everyday life easier: fewer things lost,
+  less clutter, smoother trips. If it doesn''t do that, it isn''t worth buying.
+
+
+  5. We only recommend what we''d buy again. If something let us down, we say so.'
+formative_experiences: Not applicable
+desired_outcome: We want to cut the time people spend searching for what to buy by
+  pointing them to products that come recommended, either from our own research or
+  because we've used them ourselves. Above all, we want to solve the "what do I get
+  them?" problem, so that finding a thoughtful gift takes minutes, not hours.
 persona_by_domain:
-  tech:
+  leadership:
     primary_persona: practical_expert
     persona_modifiers:
-      - none
+    - none
     science_explicitness: implied
     personal_presence: none
     narration_mode: third_person_only
-  home:
-    primary_persona: practical_expert
-    persona_modifiers:
-      - none
-    science_explicitness: implied
-    personal_presence: none
-    narration_mode: third_person_only
-
 commercial_policy:
   commercial_posture: invisible
   cta_policy: none
   prohibited_behaviors:
-    - fake_scarcity
-    - hype_superlatives
-    - pressure_language
-
+  - fake_scarcity
+  - hype_superlatives
+  - pressure_language
 disclaimer_policy:
   required: true
-  disclaimer_text: "This post may contain affiliate links. If you buy through our links, we may earn a commission at no extra cost to you."
+  disclaimer_text: This post may contain affiliate links. If you buy through our links,
+    we may earn a commission at no extra cost to you.
   locations:
-    - footer
-
+  - header
 delivery_policy:
   delivery_channels:
-    - blog_article
-    - social_shortform
+  - blog_article
   delivery_destinations:
-    - hosted_by_us
-    - instagram
+  - hosted_by_us
   delivery_strategy: single_canonical_article
   auto_publish: false
-
 cadence:
-  publication_cadence: on_demand
-  preferred_publish_days: []
+  publication_cadence: weekly
+  preferred_publish_days:
+  - mon
   time_zone: UTC
+package_size: 8
+content_slots:
+- day: mon
+  type: long_blog
+writing_samples: 'https://theproductwheel.com/posts/2026-02-08-dehumidified-is-not-just-dry-why-moisture-control-matters
+
+
+  https://theproductwheel.com/posts/2026-02-23-insulated-drinkware'
+llm_provider: claude
