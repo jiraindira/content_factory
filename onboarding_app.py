@@ -44,19 +44,29 @@ def api_auth(request: Request):
 
 
 # ── Public pages ──────────────────────────────────────────────────────────────
+def _page(name: str) -> FileResponse:
+    """Serve an HTML page that browsers must revalidate on every visit.
+
+    Without Cache-Control, browsers heuristically cache by Last-Modified and can
+    show a stale page for hours after a deploy. Pages are small, so always
+    sending the current copy is cheap.
+    """
+    return FileResponse(Path(__file__).parent / name, headers={"Cache-Control": "no-cache"})
+
+
 @app.get("/", response_class=HTMLResponse)
 def homepage():
-    return FileResponse(Path(__file__).parent / "index.html")
+    return _page("index.html")
 
 @app.get("/onboard", response_class=HTMLResponse)
 def onboard_page():
-    return FileResponse(Path(__file__).parent / "onboard.html")
+    return _page("onboard.html")
 
 @app.get("/login", response_class=HTMLResponse)
 def login_page(request: Request):
     if is_authenticated(request):
         return RedirectResponse(url="/admin", status_code=302)
-    return FileResponse(Path(__file__).parent / "login.html")
+    return _page("login.html")
 
 
 # ── Auth actions ──────────────────────────────────────────────────────────────
@@ -79,7 +89,7 @@ def do_logout(request: Request):
 def admin_page(request: Request):
     if not is_authenticated(request):
         return RedirectResponse(url="/login", status_code=302)
-    return FileResponse(Path(__file__).parent / "onboarding.html")
+    return _page("onboarding.html")
 
 
 # ── Client portal (email sign-in link, read-only) ─────────────────────────────
@@ -96,7 +106,7 @@ def _portal_email(request: Request) -> str:
 
 @app.get("/portal", response_class=HTMLResponse)
 def portal_page():
-    return FileResponse(Path(__file__).parent / "portal.html")
+    return _page("portal.html")
 
 
 @app.post("/api/portal/login")
