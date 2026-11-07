@@ -43,6 +43,21 @@ def _slot_for_today(brand: dict) -> dict | None:
     return next((s for s in brand.get("content_slots", []) if s.get("day") == today), None)
 
 
+def _slot_type(brand: dict, slot: dict) -> str:
+    """Slot type for today's article.
+
+    Brands with a `slot_type_sequence` (the free preview: long → short) take the
+    Nth entry, where N = articles already produced; otherwise the slot's own type.
+    """
+    seq = brand.get("slot_type_sequence") or []
+    if seq:
+        path = TOPICS_DIR / f"{brand.get('brand_id', '')}.yaml"
+        data = (yaml.safe_load(path.read_text(encoding="utf-8")) or {}) if path.exists() else {}
+        produced = sum(1 for t in data.get("topics", []) if t.get("status") in ("generated", "sent"))
+        return seq[min(produced, len(seq) - 1)]
+    return slot.get("type", "long_blog")
+
+
 def _has_pending_review(brand_id: str) -> bool:
     d = GENERATED_DIR / brand_id
     if not d.exists():
@@ -167,7 +182,7 @@ def run() -> int:
             skipped += 1
             continue
 
-        slot_type = slot.get("type", "long_blog")
+        slot_type = _slot_type({**brand, "brand_id": brand_id}, slot)
         print(f"[{client_name}] Generating {slot_type}...")
 
         try:

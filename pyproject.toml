@@ -22,6 +22,7 @@ resend = "^2.32.2"
 itsdangerous = "^2.2.0"
 anthropic = "^0.112.0"
 pypdf = "^6.14.2"
+stripe = ">=11,<13"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

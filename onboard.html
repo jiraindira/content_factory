@@ -6,36 +6,34 @@
   <title>Said By — Start your content plan</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    .card-opt {
-      cursor: pointer; border: 2px solid #e5e7eb; border-radius: 0.5rem;
-      padding: 0.75rem 1rem; transition: all 0.15s; background: white;
-    }
-    .card-opt:hover { border-color: #6366f1; background: #f5f3ff; }
-    .card-opt.selected { border-color: #6366f1; background: #eef2ff; }
-    .card-opt.selected .opt-dot { background: #6366f1; }
-    .opt-dot {
-      width: 14px; height: 14px; border-radius: 50%;
-      border: 2px solid #6366f1; flex-shrink: 0; margin-top: 3px;
-      transition: background 0.15s;
-    }
-    .section-card { background: white; border-radius: 0.75rem; border: 1px solid #e5e7eb; padding: 1.75rem 2rem; margin-bottom: 1.5rem; }
+    .section-card { background: white; border-radius: 0.75rem; border: 1px solid #e5e7eb; padding: 1.75rem 2rem; }
+    @media (max-width: 640px) { .section-card { padding: 1.25rem; } }
     input[type=text], input[type=email], input[type=url], textarea, select {
-      width: 100%; border: 1px solid #d1d5db; border-radius: 0.375rem;
+      width: 100%; border: 1px solid #d1d5db; border-radius: 0.375rem; background: white;
       padding: 0.5rem 0.75rem; font-size: 0.9rem; outline: none; transition: border 0.15s;
     }
-    input:focus, textarea:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+    input:focus, textarea:focus, select:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+    .invalid { border-color: #f87171 !important; }
     label.field-label { display: block; font-size: 0.8rem; font-weight: 600; color: #374151; margin-bottom: 0.3rem; }
-    .step-num {
-      display: inline-flex; align-items: center; justify-content: center;
-      width: 1.75rem; height: 1.75rem; border-radius: 50%;
-      background: #eef2ff; color: #4338ca; font-size: 0.8rem; font-weight: 700;
-      margin-right: 0.6rem; flex-shrink: 0;
+    .hint { font-size: 0.75rem; color: #6b7280; margin-top: 0.35rem; min-height: 1rem; }
+    .opt { font-weight: 400; color: #9ca3af; }
+    .step { display: none; }
+    .step.active { display: block; }
+    .plan-card {
+      cursor: pointer; border: 2px solid #e5e7eb; border-radius: 0.75rem; padding: 1rem 1.1rem;
+      background: white; transition: all 0.15s; position: relative;
     }
+    .plan-card:hover { border-color: #a5b4fc; }
+    .plan-card.selected { border-color: #6366f1; background: #eef2ff; }
+    .seg button { padding: 0.4rem 0.9rem; font-size: 0.8rem; font-weight: 600; border: 2px solid #e5e7eb; background: white; }
+    .seg button:first-child { border-radius: 0.375rem 0 0 0.375rem; }
+    .seg button:last-child { border-radius: 0 0.375rem 0.375rem 0; border-left: 0; }
+    .seg button.active { border-color: #6366f1; background: #eef2ff; color: #4338ca; }
+    .seg button.active + button { border-left: 2px solid #e5e7eb; }
   </style>
 </head>
 <body class="bg-gray-50 font-sans text-gray-900">
 
-  <!-- Nav -->
   <nav class="bg-white border-b border-gray-100 px-6 py-4">
     <div class="max-w-2xl mx-auto flex items-center justify-between">
       <a href="/" class="font-bold text-gray-900 tracking-tight">✦ Said By</a>
@@ -43,197 +41,172 @@
     </div>
   </nav>
 
-  <!-- Success screen (hidden until submit) -->
-  <div id="success-screen" class="hidden min-h-screen flex items-center justify-center px-6">
+  <!-- Success screen -->
+  <div id="success-screen" class="hidden min-h-[70vh] flex items-center justify-center px-6">
     <div class="text-center max-w-md">
       <div class="text-5xl mb-6">✦</div>
-      <h2 class="text-2xl font-bold text-gray-900 mb-3">You're all set!</h2>
-      <p class="text-gray-500 mb-8">We've received your questionnaire and will be in touch shortly to confirm your content plan.</p>
-      <a href="/" class="inline-block bg-indigo-600 text-white font-semibold px-6 py-3 rounded-lg hover:bg-indigo-700 transition">
-        Back to homepage
-      </a>
+      <h2 id="success-title" class="text-2xl font-bold text-gray-900 mb-3">You're all set!</h2>
+      <p id="success-body" class="text-gray-500 mb-8">We've received your questionnaire and will be in touch within 24 hours with your content plan.</p>
+      <a href="/" class="inline-block bg-indigo-600 text-white font-semibold px-6 py-3 rounded-lg hover:bg-indigo-700 transition">Back to homepage</a>
     </div>
   </div>
 
-  <!-- Form -->
-  <div id="form-wrap" class="max-w-2xl mx-auto py-10 px-6">
+  <div id="form-wrap" class="max-w-2xl mx-auto py-8 px-4 sm:px-6">
 
-    <div class="mb-10">
-      <h1 class="text-2xl font-bold text-gray-900 mb-2">Start your content plan</h1>
-      <p class="text-gray-500">Answer a few questions so we can write in your voice. Takes about 5 minutes.</p>
+    <div id="cancel-banner" class="hidden bg-amber-50 border border-amber-200 text-amber-800 text-sm rounded-lg px-4 py-3 mb-6 flex flex-wrap items-center gap-3">
+      <span class="flex-1">Payment wasn't completed. Your answers are saved.</span>
+      <button onclick="resumePayment()" class="bg-amber-600 text-white font-semibold text-xs px-3 py-1.5 rounded hover:bg-amber-700">Resume payment</button>
     </div>
 
-    <!-- 1. Your details -->
-    <div class="section-card">
-      <div class="flex items-start mb-4">
-        <span class="step-num">1</span>
-        <div>
-          <h2 class="font-bold text-gray-900">About you</h2>
-          <p class="text-sm text-gray-500 mt-0.5">The basics so we know who we're writing for.</p>
-        </div>
+    <div class="mb-6">
+      <h1 class="text-2xl font-bold text-gray-900 mb-1">Start your content plan</h1>
+      <p class="text-gray-500 text-sm">A few questions so we can write in your voice. About 5 minutes.</p>
+    </div>
+
+    <!-- Progress -->
+    <div class="mb-6">
+      <div class="flex justify-between text-xs font-semibold text-gray-400 mb-2" id="step-labels">
+        <span data-i="0">1 · You</span><span data-i="1">2 · Your ideas</span><span data-i="2">3 · Your voice</span><span data-i="3">4 · Plan</span>
       </div>
-      <div class="space-y-4 mb-4">
+      <div class="h-1.5 bg-gray-200 rounded-full overflow-hidden">
+        <div id="progress-bar" class="h-full bg-indigo-600 transition-all duration-300" style="width:25%"></div>
+      </div>
+    </div>
+
+    <!-- Step 1: You -->
+    <section class="step section-card active" data-step="0">
+      <h2 class="font-bold text-gray-900">About you</h2>
+      <p class="text-sm text-gray-500 mt-0.5 mb-5">The basics, so we know who we're writing for.</p>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
         <div>
-          <label class="field-label">Your name</label>
-          <input type="text" id="client_name" placeholder="Your full name" />
+          <label class="field-label" for="client_name">Your name</label>
+          <input type="text" id="client_name" placeholder="Your full name" autocomplete="name" />
         </div>
         <div>
-          <label class="field-label">Your email</label>
-          <input type="email" id="client_email" placeholder="your@email.com" />
+          <label class="field-label" for="client_email">Your email</label>
+          <input type="email" id="client_email" placeholder="your@email.com" autocomplete="email" />
         </div>
         <div>
-          <label class="field-label">Your website <span class="font-normal text-gray-400">(optional)</span></label>
+          <label class="field-label" for="website_url">Website <span class="opt">(optional)</span></label>
           <input type="url" id="website_url" placeholder="https://yourwebsite.com" />
         </div>
         <div>
-          <label class="field-label">Content style</label>
-          <select id="brand_archetype" onchange="onStyleChange()">
-            <option value="mentor_coach">Mentor / Coach</option>
-            <option value="author">Author / Writer</option>
-            <option value="industry_consultant">Industry Expert / Consultant</option>
-            <option value="corporate_firm">Professional Services Firm</option>
-            <option value="thought_leader">Thought Leader</option>
-            <option value="reviewer">Reviewer / Critic</option>
-            <option value="travel_lifestyle">Travel & Lifestyle</option>
-          </select>
-          <p id="role-tip" class="text-xs text-indigo-600 mt-1.5"></p>
+          <label class="field-label" for="brand_archetype">Content style</label>
+          <select id="brand_archetype"></select>
+          <p class="hint" id="brand_archetype-hint"></p>
         </div>
       </div>
       <div>
-        <label class="field-label">What do you write about?</label>
+        <label class="field-label" for="about">What do you write about?</label>
         <textarea id="about" rows="3" placeholder="e.g. Productivity and leadership for busy professionals — how to do more with less and lead teams with clarity."></textarea>
       </div>
-    </div>
+    </section>
 
-    <!-- 2. What you stand for -->
-    <div class="section-card">
-      <div class="flex items-start mb-4">
-        <span class="step-num">2</span>
+    <!-- Step 2: Ideas & audience -->
+    <section class="step section-card" data-step="1">
+      <h2 class="font-bold text-gray-900">Your ideas & audience</h2>
+      <p class="text-sm text-gray-500 mt-0.5 mb-5">The heart of your content — the substance we write from.</p>
+      <div class="space-y-4">
         <div>
-          <h2 class="font-bold text-gray-900">What you stand for</h2>
-          <p class="text-sm text-gray-500 mt-0.5">This is the heart of your content — the substance we write from.</p>
+          <label class="field-label" for="core_beliefs">What 3–5 ideas or beliefs do you wish more people understood?</label>
+          <textarea id="core_beliefs" rows="4" placeholder="The principles you find yourself repeating. If your audience remembered only a handful of things from your work, what would they be?"></textarea>
+        </div>
+        <div>
+          <label class="field-label" for="formative_experiences">What experiences shaped these beliefs?</label>
+          <textarea id="formative_experiences" rows="3" placeholder="Turning points, failures, surprising lessons, mentors, successes — moments that changed how you think."></textarea>
+        </div>
+        <div>
+          <label class="field-label" for="desired_outcome">What should every piece move people toward? <span class="opt">(optional)</span></label>
+          <input type="text" id="desired_outcome" placeholder="e.g. Question a common assumption about leadership" />
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="sm:col-span-2">
+            <label class="field-label" for="audience_context">Describe your ideal reader</label>
+            <input type="text" id="audience_context" placeholder="e.g. Senior lawyers and CFOs in cross-border M&A" />
+          </div>
+          <div>
+            <label class="field-label" for="audience">Category <span class="opt">(optional)</span></label>
+            <select id="audience"></select>
+          </div>
         </div>
       </div>
-      <div class="space-y-5">
-        <div>
-          <label class="field-label">What are the 3–5 ideas or beliefs you wish more people understood?</label>
-          <textarea id="core_beliefs" rows="4" placeholder="These are the principles you find yourself repeating over and over. If your audience remembered only a handful of things from your work, what would they be?"></textarea>
-        </div>
-        <div>
-          <label class="field-label">What experiences shaped these beliefs?</label>
-          <textarea id="formative_experiences" rows="4" placeholder="Tell us about turning points, failures, surprising lessons, mentors, successes, or moments that changed how you think."></textarea>
-        </div>
-        <div>
-          <label class="field-label">What should every piece of content move people toward? <span class="font-normal text-gray-400">(optional)</span></label>
-          <textarea id="desired_outcome" rows="2" placeholder="The shift in thinking you want to create — e.g. think differently about leadership, question a common assumption, see their own work in a new light."></textarea>
-        </div>
-      </div>
-    </div>
+    </section>
 
-    <!-- 3. Your audience -->
-    <div class="section-card">
-      <div class="flex items-start mb-4">
-        <span class="step-num">3</span>
+    <!-- Step 3: Voice -->
+    <section class="step section-card" data-step="2">
+      <h2 class="font-bold text-gray-900">Your voice</h2>
+      <p class="text-sm text-gray-500 mt-0.5 mb-5">How the writing should sound and where it'll live.</p>
+      <div class="mb-4">
+        <label class="field-label" for="tone">Tone</label>
+        <select id="tone"></select>
+        <div id="tone-example" class="hidden text-sm text-gray-600 italic mt-2 border-l-2 border-indigo-200 bg-indigo-50/40 pl-3 pr-2 py-2 rounded-r"></div>
+        <div id="custom-tone-wrap" class="hidden mt-3">
+          <label class="field-label" for="custom_tone">Describe your blend</label>
+          <textarea id="custom_tone" rows="2" placeholder="e.g. Calm but slightly playful, never corporate, always grounded in evidence…"></textarea>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
         <div>
-          <h2 class="font-bold text-gray-900">Who are you writing for?</h2>
-          <p class="text-sm text-gray-500 mt-0.5">Be specific — the more precise, the better the writing.</p>
+          <label class="field-label" for="platform">Where will it live?</label>
+          <select id="platform"></select>
+          <p class="hint" id="platform-hint"></p>
         </div>
-      </div>
-      <div class="mb-5">
-        <label class="field-label">Describe your ideal reader</label>
-        <textarea id="audience_context" rows="2" placeholder="e.g. Senior lawyers and CFOs involved in complex cross-border M&A transactions who need defensible valuations"></textarea>
-      </div>
-      <div>
-        <label class="field-label text-gray-400 font-normal">General category</label>
-        <div id="audience-opts" class="space-y-2 mt-1"></div>
-      </div>
-    </div>
-
-    <!-- 4. Platform -->
-    <div class="section-card">
-      <div class="flex items-start mb-4">
-        <span class="step-num">4</span>
         <div>
-          <h2 class="font-bold text-gray-900">Where will this content live?</h2>
-          <p class="text-sm text-gray-500 mt-0.5">This affects length, structure, and tone.</p>
+          <label class="field-label" for="personal_presence">How visible are you in it?</label>
+          <select id="personal_presence"></select>
+          <p class="hint" id="personal_presence-hint"></p>
         </div>
-      </div>
-      <div id="platform-opts" class="space-y-2"></div>
-    </div>
-
-    <!-- 5. Tone -->
-    <div class="section-card">
-      <div class="flex items-start mb-4">
-        <span class="step-num">5</span>
         <div>
-          <h2 class="font-bold text-gray-900">Tone calibration</h2>
-          <p class="text-sm text-gray-500 mt-0.5">Which lane should your voice sit in?</p>
+          <label class="field-label" for="commercial_stance">Relationship to selling</label>
+          <select id="commercial_stance"></select>
+          <p class="hint" id="commercial_stance-hint"></p>
         </div>
-      </div>
-      <div id="tone-opts" class="space-y-2 mb-4"></div>
-      <div id="custom-tone-wrap" class="hidden">
-        <label class="field-label">Describe your blend</label>
-        <textarea id="custom_tone" rows="2" placeholder="e.g. Calm but slightly playful, never corporate, always grounded in evidence…"></textarea>
-      </div>
-      <div class="mt-4 flex flex-wrap items-center gap-3">
-        <label class="field-label mb-0 text-sm">Explicitly reference science / research?</label>
-        <div class="flex gap-2" id="sci-btns">
-          <button type="button" onclick="setSci('explicit_when_credibility_helpful')" data-val="explicit_when_credibility_helpful"
-            class="sci-btn px-3 py-1.5 rounded border-2 border-gray-200 text-xs font-semibold bg-white hover:border-indigo-400 transition">Yes, when it helps</button>
-          <button type="button" onclick="setSci('explicit_often')" data-val="explicit_often"
-            class="sci-btn px-3 py-1.5 rounded border-2 border-gray-200 text-xs font-semibold bg-white hover:border-indigo-400 transition">Yes, often</button>
-          <button type="button" onclick="setSci('implied')" data-val="implied"
-            class="sci-btn px-3 py-1.5 rounded border-2 border-gray-200 text-xs font-semibold bg-white hover:border-indigo-400 transition active-sci">Keep it implied</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 6. Personal presence -->
-    <div class="section-card">
-      <div class="flex items-start mb-4">
-        <span class="step-num">6</span>
         <div>
-          <h2 class="font-bold text-gray-900">Personal presence</h2>
-          <p class="text-sm text-gray-500 mt-0.5">How visible are you in the writing?</p>
+          <label class="field-label" for="science_explicitness">Reference research / science?</label>
+          <select id="science_explicitness"></select>
+          <p class="hint" id="science_explicitness-hint"></p>
         </div>
       </div>
-      <div id="presence-opts" class="space-y-2"></div>
-    </div>
+    </section>
 
-    <!-- 7. Commercial stance -->
-    <div class="section-card">
-      <div class="flex items-start mb-4">
-        <span class="step-num">7</span>
-        <div>
-          <h2 class="font-bold text-gray-900">Relationship to selling</h2>
-          <p class="text-sm text-gray-500 mt-0.5">How overt should the commercial angle be?</p>
+    <!-- Step 4: Plan -->
+    <section class="step section-card" data-step="3">
+      <h2 class="font-bold text-gray-900">Choose your plan</h2>
+      <p class="text-sm text-gray-500 mt-0.5 mb-5">Start free, or go straight to a package.</p>
+      <div id="plan-cards" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+      <div id="cadence-wrap" class="hidden mt-5 flex flex-wrap items-center gap-3">
+        <span class="text-sm font-semibold text-gray-700">How often?</span>
+        <div class="seg flex">
+          <button type="button" data-val="weekly" class="active" onclick="setCadence('weekly')">1× / week</button>
+          <button type="button" data-val="twice_weekly" onclick="setCadence('twice_weekly')">2× / week</button>
         </div>
       </div>
-      <div id="commercial-opts" class="space-y-2"></div>
-    </div>
+      <p id="plan-summary" class="text-sm text-gray-600 mt-4"></p>
+      <p id="coupon-note" class="hidden text-xs text-gray-400 mt-1">Have a coupon? You can enter it on the secure Stripe checkout page.</p>
+    </section>
 
-    <!-- Submit -->
-    <div class="pb-16">
+    <!-- Nav -->
+    <div class="pt-5 pb-16">
       <div id="submit-error" class="hidden bg-red-50 border border-red-200 text-red-600 text-sm rounded-md px-4 py-3 mb-4"></div>
-      <button onclick="submitForm()" id="submit-btn"
-        class="w-full bg-indigo-600 text-white font-semibold py-4 rounded-lg hover:bg-indigo-700 transition text-base">
-        Submit my questionnaire →
-      </button>
-      <p class="text-xs text-gray-400 text-center mt-3">We'll review your answers and get in touch within 24 hours.</p>
+      <div class="flex gap-3">
+        <button id="back-btn" onclick="go(-1)" class="hidden px-5 py-3.5 rounded-lg border border-gray-300 bg-white text-gray-700 font-semibold hover:bg-gray-50 transition">Back</button>
+        <button id="next-btn" onclick="go(1)" class="flex-1 bg-indigo-600 text-white font-semibold py-3.5 rounded-lg hover:bg-indigo-700 transition disabled:opacity-60">Next →</button>
+      </div>
+      <p id="nav-note" class="text-xs text-gray-400 text-center mt-3">Your answers are saved on this device as you go.</p>
     </div>
-
-  </div><!-- /form-wrap -->
+  </div>
 
 <script>
-const STYLE_TIPS = {
-  mentor_coach:         "Personal brand — shares frameworks, lessons, and growth advice as an individual voice.",
-  author:               "Writer / Author — promotes ideas, books, and creative work through compelling content.",
-  industry_consultant:  "Individual expert — technical authority, market insight, B2B advisory.",
-  corporate_firm:       "Firm brand — professional services, sector expertise, company voice.",
-  thought_leader:       "Opinion & ideas — challenges thinking, shapes industry narrative.",
-  reviewer:             "Opinionated evaluations — gear, services, restaurants, places.",
-  travel_lifestyle:     "Destination and experience-led storytelling.",
-};
+// ── Options ──────────────────────────────────────────────────────────────────
+const STYLE_OPTS = [
+  { value: "mentor_coach",        label: "Mentor / Coach",               desc: "Personal brand — shares frameworks, lessons, and growth advice as an individual voice." },
+  { value: "author",              label: "Author / Writer",              desc: "Promotes ideas, books, and creative work through compelling content." },
+  { value: "industry_consultant", label: "Industry Expert / Consultant", desc: "Individual expert — technical authority, market insight, B2B advisory." },
+  { value: "corporate_firm",      label: "Professional Services Firm",   desc: "Firm brand — professional services, sector expertise, company voice." },
+  { value: "thought_leader",      label: "Thought Leader",               desc: "Opinion & ideas — challenges thinking, shapes industry narrative." },
+  { value: "reviewer",            label: "Reviewer / Critic",            desc: "Opinionated evaluations — gear, services, restaurants, places." },
+  { value: "travel_lifestyle",    label: "Travel & Lifestyle",           desc: "Destination and experience-led storytelling." },
+];
 
 const TONE_EXAMPLES = {
   author: {
@@ -289,21 +262,19 @@ const TONE_EXAMPLES = {
 
 const AUDIENCE_OPTS = [
   { value: "c_suite_senior_leaders",       label: "C-suite & senior leaders" },
-  { value: "entrepreneurs_founders",        label: "Entrepreneurs & founders" },
-  { value: "coaches_consultants_speakers",  label: "Coaches, consultants & speakers" },
-  { value: "everyday_consumers_shoppers",   label: "Everyday consumers & shoppers" },
-  { value: "hobbyists_enthusiasts",         label: "Hobbyists & enthusiasts" },
-  { value: "travelers_experience_seekers",  label: "Travelers & experience seekers" },
-  { value: "professionals_specific_field",  label: "Professionals in a specific field" },
+  { value: "entrepreneurs_founders",       label: "Entrepreneurs & founders" },
+  { value: "coaches_consultants_speakers", label: "Coaches, consultants & speakers" },
+  { value: "everyday_consumers_shoppers",  label: "Everyday consumers & shoppers" },
+  { value: "hobbyists_enthusiasts",        label: "Hobbyists & enthusiasts" },
+  { value: "travelers_experience_seekers", label: "Travelers & experience seekers" },
+  { value: "professionals_specific_field", label: "Professionals in a specific field" },
 ];
-
 const PLATFORM_OPTS = [
-  { value: "linkedin_only", label: "LinkedIn posts only", desc: "Scroll-first, conversational, shorter form" },
-  { value: "blog_only",     label: "Blog articles only",  desc: "Evergreen, SEO-friendly, long form" },
-  { value: "both",          label: "Both — blog + LinkedIn adaptation", desc: "Full article as primary, LinkedIn as a shortened version" },
+  { value: "both",          label: "Blog + LinkedIn",    desc: "Full article as primary, LinkedIn as a shortened version." },
+  { value: "blog_only",     label: "Blog articles only", desc: "Evergreen, SEO-friendly, long form." },
+  { value: "linkedin_only", label: "LinkedIn posts only", desc: "Scroll-first, conversational, shorter form." },
 ];
-
-const TONE_BASE = [
+const TONE_OPTS = [
   { value: "calm_authoritative",   label: "Calm, authoritative, evidence-led" },
   { value: "warm_reflective",      label: "Warm, reflective, quietly confident" },
   { value: "direct_insight_dense", label: "Direct, sharp, insight-dense" },
@@ -311,158 +282,291 @@ const TONE_BASE = [
   { value: "minimalist_executive", label: "Executive and minimal" },
   { value: "custom",               label: "A distinct blend — I'll describe it" },
 ];
-
 const PRESENCE_OPTS = [
-  { value: "first_person_frequent",  label: "First-person, personal",        desc: '"In my work with leaders…"' },
-  { value: "first_person_occasional",label: "Occasional personal anecdotes",  desc: "Mostly insight-led, personal moments used sparingly" },
-  { value: "insight_only",           label: "No personal anecdotes — insight only", desc: "The idea is the hero, not the person" },
-  { value: "third_person",           label: "Third-person brand voice",       desc: "Fully brand-led, no personal perspective" },
+  { value: "first_person_frequent",   label: "First-person, personal",       desc: '"In my work with leaders…"' },
+  { value: "first_person_occasional", label: "Occasional personal anecdotes", desc: "Mostly insight-led; personal moments used sparingly." },
+  { value: "insight_only",            label: "Insight only",                 desc: "The idea is the hero, not the person." },
+  { value: "third_person",            label: "Third-person brand voice",     desc: "Fully brand-led, no personal perspective." },
 ];
-
 const COMMERCIAL_OPTS = [
-  { value: "invisible",       label: "Pure value, no selling",                desc: "Never reference services or products" },
-  { value: "soft_authority",  label: "Soft authority building",               desc: '"This is what I work on" — implied expertise only' },
-  { value: "gentle_cta",      label: "Gentle CTA at the end",                 desc: "One low-pressure invitation at the close" },
-  { value: "clear_invitation",label: "Clear invitation to work together",     desc: "Direct ask — book a call, join the programme, etc." },
+  { value: "invisible",        label: "Pure value, no selling",   desc: "Never reference services or products." },
+  { value: "soft_authority",   label: "Soft authority building",  desc: '"This is what I work on" — implied expertise only.' },
+  { value: "gentle_cta",       label: "Gentle CTA at the end",    desc: "One low-pressure invitation at the close." },
+  { value: "clear_invitation", label: "Clear invitation to work together", desc: "Direct ask — book a call, join the programme, etc." },
+];
+const SCIENCE_OPTS = [
+  { value: "implied",                           label: "Keep it implied",  desc: "Grounded in evidence, without citing it." },
+  { value: "explicit_when_credibility_helpful", label: "Yes, when it helps", desc: "Cite research where it strengthens a point." },
+  { value: "explicit_often",                    label: "Yes, often",       desc: "Lean on studies and data regularly." },
 ];
 
-let sciExplicitness = "implied";
+// Fallback if /api/plans is unreachable; server is the source of truth.
+let PLANS = [
+  { id: "free_preview", label: "Free preview", articles: 2,  price_cents: 0,     list_price_cents: 0,     blurb: "1 long article + 1 short post, a week apart. No card.", fixed_cadence: "weekly" },
+  { id: "starter",      label: "Starter",      articles: 8,  price_cents: 4900,  list_price_cents: 9900,  blurb: "8 articles · 1×/week · about 2 months.", default_cadence: "weekly" },
+  { id: "standard",     label: "Standard",     articles: 16, price_cents: 8900,  list_price_cents: 13900, blurb: "16 articles · 2×/week · about 2 months.", default_cadence: "twice_weekly" },
+  { id: "premium",      label: "Premium",      articles: 24, price_cents: 11900, list_price_cents: 16900, blurb: "24 articles · 2×/week · about 3 months.", default_cadence: "twice_weekly" },
+];
+let checkoutEnabled = false;
 
-function renderOpts(containerId, opts, group) {
-  document.getElementById(containerId).innerHTML = opts.map(o => `
-    <div class="card-opt" data-val="${o.value}" data-group="${group}" onclick="selectOpt(this, '${group}')">
-      <div class="flex items-start gap-3">
-        <div class="opt-dot mt-0.5"></div>
-        <div class="flex-1">
-          <div class="text-sm font-semibold text-gray-800">${o.label}</div>
-          ${o.desc ? `<div class="text-xs text-gray-500 mt-0.5">${o.desc}</div>` : ''}
-          ${o.example ? `<div class="text-xs text-gray-400 italic mt-1.5 border-l-2 border-gray-200 pl-2">"${o.example}"</div>` : ''}
-        </div>
-      </div>
-    </div>`).join('');
+const SELECTS = {
+  brand_archetype:      { opts: STYLE_OPTS },
+  audience:             { opts: AUDIENCE_OPTS,   placeholder: "— Optional —" },
+  tone:                 { opts: TONE_OPTS,       placeholder: "Choose a tone…" },
+  platform:             { opts: PLATFORM_OPTS,   placeholder: "Choose…" },
+  personal_presence:    { opts: PRESENCE_OPTS,   placeholder: "Choose…" },
+  commercial_stance:    { opts: COMMERCIAL_OPTS, placeholder: "Choose…" },
+  science_explicitness: { opts: SCIENCE_OPTS },
+};
+const TEXT_FIELDS = ["client_name", "client_email", "website_url", "about", "core_beliefs",
+  "formative_experiences", "desired_outcome", "audience_context", "custom_tone"];
+
+// Required fields per step: [id, message]
+const REQUIRED = [
+  [["client_name", "Please enter your name."], ["client_email", "Please enter a valid email address."], ["about", "Please tell us what you write about."]],
+  [["core_beliefs", "Please share the core ideas you want to be known for."], ["formative_experiences", "Please tell us what shaped those beliefs."], ["audience_context", "Please describe your ideal reader."]],
+  [["tone", "Please choose a tone."], ["platform", "Please choose where your content will live."], ["personal_presence", "Please choose how visible you are."], ["commercial_stance", "Please choose your relationship to selling."]],
+  [],
+];
+
+let step = 0;
+let plan = null;
+let cadence = "weekly";
+const $ = id => document.getElementById(id);
+
+// ── Storage (best-effort) ────────────────────────────────────────────────────
+const DRAFT_KEY = "saidby_intake_draft_v2";
+function store(key, val) { try { val == null ? localStorage.removeItem(key) : localStorage.setItem(key, JSON.stringify(val)); } catch (e) {} }
+function load(key) { try { return JSON.parse(localStorage.getItem(key) || "null"); } catch (e) { return null; } }
+
+function saveDraft() {
+  const d = { plan, cadence };
+  [...TEXT_FIELDS, ...Object.keys(SELECTS)].forEach(id => d[id] = $(id).value);
+  store(DRAFT_KEY, d);
+}
+function restoreDraft() {
+  const d = load(DRAFT_KEY);
+  if (!d) return;
+  [...TEXT_FIELDS, ...Object.keys(SELECTS)].forEach(id => { if (d[id] != null) $(id).value = d[id]; });
+  if (d.plan) plan = d.plan;
+  if (d.cadence) cadence = d.cadence;
 }
 
-function selectOpt(el, group) {
-  document.querySelectorAll(`[data-group="${group}"]`).forEach(e => e.classList.remove('selected'));
-  el.classList.add('selected');
-  if (group === 'tone') {
-    document.getElementById('custom-tone-wrap').classList.toggle('hidden', el.dataset.val !== 'custom');
+// ── Rendering ────────────────────────────────────────────────────────────────
+function fillSelect(id, { opts, placeholder }) {
+  $(id).innerHTML = (placeholder ? `<option value="">${placeholder}</option>` : "") +
+    opts.map(o => `<option value="${o.value}">${o.label}</option>`).join("");
+}
+
+function updateHints() {
+  for (const [id, cfg] of Object.entries(SELECTS)) {
+    const hint = $(id + "-hint");
+    if (!hint) continue;
+    const o = cfg.opts.find(o => o.value === $(id).value);
+    hint.textContent = o?.desc || "";
   }
+  const style = $("brand_archetype").value;
+  const tone = $("tone").value;
+  const ex = (TONE_EXAMPLES[style] || TONE_EXAMPLES.mentor_coach)[tone];
+  $("tone-example").textContent = ex ? `“${ex}”` : "";
+  $("tone-example").classList.toggle("hidden", !ex);
+  $("custom-tone-wrap").classList.toggle("hidden", tone !== "custom");
 }
 
-function getSelected(group) {
-  return document.querySelector(`[data-group="${group}"].selected`)?.dataset.val || null;
-}
+const money = c => "$" + (c / 100).toFixed(c % 100 ? 2 : 0);
 
-function setSci(val) {
-  sciExplicitness = val;
-  document.querySelectorAll('.sci-btn').forEach(b => {
-    b.classList.toggle('border-indigo-500', b.dataset.val === val);
-    b.classList.toggle('bg-indigo-50', b.dataset.val === val);
-    b.classList.toggle('text-indigo-700', b.dataset.val === val);
-    b.classList.toggle('border-gray-200', b.dataset.val !== val);
-  });
-}
-
-function onStyleChange() {
-  const style = document.getElementById('brand_archetype').value;
-  document.getElementById('role-tip').textContent = STYLE_TIPS[style] || '';
-  renderToneOpts(style);
-}
-
-function renderToneOpts(style) {
-  const examples = TONE_EXAMPLES[style] || TONE_EXAMPLES['mentor_coach'];
-  const opts = TONE_BASE.map(t => ({ ...t, example: examples[t.value] || null }));
-  const el = document.getElementById('tone-opts');
-  const selected = getSelected('tone');
-  el.innerHTML = opts.map(o => `
-    <div class="card-opt ${selected === o.value ? 'selected' : ''}" data-val="${o.value}" data-group="tone" onclick="selectOpt(this, 'tone')">
-      <div class="flex items-start gap-3">
-        <div class="opt-dot mt-0.5"></div>
-        <div class="flex-1">
-          <div class="text-sm font-semibold text-gray-800">${o.label}</div>
-          ${o.example ? `<div class="text-xs text-gray-400 italic mt-1.5 border-l-2 border-gray-200 pl-2">"${o.example}"</div>` : ''}
+function renderPlans() {
+  $("plan-cards").innerHTML = PLANS.map(p => {
+    const free = p.price_cents === 0;
+    const price = free
+      ? `<span class="text-xl font-bold text-gray-900">Free</span>`
+      : `<span class="text-xl font-bold text-gray-900">${money(p.price_cents)}</span>
+         ${p.list_price_cents > p.price_cents ? `<span class="text-sm text-gray-400 line-through ml-1">${money(p.list_price_cents)}</span>` : ""}`;
+    return `
+      <div class="plan-card ${plan === p.id ? "selected" : ""}" role="radio" tabindex="0" aria-checked="${plan === p.id}"
+           onclick="selectPlan('${p.id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectPlan('${p.id}')}">
+        ${free ? `<span class="absolute -top-2.5 right-3 bg-emerald-500 text-white text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full">Try first</span>` : ""}
+        <div class="flex items-baseline justify-between gap-2">
+          <span class="font-semibold text-gray-900">${p.label}</span>
+          <span>${price}</span>
         </div>
-      </div>
-    </div>`).join('');
+        <div class="text-xs text-gray-500 mt-1">${p.blurb}</div>
+      </div>`;
+  }).join("");
+  updatePlanSummary();
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  renderOpts('audience-opts',  AUDIENCE_OPTS,  'audience');
-  renderOpts('platform-opts',  PLATFORM_OPTS,  'platform');
-  renderOpts('presence-opts',  PRESENCE_OPTS,  'presence');
-  renderOpts('commercial-opts',COMMERCIAL_OPTS,'commercial');
-  onStyleChange();  // renders tone opts + tip for default style
-  setSci('implied');
-});
+function selectPlan(id) {
+  if (id !== plan) {
+    const p = PLANS.find(p => p.id === id);
+    if (p?.default_cadence) cadence = p.default_cadence;
+  }
+  plan = id;
+  renderPlans();
+  saveDraft();
+}
 
+function setCadence(val) {
+  cadence = val;
+  document.querySelectorAll(".seg button").forEach(b => b.classList.toggle("active", b.dataset.val === val));
+  updatePlanSummary();
+  saveDraft();
+}
+
+function updatePlanSummary() {
+  const p = PLANS.find(p => p.id === plan);
+  const paid = p && p.price_cents > 0;
+  $("cadence-wrap").classList.toggle("hidden", !paid);
+  $("coupon-note").classList.toggle("hidden", !(paid && checkoutEnabled));
+  document.querySelectorAll(".seg button").forEach(b => b.classList.toggle("active", b.dataset.val === cadence));
+  if (!p) { $("plan-summary").textContent = ""; if (step === 3) updateNav(); return; }
+  if (!paid) {
+    $("plan-summary").innerHTML = "We'll write <strong>one long-form article</strong>, then <strong>one short post</strong> the following week — in your voice, for you to review. No card needed.";
+  } else {
+    const perWeek = cadence === "twice_weekly" ? 2 : 1;
+    const weeks = Math.ceil(p.articles / perWeek);
+    $("plan-summary").innerHTML = `<strong>${p.articles} articles</strong> at ${perWeek}× per week ≈ <strong>${weeks} weeks</strong> of content. One-off payment of ${money(p.price_cents)}.`;
+  }
+  if (step === 3) updateNav();
+}
+
+function updateNav() {
+  $("back-btn").classList.toggle("hidden", step === 0);
+  document.querySelectorAll(".step").forEach(s => s.classList.toggle("active", +s.dataset.step === step));
+  $("progress-bar").style.width = `${(step + 1) * 25}%`;
+  document.querySelectorAll("#step-labels span").forEach(s =>
+    s.classList.toggle("text-indigo-600", +s.dataset.i <= step));
+  const btn = $("next-btn");
+  if (step < 3) { btn.textContent = "Next →"; return; }
+  const p = PLANS.find(p => p.id === plan);
+  if (!p) btn.textContent = "Choose a plan above";
+  else if (p.price_cents === 0) btn.textContent = "Start my free preview →";
+  else btn.textContent = checkoutEnabled ? `Continue to payment — ${money(p.price_cents)} →` : "Submit my questionnaire →";
+}
+
+// ── Validation & navigation ──────────────────────────────────────────────────
+function validStep(i) {
+  document.querySelectorAll(".invalid").forEach(e => e.classList.remove("invalid"));
+  for (const [id, msg] of REQUIRED[i]) {
+    const el = $(id);
+    const v = el.value.trim();
+    const bad = !v || (id === "client_email" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v));
+    if (bad) { el.classList.add("invalid"); el.focus(); showErr(msg); return false; }
+  }
+  if (i === 3 && !plan) { showErr("Please choose a plan."); return false; }
+  hideErr();
+  return true;
+}
+
+function go(dir) {
+  if (dir > 0 && !validStep(step)) return;
+  if (dir > 0 && step === 3) { submitForm(); return; }
+  step = Math.max(0, Math.min(3, step + dir));
+  hideErr();
+  updateNav();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function showErr(msg) { const el = $("submit-error"); el.textContent = msg; el.classList.remove("hidden"); }
+function hideErr() { $("submit-error").classList.add("hidden"); }
+
+// ── Submit / payment ─────────────────────────────────────────────────────────
 async function submitForm() {
-  const btn = document.getElementById('submit-btn');
-  const errEl = document.getElementById('submit-error');
-  errEl.classList.add('hidden');
-
-  const name  = document.getElementById('client_name').value.trim();
-  const email = document.getElementById('client_email').value.trim();
-  const about = document.getElementById('about').value.trim();
-
-  const coreBeliefs = document.getElementById('core_beliefs').value.trim();
-  const formativeExperiences = document.getElementById('formative_experiences').value.trim();
-  const audienceContext = document.getElementById('audience_context').value.trim();
-  if (!name)          { showErr('Please enter your name.'); return; }
-  if (!email)         { showErr('Please enter your email address.'); return; }
-  if (!about)         { showErr('Please tell us what you write about.'); return; }
-  if (!coreBeliefs)   { showErr('Please share the core ideas or beliefs you want to be known for.'); return; }
-  if (!formativeExperiences) { showErr('Please tell us about the experiences that shaped your beliefs.'); return; }
-  if (!audienceContext){ showErr('Please describe your ideal reader.'); return; }
-  if (!getSelected('platform'))  { showErr('Please select where your content will live.'); return; }
-  if (!getSelected('tone'))      { showErr('Please select a tone.'); return; }
-  if (!getSelected('presence'))  { showErr('Please select your personal presence.'); return; }
-  if (!getSelected('commercial')){ showErr('Please select your commercial stance.'); return; }
-
-  btn.textContent = 'Submitting…';
+  const btn = $("next-btn");
+  const label = btn.textContent;
   btn.disabled = true;
+  btn.textContent = "Submitting…";
 
-  const data = {
-    client_name:      name,
-    client_email:     email,
-    website_url:      document.getElementById('website_url').value.trim(),
-    brand_archetype:  document.getElementById('brand_archetype').value,
-    about,
-    core_beliefs:          coreBeliefs,
-    formative_experiences: formativeExperiences,
-    desired_outcome:       document.getElementById('desired_outcome').value.trim(),
-    audience:         getSelected('audience'),
-    audience_context: document.getElementById('audience_context').value.trim(),
-    platform:         getSelected('platform'),
-    tone:             getSelected('tone'),
-    custom_tone:      document.getElementById('custom_tone').value.trim(),
-    science_explicitness: sciExplicitness,
-    personal_presence:   getSelected('presence'),
-    commercial_stance:   getSelected('commercial'),
-  };
+  const data = { plan, cadence };
+  TEXT_FIELDS.forEach(id => data[id] = $(id).value.trim());
+  Object.keys(SELECTS).forEach(id => data[id] = $(id).value || null);
 
   try {
-    const res = await fetch('/api/submissions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
+    const res = await fetch("/api/submissions", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data),
     });
-    if (!res.ok) throw new Error(await res.text());
-    document.getElementById('form-wrap').classList.add('hidden');
-    document.getElementById('success-screen').classList.remove('hidden');
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body.detail || "Something went wrong. Please try again.");
+    if (body.checkout_url) {
+      store("saidby_pending_sub", body.id);
+      btn.textContent = "Redirecting to secure checkout…";
+      window.location.href = body.checkout_url;
+      return;
+    }
+    store(DRAFT_KEY, null);
+    showSuccess(plan === "free_preview" ? "free" : "offline");
   } catch (e) {
-    showErr('Something went wrong. Please try again.');
-    btn.textContent = 'Submit my questionnaire →';
+    showErr(e.message);
     btn.disabled = false;
+    btn.textContent = label;
   }
 }
 
-function showErr(msg) {
-  const el = document.getElementById('submit-error');
-  el.textContent = msg;
-  el.classList.remove('hidden');
-  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+async function resumePayment() {
+  const sub = load("saidby_pending_sub");
+  if (!sub) { $("cancel-banner").classList.add("hidden"); step = 3; updateNav(); return; }
+  const res = await fetch(`/api/submissions/${encodeURIComponent(sub)}/checkout`, { method: "POST" });
+  const body = await res.json().catch(() => ({}));
+  if (res.ok && body.checkout_url) window.location.href = body.checkout_url;
+  else { $("cancel-banner").classList.add("hidden"); step = 3; updateNav(); showErr(body.detail || "Couldn't resume payment — please submit again."); }
 }
+
+async function confirmPayment(sessionId) {
+  $("form-wrap").classList.add("hidden");
+  showSuccess("confirming");
+  try {
+    const res = await fetch("/api/checkout/confirm", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ session_id: sessionId }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (res.ok && body.paid) {
+      store(DRAFT_KEY, null); store("saidby_pending_sub", null);
+      showSuccess(body.kind === "upgrade" ? "upgrade" : "paid");
+    } else showSuccess("pending");
+  } catch (e) { showSuccess("pending"); }
+  history.replaceState(null, "", "/onboard");
+}
+
+const SUCCESS_COPY = {
+  free:       ["Your free preview is on its way!", "We'll review your answers and email you within 24 hours with the topics for your two pieces."],
+  offline:    ["You're all set!", "We've received your questionnaire and will be in touch within 24 hours to confirm your plan and payment."],
+  paid:       ["Payment received — thank you!", "You'll get a receipt from Stripe. We'll email you within 24 hours with your content plan."],
+  upgrade:    ["Payment received — thank you!", "Your package is confirmed. We'll email you shortly with your next set of topics."],
+  confirming: ["Confirming your payment…", "One moment."],
+  pending:    ["Thanks — we're confirming your payment", "If it went through, you'll get a Stripe receipt and hear from us within 24 hours."],
+};
+function showSuccess(kind) {
+  $("form-wrap").classList.add("hidden");
+  $("success-screen").classList.remove("hidden");
+  $("success-title").textContent = SUCCESS_COPY[kind][0];
+  $("success-body").textContent = SUCCESS_COPY[kind][1];
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+document.addEventListener("DOMContentLoaded", async () => {
+  Object.entries(SELECTS).forEach(([id, cfg]) => fillSelect(id, cfg));
+  restoreDraft();
+
+  const params = new URLSearchParams(location.search);
+  if (params.get("session_id")) { confirmPayment(params.get("session_id")); return; }
+  const urlPlan = params.get("plan");
+  if (params.get("cancelled")) { $("cancel-banner").classList.remove("hidden"); }
+
+  document.querySelectorAll("input, textarea, select").forEach(el => {
+    el.addEventListener("input", () => { el.classList.remove("invalid"); updateHints(); saveDraft(); });
+    el.addEventListener("change", () => { updateHints(); saveDraft(); });
+  });
+  updateHints();
+
+  try {
+    const res = await fetch("/api/plans");
+    if (res.ok) { const d = await res.json(); PLANS = d.plans; checkoutEnabled = d.checkout_enabled; }
+  } catch (e) {}
+  if (urlPlan && PLANS.some(p => p.id === urlPlan)) { plan = null; selectPlan(urlPlan); }
+  if (plan && !PLANS.some(p => p.id === plan)) plan = null;
+  renderPlans();
+  updateNav();
+});
 </script>
 </body>
 </html>

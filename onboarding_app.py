@@ -92,32 +92,243 @@ def _delete(path: Path, msg: str = ""):
     delete_file(path, msg)
 
 
+def _base_url(request: Request) -> str:
+    """Public origin for Stripe redirect URLs (honours Railway's proxy headers)."""
+    explicit = os.environ.get("PUBLIC_BASE_URL", "").strip()
+    if explicit:
+        return explicit.rstrip("/")
+    proto = request.headers.get("x-forwarded-proto") or request.url.scheme
+    host = request.headers.get("x-forwarded-host") or request.headers.get("host") or request.url.netloc
+    return f"{proto}://{host}"
+
+
+def _write_yaml(path: Path, data: dict):
+    with open(path, "w", encoding="utf-8") as f:
+        yaml.dump(data, f, allow_unicode=True, sort_keys=False)
+
+
+def _notify_operator_of_submission(sub: dict):
+    try:
+        from content_factory.emailer import send_new_submission_email
+        send_new_submission_email(submission=sub)
+    except Exception as e:
+        print(f"Warning: could not send submission email: {e}")
+
+
+def _email_has_free_preview(email: str) -> bool:
+    email = email.strip().lower()
+    for p in SUBMISSIONS_DIR.glob("*.yaml"):
+        d = yaml.safe_load(p.read_text(encoding="utf-8")) or {}
+        if d.get("plan") == "free_preview" and (d.get("client_email") or "").strip().lower() == email:
+            return True
+    return False
+
+
+@app.get("/api/plans")
+def list_plans():
+    from content_factory import billing
+    from content_factory.plans import public_catalogue
+    return {"plans": public_catalogue(), "checkout_enabled": billing.enabled()}
+
+
 @app.post("/api/submissions")
 async def create_submission(request: Request, bg: BackgroundTasks):
+    from content_factory import billing
+    from content_factory.plans import CADENCES, get_plan, is_free
+
     data = await request.json()
     if not data.get("client_email"):
         raise HTTPException(status_code=400, detail="client_email is required")
 
+    plan_id = data.get("plan") or "free_preview"
+    plan = get_plan(plan_id)
+    if not plan:
+        raise HTTPException(status_code=400, detail=f"Unknown plan: {plan_id}")
+    cadence = plan.get("fixed_cadence") or data.get("cadence") or plan.get("default_cadence") or "weekly"
+    if cadence not in CADENCES:
+        raise HTTPException(status_code=400, detail=f"Unknown cadence: {cadence}")
+    data["plan"], data["cadence"] = plan_id, cadence
+
     SUBMISSIONS_DIR.mkdir(parents=True, exist_ok=True)
+    if is_free(plan_id) and _email_has_free_preview(data["client_email"]):
+        raise HTTPException(
+            status_code=409,
+            detail="This email has already used its free preview — pick a package to continue.",
+        )
+
     sub_id = datetime.utcnow().strftime("%Y%m%d_%H%M%S") + "_" + str(uuid.uuid4())[:6]
     data["id"] = sub_id
     data["submitted_at"] = datetime.utcnow().isoformat()
-    data["status"] = "submitted"
+
+    paid_online = not is_free(plan_id) and billing.enabled()
+    if is_free(plan_id):
+        data["payment"] = {"status": "free"}
+    elif paid_online:
+        data["payment"] = {"status": "awaiting_payment"}
+    else:
+        data["payment"] = {"status": "offline"}  # Stripe not configured — invoice manually
+    data["status"] = "awaiting_payment" if paid_online else "submitted"
 
     path = SUBMISSIONS_DIR / f"{sub_id}.yaml"
-    with open(path, "w", encoding="utf-8") as f:
-        yaml.dump(data, f, allow_unicode=True, sort_keys=False)
+    checkout_url = None
+    if paid_online:
+        try:
+            session = billing.create_checkout_session(
+                plan_id=plan_id, cadence=cadence, customer_email=data["client_email"],
+                base_url=_base_url(request), metadata={"submission_id": sub_id},
+            )
+        except Exception as e:
+            print(f"[checkout] Stripe session failed for {sub_id}: {e}")
+            raise HTTPException(status_code=502, detail="Could not start checkout — please try again.")
+        data["payment"]["session_id"] = session["id"]
+        checkout_url = session["url"]
 
+    _write_yaml(path, data)
     bg.add_task(_sync, path, f"feat: new submission {sub_id}")
 
-    # Email operator
-    try:
-        from content_factory.emailer import send_new_submission_email
-        send_new_submission_email(submission=data)
-    except Exception as e:
-        print(f"Warning: could not send submission email: {e}")
+    # Paid plans notify the operator once payment lands (see _mark_submission_paid).
+    if not paid_online:
+        _notify_operator_of_submission(data)
 
-    return {"submitted": True, "id": sub_id}
+    return {"submitted": True, "id": sub_id, "checkout_url": checkout_url}
+
+
+@app.post("/api/submissions/{sub_id}/checkout")
+async def retry_checkout(sub_id: str, request: Request):
+    """Restart payment for a submission whose checkout was cancelled/abandoned."""
+    from content_factory import billing
+
+    if not re.fullmatch(r"[\w-]+", sub_id):
+        raise HTTPException(status_code=404, detail="Submission not found")
+    path = SUBMISSIONS_DIR / f"{sub_id}.yaml"
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="Submission not found")
+    sub = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    if sub.get("status") != "awaiting_payment" or not billing.enabled():
+        raise HTTPException(status_code=400, detail="This submission doesn't need payment.")
+
+    session = billing.create_checkout_session(
+        plan_id=sub["plan"], cadence=sub.get("cadence", "weekly"), customer_email=sub.get("client_email", ""),
+        base_url=_base_url(request), metadata={"submission_id": sub_id},
+    )
+    sub.setdefault("payment", {})["session_id"] = session["id"]
+    _write_yaml(path, sub)
+    return {"checkout_url": session["url"]}
+
+
+def _mark_submission_paid(sub_id: str, session: dict, bg: BackgroundTasks | None = None) -> bool:
+    """Idempotent: flip awaiting_payment → submitted and notify the operator once."""
+    from content_factory import billing
+
+    path = SUBMISSIONS_DIR / f"{sub_id}.yaml"
+    if not path.exists():
+        return False
+    sub = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    if (sub.get("payment") or {}).get("status") == "paid":
+        return True
+    sub["payment"] = billing.payment_record(session)
+    if sub.get("status") == "awaiting_payment":
+        sub["status"] = "submitted"
+    _write_yaml(path, sub)
+    if bg:
+        bg.add_task(_sync, path, f"chore: payment received {sub_id}")
+    else:
+        _sync(path, f"chore: payment received {sub_id}")
+    _notify_operator_of_submission(sub)
+    return True
+
+
+def _mark_upgrade_paid(brand_id: str, session: dict, bg: BackgroundTasks | None = None) -> bool:
+    """A free-preview client paid for a package — record it for the operator."""
+    from content_factory import billing
+
+    brand_path = BRANDS_DIR / f"{brand_id}.yaml"
+    if not brand_path.exists():
+        return False
+    brand = yaml.safe_load(brand_path.read_text(encoding="utf-8")) or {}
+    if (brand.get("upgrade") or {}).get("session_id") == session.get("id"):
+        return True
+    meta = session.get("metadata") or {}
+    brand["upgrade"] = {
+        **billing.payment_record(session),
+        "plan": meta.get("plan"), "cadence": meta.get("cadence"),
+        "paid_at": datetime.utcnow().isoformat(),
+    }
+    _write_yaml(brand_path, brand)
+    if bg:
+        bg.add_task(_sync, brand_path, f"chore: upgrade paid {brand_id}")
+    else:
+        _sync(brand_path, f"chore: upgrade paid {brand_id}")
+    try:
+        from content_factory.emailer import send_upgrade_paid_email
+        send_upgrade_paid_email(brand=brand)
+    except Exception as e:
+        print(f"Warning: could not send upgrade-paid email: {e}")
+    return True
+
+
+def _apply_paid_session(session: dict, bg: BackgroundTasks | None = None) -> dict:
+    if session.get("payment_status") not in ("paid", "no_payment_required"):
+        return {"paid": False}
+    meta = session.get("metadata") or {}
+    if meta.get("submission_id"):
+        _mark_submission_paid(meta["submission_id"], session, bg)
+        return {"paid": True, "kind": "submission"}
+    if meta.get("brand_id"):
+        _mark_upgrade_paid(meta["brand_id"], session, bg)
+        return {"paid": True, "kind": "upgrade"}
+    return {"paid": True, "kind": "unknown"}
+
+
+@app.post("/api/checkout/confirm")
+async def confirm_checkout(request: Request, bg: BackgroundTasks):
+    """Called by the success page — verifies with Stripe, so it can't be faked."""
+    from content_factory import billing
+
+    body = await request.json()
+    session_id = (body.get("session_id") or "").strip()
+    if not session_id.startswith("cs_") or not billing.enabled():
+        raise HTTPException(status_code=400, detail="Invalid session")
+    try:
+        session = billing.retrieve_session(session_id)
+    except Exception:
+        raise HTTPException(status_code=404, detail="Session not found")
+    return _apply_paid_session(session, bg)
+
+
+@app.post("/api/stripe/webhook")
+async def stripe_webhook(request: Request, bg: BackgroundTasks):
+    from content_factory import billing
+
+    payload = await request.body()
+    try:
+        event = billing.parse_webhook(payload, request.headers.get("stripe-signature", ""))
+    except Exception as e:
+        print(f"[stripe] webhook rejected: {e}")
+        raise HTTPException(status_code=400, detail="Invalid webhook")
+    if event["type"] in ("checkout.session.completed", "checkout.session.async_payment_succeeded"):
+        _apply_paid_session(event["data"]["object"], bg)
+    return {"received": True}
+
+
+@app.get("/upgrade/{brand_id}")
+def upgrade_checkout(brand_id: str, request: Request, plan: str = "starter", cadence: str = "weekly"):
+    """Link in the free-preview upgrade email → straight to Stripe for that client."""
+    from content_factory import billing
+    from content_factory.plans import CADENCES, get_plan, is_free
+
+    if not re.fullmatch(r"[\w-]+", brand_id) or not (BRANDS_DIR / f"{brand_id}.yaml").exists():
+        raise HTTPException(status_code=404, detail="Not found")
+    if not get_plan(plan) or is_free(plan) or cadence not in CADENCES:
+        raise HTTPException(status_code=400, detail="Unknown plan")
+    if not billing.enabled():
+        return RedirectResponse(url="/#pricing", status_code=302)
+    brand = yaml.safe_load((BRANDS_DIR / f"{brand_id}.yaml").read_text(encoding="utf-8")) or {}
+    session = billing.create_checkout_session(
+        plan_id=plan, cadence=cadence, customer_email=brand.get("client_email", ""),
+        base_url=_base_url(request), metadata={"brand_id": brand_id}, cancel_path="/",
+    )
+    return RedirectResponse(url=session["url"], status_code=303)
 
 
 @app.get("/api/submissions", dependencies=[Depends(api_auth)])
@@ -134,6 +345,9 @@ def list_submissions():
             "brand_archetype": data.get("brand_archetype", ""),
             "submitted_at": data.get("submitted_at", ""),
             "status": data.get("status", "submitted"),
+            "plan": data.get("plan", ""),
+            "cadence": data.get("cadence", ""),
+            "payment_status": (data.get("payment") or {}).get("status", ""),
         })
     return items
 
@@ -196,7 +410,10 @@ async def activate_submission(sub_id: str, request: Request, bg: BackgroundTasks
         "narration_mode": narration,
     }
 
-    cadence_val = body.get("publication_cadence", "weekly")
+    from content_factory.plans import get_plan
+    plan_id = body.get("plan") or sub.get("plan") or ""
+    plan = get_plan(plan_id) or {}
+    cadence_val = plan.get("fixed_cadence") or body.get("publication_cadence") or sub.get("cadence") or "weekly"
     slots = body.get("content_slots", [{"day": "mon", "type": "long_blog"}])
     publish_days = list({s["day"] for s in slots})
 
@@ -205,7 +422,8 @@ async def activate_submission(sub_id: str, request: Request, bg: BackgroundTasks
         "client_name": sub.get("client_name", ""),
         "client_email": sub.get("client_email", ""),
         "brand_archetype": sub.get("brand_archetype", "mentor_coach"),
-        "package_size": body.get("package_size", 8),
+        "plan": plan_id or "custom",
+        "package_size": body.get("package_size") or plan.get("articles") or 8,
         "core_beliefs": sub.get("core_beliefs", ""),
         "formative_experiences": sub.get("formative_experiences", ""),
         "desired_outcome": sub.get("desired_outcome", ""),
@@ -249,6 +467,11 @@ async def activate_submission(sub_id: str, request: Request, bg: BackgroundTasks
         },
         "content_slots": slots,
     }
+    if plan.get("slot_type_sequence"):
+        # Scheduler picks the Nth article's type from this list (free preview: long → short).
+        brand["slot_type_sequence"] = list(plan["slot_type_sequence"])
+    if sub.get("payment"):
+        brand["payment"] = sub["payment"]
 
     BRANDS_DIR.mkdir(parents=True, exist_ok=True)
     brand_path = BRANDS_DIR / f"{brand_id}.yaml"
@@ -505,7 +728,21 @@ def approve_generated(brand_id: str, run_id: str, bg: BackgroundTasks):
 
     bg.add_task(_sync, path, f"chore: approve content {run_id}")
     bg.add_task(_sync, topics_path, f"chore: mark topic sent {brand_id}")
-    return {"approved": True, "email_id": email_id}
+
+    # Free preview finished → invite them to pick a package (once).
+    from content_factory.plans import is_free
+    upgrade_sent = False
+    if is_free(brand.get("plan")) and pkg_size and sent_count >= int(pkg_size) and not brand.get("upgrade_email_sent"):
+        try:
+            from content_factory.emailer import send_upgrade_email
+            send_upgrade_email(brand=brand)
+            brand["upgrade_email_sent"] = True
+            _write_yaml(brand_path, brand)
+            bg.add_task(_sync, brand_path, f"chore: upgrade email sent {brand_id}")
+            upgrade_sent = True
+        except Exception as e:
+            print(f"[approve] Upgrade email failed for {brand_id}: {e}")
+    return {"approved": True, "email_id": email_id, "upgrade_email_sent": upgrade_sent}
 
 
 @app.post("/api/brands/{brand_id}/generated/{run_id}/reject", dependencies=[Depends(api_auth)])
@@ -625,6 +862,8 @@ def get_milestones(brand_id: str):
     # Flags from brand YAML
     welcome_sent = bool(brand.get("welcome_email_sent"))
     plan_confirmed = bool(brand.get("plan_confirmed"))
+    from content_factory.plans import is_free
+    is_free_plan = is_free(brand.get("plan"))
     renewal_sent = bool(brand.get("renewal_email_sent"))
 
     def ms(id_, label, desc, status, action=None):
@@ -643,8 +882,13 @@ def get_milestones(brand_id: str):
         ms("articles",       f"Articles ({articles_sent}/{package_size})",
            f"{articles_sent} of {package_size} articles approved and sent",
            "done" if articles_sent >= package_size else ("in_progress" if articles_sent > 0 else "blocked")),
-        ms("renewal",        "Renewal email",        "Sent when 2 articles remain" if not renewal_sent else "Renewal email sent",
-           "done" if renewal_sent else ("action" if articles_sent >= package_size - 2 else "blocked"), None if renewal_sent else ("send_renewal" if articles_sent >= package_size - 2 else None)),
+        (ms("upgrade", "Upgrade email",
+            ("Upgrade email sent" + (f" — paid ({(brand.get('upgrade') or {}).get('plan')})" if brand.get("upgrade") else ""))
+            if brand.get("upgrade_email_sent") else "Sent automatically when the last preview article is approved",
+            "done" if brand.get("upgrade_email_sent") else "blocked")
+         if is_free_plan else
+         ms("renewal",        "Renewal email",        "Sent when 2 articles remain" if not renewal_sent else "Renewal email sent",
+           "done" if renewal_sent else ("action" if articles_sent >= package_size - 2 else "blocked"), None if renewal_sent else ("send_renewal" if articles_sent >= package_size - 2 else None))),
     ]
 
     return {"brand_id": brand_id, "package_size": package_size, "milestones": milestones}

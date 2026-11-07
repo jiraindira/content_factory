@@ -660,6 +660,7 @@
             <div>
               <label class="field-label">Package size</label>
               <div class="flex gap-2 mt-1">
+                <button type="button" class="act-pkg-btn slot-type-btn" data-val="2"  onclick="setActPkg(2)">2 (free)</button>
                 <button type="button" class="act-pkg-btn slot-type-btn" data-val="8"  onclick="setActPkg(8)">8 articles</button>
                 <button type="button" class="act-pkg-btn slot-type-btn" data-val="16" onclick="setActPkg(16)">16</button>
                 <button type="button" class="act-pkg-btn slot-type-btn" data-val="24" onclick="setActPkg(24)">24</button>
@@ -688,6 +689,8 @@
           </div>
           <div id="act-slots-wrap" class="mb-5">
             <label class="field-label">Publish days & content type</label>
+            <p id="act-free-note" class="hidden text-xs text-sky-700 bg-sky-50 border border-sky-200 rounded px-2 py-1 mb-2">
+              Free preview: one article per week on this day — long blog first, then a short snippet (type alternates automatically).</p>
             <div id="act-slots" class="space-y-2 mt-1"></div>
           </div>
           <button onclick="activateSubmission()"
@@ -1533,6 +1536,18 @@ function setChips(containerId, vals) {
 let activeSubmissionId = null;
 let actCadence = 'weekly';
 let actPackage = null;
+let actPlan = null;
+
+function planLine(sub) {
+  const pay = sub.payment || {};
+  let money = '';
+  if (pay.amount_total_cents != null) {
+    money = ` ($${(pay.amount_total_cents / 100).toFixed(2)}`
+      + (pay.discount_cents ? `, coupon −$${(pay.discount_cents / 100).toFixed(2)}` : '') + ')';
+  }
+  return `${sub.plan.replace(/_/g, ' ')} · ${sub.cadence === 'twice_weekly' ? '2×' : '1×'}/week`
+    + ` · payment: ${(pay.status || 'n/a').replace(/_/g, ' ')}${money}`;
+}
 let actSlots = [{ day: 'mon', type: 'long_blog' }];
 
 async function showSubmissions() {
@@ -1563,19 +1578,30 @@ function renderSubmissionsList(items) {
     el.innerHTML = '<p class="text-sm text-gray-400 text-center py-8">No submissions yet.</p>';
     return;
   }
+  const PAY = {
+    paid:             ['Paid',   'bg-emerald-50 text-emerald-700 border-emerald-200'],
+    free:             ['Free',   'bg-sky-50 text-sky-700 border-sky-200'],
+    awaiting_payment: ['Unpaid', 'bg-red-50 text-red-600 border-red-200'],
+    offline:          ['Invoice offline', 'bg-gray-50 text-gray-600 border-gray-200'],
+  };
+  const STATUS = {
+    activated:        ['Activated', 'bg-emerald-100 text-emerald-700 border-emerald-200'],
+    awaiting_payment: ['Checkout abandoned', 'bg-gray-100 text-gray-500 border-gray-200'],
+  };
   el.innerHTML = items.map(s => {
-    const cfg = s.status === 'activated'
-      ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
-      : 'bg-amber-100 text-amber-700 border-amber-200';
-    const label = s.status === 'activated' ? 'Activated' : 'Pending';
+    const [label, cfg] = STATUS[s.status] || ['Pending', 'bg-amber-100 text-amber-700 border-amber-200'];
     const role = (s.brand_archetype || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    const planLabel = s.plan ? s.plan.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) + (s.cadence === 'twice_weekly' ? ' · 2×/wk' : '') : '';
+    const pay = PAY[s.payment_status];
+    const clickable = s.status !== 'activated';
     return `
-      <div class="section-card !py-3 !px-4 flex items-center gap-4 ${s.status === 'submitted' ? 'cursor-pointer hover:border-indigo-300' : ''} transition"
-           ${s.status === 'submitted' ? `onclick="openActivation('${s.id}')"` : ''}>
+      <div class="section-card !py-3 !px-4 flex items-center gap-3 ${clickable ? 'cursor-pointer hover:border-indigo-300' : ''} transition"
+           ${clickable ? `onclick="openActivation('${s.id}')"` : ''}>
         <div class="flex-1 min-w-0">
           <div class="text-sm font-semibold text-gray-900">${s.client_name || 'Unknown'}</div>
-          <div class="text-xs text-gray-400 mt-0.5">${s.client_email} · ${role}</div>
+          <div class="text-xs text-gray-400 mt-0.5 truncate">${s.client_email} · ${role}${planLabel ? ' · ' + planLabel : ''}</div>
         </div>
+        ${pay ? `<span class="text-xs font-semibold px-2 py-0.5 rounded-full border whitespace-nowrap ${pay[1]}">${pay[0]}</span>` : ''}
         <span class="text-xs font-semibold px-2.5 py-1 rounded-full border whitespace-nowrap ${cfg}">${label}</span>
       </div>`;
   }).join('');
@@ -1600,18 +1626,22 @@ async function openActivation(subId) {
     `<div><strong>Audience:</strong> ${(sub.audience || '').replace(/_/g, ' ')}</div>`,
     `<div><strong>Platform:</strong> ${sub.platform || ''}</div>`,
     `<div><strong>Tone:</strong> ${(sub.tone || '').replace(/_/g, ' ')}</div>`,
+    sub.plan ? `<div><strong>Plan:</strong> ${planLine(sub)}</div>` : '',
   ].join('');
 
   // Pre-fill brand_id from name
   const slug = (sub.client_name || '').toLowerCase().replace(/[^\w\s]/g, '').replace(/\s+/g, '_');
   document.getElementById('act_brand_id').value = slug;
 
+  // Pre-fill from the plan the client chose on the intake form
+  const PLAN_SIZES = { free_preview: 2, starter: 8, standard: 16, premium: 24 };
+  actPlan = sub.plan || null;
   actPackage = null;
-  actCadence = 'weekly';
   actSlots = [{ day: 'mon', type: 'long_blog' }];
   document.querySelectorAll('.act-pkg-btn').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('.act-cad-btn').forEach(b => b.classList.toggle('active', b.dataset.val === 'weekly'));
-  renderActSlots();
+  if (PLAN_SIZES[sub.plan]) setActPkg(PLAN_SIZES[sub.plan]);
+  setActCad(sub.plan === 'free_preview' ? 'weekly' : (sub.cadence || 'weekly'));
+  document.getElementById('act-free-note').classList.toggle('hidden', sub.plan !== 'free_preview');
   document.getElementById('activation-panel').classList.remove('hidden');
   document.getElementById('activation-panel').scrollIntoView({ behavior: 'smooth' });
 }
@@ -1667,6 +1697,7 @@ async function activateSubmission() {
 
   const payload = {
     brand_id,
+    plan: actPlan,
     package_size: actPackage,
     publication_cadence: actCadence,
     content_slots: actSlots,

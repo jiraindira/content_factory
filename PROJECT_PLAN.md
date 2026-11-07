@@ -8,10 +8,13 @@ An AI-powered ghostwriting service (brand: **Said By**, live at **saidby.co**) t
 ## Architecture
 
 ```
-Public homepage (saidby.co) → /onboard intake form (public)
+Public homepage (saidby.co) → /onboard intake form (public, 4-step wizard)
   → captures voice/audience settings + "What you stand for" (core beliefs,
     formative experiences, desired outcome) — the substance generation grounds on
-  → submission saved + operator emailed
+  → step 4: plan — Free preview (2 articles) or Starter/Standard/Premium + cadence
+      → paid plan → Stripe Checkout (coupons via promotion codes) → webhook/success
+        page marks submission paid → operator emailed
+      → free preview (one per email) / Stripe not configured → operator emailed
   → operator reviews & ACTIVATES in /admin (protected)
       → auto-generates topics (Claude) + sends welcome email with topic list
   → operator marks "plan confirmed" once client replies
@@ -43,7 +46,9 @@ survive Railway's ephemeral filesystem and the scheduler can read them.
 | `content_factory/topic_generator.py` | Topic generation from brand profile |
 | `content_factory/content_runner.py` | End-to-end: topic → article → save → review email |
 | `content_factory/references.py` | PDF book → text extraction + per-brand storage (grounding) |
-| `content_factory/emailer.py` | Resend emails (new-submission, welcome, review, delivery) |
+| `content_factory/emailer.py` | Resend emails (new-submission, welcome, review, delivery, upgrade) |
+| `content_factory/plans.py` | **Plan catalogue + prices** — single source of truth (form, checkout, activation) |
+| `content_factory/billing.py` | Stripe Checkout session / webhook helpers |
 | `content_factory/github_sync.py` | Syncs runtime file writes back to GitHub |
 | `content_factory/models.py` | Pydantic schemas for brand profiles |
 | `.github/workflows/scheduler.yml` | GitHub Actions daily cron |
@@ -63,8 +68,9 @@ survive Railway's ephemeral filesystem and the scheduler can read them.
 ## Content packages & cadence
 - Packages (list → launch price): **8** Starter $99 → **$49** · **16** Standard $139 → **$89** · **24** Premium $169 → **$119**
 - Deliberately no-brainer pricing (marginal cost per article is ~$0.05–0.50; real constraint is operator review time). Plan: raise prices as features are added (LinkedIn/website integration), and remove the launch discount once it catches on.
-- Launch discount: **$50 off each**, shown as a strikethrough. One-off package price (no checkout yet — payment handled offline).
-- **Free trial: 3 articles, no card** — lead magnet to pull prospects through the intake. Operator generates the 3 free pieces manually; no billing.
+- Launch discount: **$50 off each**, shown as a strikethrough. Stripe charges the launch price; coupons stack on top.
+- **Payment: Stripe Checkout, one-off** (`mode=payment`, inline `price_data` from `plans.py` — no Stripe Price objects to maintain). Coupons = Stripe **promotion codes** (create in the Stripe dashboard; the "Add promotion code" box shows on checkout). Webhook `POST /api/stripe/webhook` (`checkout.session.completed`) + success page (`/api/checkout/confirm`, verifies with Stripe) both mark the submission paid — idempotent. Abandoned checkouts show as "Checkout abandoned / Unpaid" in admin; the client can resume from `/onboard?cancelled=1`. If `STRIPE_SECRET_KEY` is unset the form falls back to "payment offline".
+- **Free preview: 2 articles, no card, one per email** — 1 long blog then 1 short snippet, a week apart (brand `slot_type_sequence`, scheduler picks the Nth type). Activation pre-fills package 2 / weekly. When the 2nd article is approved, an **upgrade email** goes out with per-package links (`/upgrade/<brand_id>?plan=…` → Stripe). Upgrade payment is recorded on the brand (`upgrade:`) and the operator is emailed to extend the package manually.
 - Cadence: **1× or 2× per week**
 - Slot types: `long_blog` (~900–1,200 words) · `short_snippet` (~200–280 words)
 
@@ -96,6 +102,9 @@ Onboarded → Topics generated → Topics approved → Welcome email → **Plan 
 | `REVIEW_UI_URL` | `https://saidby.co` |
 | `GITHUB_TOKEN` / `GITHUB_REPO` | Runtime file sync to repo |
 | `SECRET_KEY` / `ADMIN_USERNAME` / `ADMIN_PASSWORD` | Admin session auth |
+| `STRIPE_SECRET_KEY` | Railway only. `sk_test_…` first, `sk_live_…` to go live. Unset → offline payment fallback |
+| `STRIPE_WEBHOOK_SECRET` | Railway only. `whsec_…` for endpoint `https://saidby.co/api/stripe/webhook` (event: `checkout.session.completed`) |
+| `PUBLIC_BASE_URL` | Optional — origin for Stripe redirect URLs (defaults to the request host) |
 
 ---
 
@@ -120,7 +129,9 @@ Onboarded → Topics generated → Topics approved → Welcome email → **Plan 
 ## To-do
 
 ### Business priorities (do before more building)
-- [x] Set pricing on saidby.co homepage — list $99/$139/$169, launch $49/$89/$119 ($50 off), + 3-article free trial
+- [x] Set pricing on saidby.co homepage — list $99/$139/$169, launch $49/$89/$119 ($50 off), + free trial (now a 2-article free preview)
+- [x] **Intake v2 (2026-11-07)** — 4-step wizard with dropdowns (tone shows a live example), draft autosave, plan picker; free 2-article preview; Stripe Checkout with coupon codes; admin plan/payment badges + activation pre-fill; free-preview upgrade email
+- [ ] **Stripe go-live** — create account, add test keys + webhook on Railway, run a test purchase with a test promotion code, then switch to live keys
 - [x] Homepage conversion sections: "Who it's for" (4 segments), "Not another AI content mill" before/after sample, a real client testimonial (Jit Puru, attribution factual), and an FAQ (ChatGPT rebuttal, voice, ownership, trial, publishing limits)
 - [ ] Onboard first paying clients (Alisa, Jit) — upload Jit's book, confirm plans
 - [ ] Pitch 2–3 people in network who fit the profile

@@ -1897,6 +1897,22 @@ snowflake = ["snowflake-connector-python (>=3.3.0)", "snowflake-snowpark-python[
 sql = ["SQLAlchemy (>=2.0.0)"]
 
 [[package]]
+name = "stripe"
+version = "12.5.2"
+description = "Python bindings for the Stripe API"
+optional = false
+python-versions = ">=3.6"
+groups = ["main"]
+files = [
+    {file = "stripe-12.5.2-py2.py3-none-any.whl", hash = "sha256:e9ebe35166c071ab3e866c7433f4c4e4dab7eaac9596ac1a92d0a8a150cf437b"},
+    {file = "stripe-12.5.2.tar.gz", hash = "sha256:407d3979d2ddc360b78f2ea5ace1b154c2152393862a3db06ac1a8c935f66102"},
+]
+
+[package.dependencies]
+requests = {version = ">=2.20", markers = "python_version >= \"3.0\""}
+typing_extensions = {version = ">=4.5.0", markers = "python_version >= \"3.7\""}
+
+[[package]]
 name = "tenacity"
 version = "9.1.4"
 description = "Retry code until it succeeds"
@@ -2141,4 +2157,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<3.13"
-content-hash = "424e3190a1f559c65c2ce2d8e54e03e4380a66311c7255ede12e38988e477259"
+content-hash = "dc5163a19bd8c7853f3176c2ae4ad1bd5a414bd21f9ea7dee6863db24c2c438b"

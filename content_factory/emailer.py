@@ -185,6 +185,12 @@ def send_welcome_email(*, brand: dict, topics: list[str]) -> str:
     days = [s.get("day", "").capitalize() for s in slots]
     days_label = " and ".join(days) if days else "your scheduled days"
     package_size = brand.get("package_size", 8)
+    is_preview = brand.get("plan") == "free_preview"
+    if is_preview:
+        schedule_line = (f"This is your <strong>free preview</strong>: a long-form article first, then a short post "
+                         f"the following week, both on <strong>{days_label}</strong>.")
+    else:
+        schedule_line = f"These will go out <strong>{freq_label}</strong>, every <strong>{days_label}</strong>."
 
     # Pull niche + audience for personalisation
     about = ((brand.get("topic_policy") or {}).get("allowlist") or [""])[0]
@@ -233,11 +239,11 @@ def send_welcome_email(*, brand: dict, topics: list[str]) -> str:
 
   <hr class="divider"/>
 
-  <p><strong>Here's your content plan — {package_size} articles:</strong></p>
+  <p><strong>Here's your {"free preview" if is_preview else "content plan"} — {package_size} articles:</strong></p>
 
   <ol>{topics_html}</ol>
 
-  <p>These will go out <strong>{freq_label}</strong>, every <strong>{days_label}</strong>. Each piece written in your voice, sent to you for approval before it goes anywhere.</p>
+  <p>{schedule_line} Each piece written in your voice, sent to you for approval before it goes anywhere.</p>
 
   <hr class="divider"/>
 
@@ -286,7 +292,8 @@ def send_new_submission_email(*, submission: dict) -> str:
     <h2 style="margin-top:0">{name}</h2>
     <div class="meta">
       <strong>Email:</strong> {email} &nbsp;·&nbsp;
-      <strong>Role:</strong> {role}
+      <strong>Role:</strong> {role}<br/>
+      <strong>Plan:</strong> {_plan_summary(submission)}
     </div>
     <p><strong>What they write about:</strong><br/>{about}</p>
     <div class="footer">Content Factory · New submission notification</div>
@@ -296,7 +303,7 @@ def send_new_submission_email(*, submission: dict) -> str:
     params: resend.Emails.SendParams = {
         "from": FROM_ADDRESS,
         "to": [OPERATOR_EMAIL],
-        "subject": f"New intake: {name}",
+        "subject": f"New intake: {name} — {(submission.get('plan') or 'no plan').replace('_', ' ')}",
         "html": html,
     }
     response = resend.Emails.send(params)
@@ -451,4 +458,91 @@ def send_delivery_email(
         "html": html,
     }
     response = resend.Emails.send(params)
+    return response["id"]
+
+
+def _plan_summary(submission: dict) -> str:
+    from html import escape
+    from content_factory.plans import get_plan
+
+    plan = get_plan(submission.get("plan"))
+    if not plan:
+        return "not chosen"
+    cadence = "2×/week" if submission.get("cadence") == "twice_weekly" else "1×/week"
+    pay = submission.get("payment") or {}
+    status = pay.get("status", "")
+    if status == "paid":
+        amount = (pay.get("amount_total_cents") or 0) / 100
+        disc = (pay.get("discount_cents") or 0) / 100
+        status = f"PAID ${amount:,.2f}" + (f" (coupon −${disc:,.2f})" if disc else "")
+    elif status == "offline":
+        status = "payment to arrange offline (Stripe not configured)"
+    return escape(f"{plan['label']} — {plan['articles']} articles, {cadence} · {status}")
+
+
+def send_upgrade_email(*, brand: dict) -> str:
+    """Free preview delivered → invite the client to pick a package."""
+    from html import escape
+    from content_factory.plans import PLANS, is_free
+
+    client_name = brand.get("client_name") or brand.get("brand_id", "")
+    first_name = escape(client_name.split()[0] if client_name else "there")
+    client_email = brand.get("client_email", "")
+    if not client_email:
+        raise ValueError("client_email not set on brand profile")
+    sandbox = "resend.dev" in FROM_ADDRESS
+    to_address = OPERATOR_EMAIL if sandbox else client_email
+    brand_id = brand.get("brand_id", "")
+
+    rows = "".join(
+        f"""<tr>
+          <td style="padding:10px 0;border-bottom:1px solid #f3f4f6"><strong>{p['label']}</strong><br/>
+            <span style="color:#6b7280;font-size:0.9rem">{p['articles']} articles</span></td>
+          <td style="padding:10px 0;border-bottom:1px solid #f3f4f6;text-align:right;white-space:nowrap">
+            <span style="color:#9ca3af;text-decoration:line-through;font-size:0.9rem">${p['list_price_cents'] // 100}</span>
+            <strong>${p['price_cents'] // 100}</strong>
+            &nbsp;<a href="{REVIEW_UI_URL}/upgrade/{brand_id}?plan={p['id']}"
+               style="background:#4f46e5;color:#fff;text-decoration:none;padding:6px 12px;border-radius:6px;font-family:sans-serif;font-size:0.85rem">Choose</a>
+          </td></tr>"""
+        for p in PLANS.values() if not is_free(p["id"])
+    )
+
+    html = f"""<!DOCTYPE html><html><head>{_base_style()}</head><body>
+    <h1>{first_name}, that's your free preview done.</h1>
+    <p>You've now seen two pieces written in your voice — a long-form article and a short post.
+       If they sounded like you, let's keep going.</p>
+    <p>Pick a package below. You'll pay securely on Stripe, and if you have a coupon code you can enter it at checkout.</p>
+    <table style="width:100%;border-collapse:collapse;margin:1.5rem 0">{rows}</table>
+    <p>Want articles twice a week instead of once? Just reply and tell us — or ask anything else.</p>
+    <p>— Jiraindira<br/><span style="color:#9ca3af;font-size:0.9rem">Said By</span></p>
+    <div class="footer">Said By · <a href="{REVIEW_UI_URL}" style="color:#6366f1">{REVIEW_UI_URL}</a></div>
+    </body></html>"""
+
+    subject = f"{first_name} — ready for the next chapter?"
+    if sandbox:
+        subject = f"[SANDBOX → {client_email}] {subject}"
+    response = resend.Emails.send({"from": FROM_ADDRESS, "to": [to_address], "subject": subject, "html": html})
+    return response["id"]
+
+
+def send_upgrade_paid_email(*, brand: dict) -> str:
+    """Tell the operator a free-preview client has paid for a package."""
+    from html import escape
+
+    if not OPERATOR_EMAIL:
+        raise ValueError("OPERATOR_EMAIL is not set in .env")
+    up = brand.get("upgrade") or {}
+    name = escape(brand.get("client_name") or brand.get("brand_id", ""))
+    summary = _plan_summary({"plan": up.get("plan"), "cadence": up.get("cadence"), "payment": up})
+    html = f"""<!DOCTYPE html><html><head>{_base_style()}</head><body>
+    <div class="banner">&#10022; {name} upgraded from the free preview<br/>
+      <small>{summary}</small></div>
+    <p>Next: open their profile in <a href="{REVIEW_UI_URL}/admin">admin</a>, set the package size and cadence,
+       generate the new topics, and send the welcome email.</p>
+    <div class="footer">Content Factory · Upgrade notification</div>
+    </body></html>"""
+    response = resend.Emails.send({
+        "from": FROM_ADDRESS, "to": [OPERATOR_EMAIL],
+        "subject": f"Upgrade paid: {brand.get('client_name') or brand.get('brand_id')}", "html": html,
+    })
     return response["id"]
