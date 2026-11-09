@@ -1,0 +1,51 @@
+# The Four Questions Every Sales Professional Should Journal After a Hard Day
+
+Nobody teaches you what to do with the feeling that follows a rejection. They teach you to smile through it, to shake it off, to move on to the next call. What they don't tell you is that if you don't actually process what happened — if you just swallow it and dial again — the residue accumulates. And enough accumulated residue will eventually put out your flame.
+
+I learned this the hard way early in my sales career. Three days into a roadshow job promoting a free credit card — free, with rewards, to strangers in a shopping mall — I had spoken to nearly 300 people and closed three. One day I walked away with zero. I was a former flight attendant with seven and a half years of Singapore Airlines experience. I knew how to connect with people. And yet I was being turned down by hundreds of them for something that cost them nothing. The rejection wasn't just stinging my pride. It was doing something quieter and more dangerous: it was eroding my will.
+
+That experience taught me a distinction I've carried ever since. In a sales slump, it isn't your skill to sell that disappears. It's your will to sell. The ability doesn't leave you. The motivation does. And motivation — that inner flame — doesn't reignite on its own once it goes out. It needs tending. It needs a practice.
+
+Journalling after a hard day is that practice. Not therapeutic venting. Not a gratitude list dressed up in sales language. Four specific questions, answered honestly, in order. Here's why each one matters.
+
+## What Am I Actually Feeling Right Now?
+
+This sounds obvious until you try it and realise you've been calling the feeling "fine" or "a bit tired" when what it actually is is dejected, humiliated, or quietly furious. We label our emotions vaguely because precise language feels dangerous — like naming the monster gives it more power. The opposite is true. Naming it accurately gives you power over it.
+
+When you can write down "I feel like I'm invisible to these people" or "I'm starting to wonder if I'm cut out for this," you've separated yourself from the feeling. It's no longer the air you're breathing. It's a thing you're looking at. That gap — tiny as it is — is where your agency lives. You can't choose how to respond to something you can't see clearly. The first question exists solely to create that gap.
+
+## What Led Me to Feel This Way?
+
+This is where most people go wrong. They answer this question with the event: "I lost the deal" or "they didn't call back." But the event isn't what made you feel the way you do. It's the meaning you gave the event. And meanings are almost always where the real story is hiding.
+
+If you lost a deal and you feel mildly disappointed, that's a healthy response. If you lost a deal and you feel like a fraud, the problem isn't the deal. It's the belief underneath it — the one that says your worth is tied to your closing rate. When you trace your feeling back to its actual root, you stop blaming the prospect, the market, or the timing. You start seeing the thought that's really running the show.
+
+I've spoken with enough salespeople over the years to know that most of the damage done by rejection isn't the rejection itself. It's the story we tell ourselves in the ninety seconds that follow it. "They didn't want what I was selling" becomes "no one will ever want what I'm selling" becomes "I'm not a person people want to buy from." That spiral happens fast, and it happens below the level of conscious awareness. This question drags it into the light.
+
+## How Much Longer Do I Want to Feel This Way?
+
+This is the question that changes everything, because it insists that you are the one holding the remote. Not the prospect who said no. Not the manager who set the target. Not the market. You.
+
+I'm not suggesting you should perform positivity or rush past pain that hasn't been processed — that's how the residue builds up in the first place. But there's a difference between feeling something and deciding to live there. This question asks you to make a conscious choice about that distinction. Sometimes the honest answer is "I need tonight to sit in this." That's fine. But you've now made it a choice, not a default. You've put a fence around it. You've decided when it ends.
+
+That act of decision-making — small as it seems on the page — is a form of emotional sovereignty. And emotional sovereignty, practiced daily, is what separates the salespeople who last from the ones who burn out quietly and blame the industry.
+
+## What Must I Do Next to Feel Better?
+
+Not tomorrow. Not eventually. Next. As in: before you close the journal.
+
+This question matters because insight without action is just introspection, and introspection without direction can tip into rumination. The question forces you to end the entry with forward motion, even if that motion is tiny. Go for a walk. Listen to one song that reliably shifts your energy. Send a message to someone who makes you feel like yourself again. Review the purpose behind your goals — not the numbers, but the why behind the numbers. The specific action matters less than the act of taking one.
+
+What you're doing with this question is practicing what I think of as operating at cause rather than effect. You're refusing to be a passenger in your own emotional state. You're asking: given everything that happened today, what can I do right now to influence what happens next inside me? That's not toxic positivity. That's agency.
+
+## Why These Four, in This Order
+
+The sequence is the method. You can't answer question two without having done the honest work of question one. You can't meaningfully answer question three if you haven't traced the feeling to its real source. And question four is only worth asking once you've genuinely sat with the first three.
+
+Tried in reverse — "what should I do next?" asked the moment things go wrong — this process becomes avoidance. It becomes the smile-and-dial culture that teaches salespeople to suppress rather than process. That approach produces short bursts of activity and long-term attrition.
+
+Tried in order, with honesty, these four questions do something that no motivational podcast can fully replace. They make the rejection useful. Not comfortable — useful. Each hard day becomes a data point instead of a verdict. Each no becomes a prompt to look inward rather than a signal to doubt yourself outward.
+
+That, at its core, is what I mean when I say rejection is an invitation to grow. Not an invitation to feel nothing. Not a trick to reframe pain as secretly good. An actual invitation — one that you have to choose to accept, with a pen in your hand, at the end of a day when it would be much easier to just pour a drink and scroll.
+
+The flame doesn't stay lit by accident. It stays lit because someone keeps tending it. These four questions are how you tend yours.
