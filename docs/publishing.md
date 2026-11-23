@@ -15,6 +15,12 @@ A failure never blocks the email. Failed articles show a **Publish failed** badg
 Content tab; open the article and press **Retry publish**. A destination that already
 succeeded is never sent the same article twice.
 
+## Setting it up
+
+In /admin open the client → **Profile** tab → section **10. Publishing**, add a destination
+and save. The form shows whether each Railway variable it names is set. (Editing the
+`publishing` list in the brand YAML by hand works too; the examples below show its shape.)
+
 ## Secrets
 
 Brand YAMLs are synced to GitHub, so **never put a token, password or webhook URL in them**.
