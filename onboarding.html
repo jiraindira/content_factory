@@ -73,9 +73,12 @@
     #tone-opts .card-opt.selected .opt-example, #tone-opts .card-opt:hover .opt-example { display: block; }
     /* Short option lists sit two per row on wider screens */
     @media (min-width: 640px) {
-      #audience-opts, #presence-opts, #commercial-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
-      #audience-opts > *, #presence-opts > *, #commercial-opts > * { margin-top: 0 !important; }
+      #tone-opts, #presence-opts, #commercial-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; align-items: start; }
+      #tone-opts > *, #presence-opts > *, #commercial-opts > * { margin-top: 0 !important; }
     }
+    .field-hint { font-size: 0.75rem; color: #6b7280; margin-top: 0.35rem; }
+    textarea[data-autogrow] { resize: vertical; max-height: 640px; line-height: 1.55; }
+    #reader-body { max-width: 72ch; }
     .save-bar { position: sticky; bottom: 0; z-index: 20; padding: 0.75rem 0 1rem; background: linear-gradient(to top, #f9fafb 75%, rgba(249,250,251,0)); }
     .section-card {
       background: white;
@@ -216,7 +219,7 @@
       </button>
       <span class="ml-3 font-bold text-gray-900 text-sm">Said By</span>
     </div>
-    <div class="max-w-2xl mx-auto py-10 px-6">
+    <div class="max-w-5xl mx-auto py-10 px-6">
 
       <!-- ── Dashboard ──────────────────────────────────────────────────── -->
       <div id="dashboard-area" class="hidden">
@@ -320,7 +323,8 @@
           <div>
             <label class="field-label">AI model <span class="font-normal text-gray-400">(used to generate content for this client)</span></label>
             <select id="llm_provider">
-              <option value="claude">Claude Sonnet — recommended</option>
+              <option value="claude">Claude Sonnet — standard, recommended</option>
+              <option value="claude_opus">Claude Opus 5.5 — premium: best writing, slower, costs more</option>
               <option value="openai">OpenAI GPT</option>
             </select>
           </div>
@@ -358,23 +362,25 @@
             <p class="text-xs text-gray-500 mb-3">The raw material every article is grounded in.</p>
           <div>
             <label class="field-label">What do they write about?</label>
-            <textarea id="topic_allowlist" rows="3" placeholder="e.g. Voice leadership and executive presence for senior leaders — how to communicate with authority, clarity, and confidence in high-stakes situations."></textarea>
+            <textarea id="topic_allowlist" rows="3" data-autogrow placeholder="e.g. Voice leadership and executive presence for senior leaders — how to communicate with authority, clarity, and confidence in high-stakes situations."></textarea>
           </div>
-          <div>
+          <div class="flex flex-col gap-4">
+            <div>
             <label class="field-label">Core beliefs <span class="font-normal text-gray-400">(the 3–5 ideas they want more people to understand — the backbone of topic generation)</span></label>
-            <textarea id="core_beliefs" rows="4" placeholder="The principles they repeat over and over. If their audience remembered only a handful of things, what would they be?"></textarea>
+            <textarea id="core_beliefs" rows="6" data-autogrow placeholder="The principles they repeat over and over. If their audience remembered only a handful of things, what would they be?"></textarea>
           </div>
-          <div>
+            <div>
             <label class="field-label">Formative experiences <span class="font-normal text-gray-400">(stories the writer can ground articles in)</span></label>
-            <textarea id="formative_experiences" rows="4" placeholder="Turning points, failures, surprising lessons, mentors, successes — moments that shaped how they think."></textarea>
+            <textarea id="formative_experiences" rows="6" data-autogrow placeholder="Turning points, failures, surprising lessons, mentors, successes — moments that shaped how they think."></textarea>
+          </div>
           </div>
           <div>
             <label class="field-label">Desired outcome <span class="font-normal text-gray-400">(the shift in thinking every piece should create — optional)</span></label>
-            <textarea id="desired_outcome" rows="2" placeholder="e.g. see public speaking as a trainable skill, not an innate gift."></textarea>
+            <textarea id="desired_outcome" rows="3" data-autogrow placeholder="e.g. see public speaking as a trainable skill, not an innate gift."></textarea>
           </div>
           <div>
             <label class="field-label">Writing samples <span class="font-normal text-gray-400">(paste LinkedIn posts or articles — used to calibrate their voice)</span></label>
-            <textarea id="writing_samples" rows="8" placeholder="Paste 2–4 of their best LinkedIn posts or articles here. The more authentic the better — threads, long-form posts, anything that shows how they actually write."></textarea>
+            <textarea id="writing_samples" rows="14" data-autogrow placeholder="Paste 2–4 of their best LinkedIn posts or articles here. The more authentic the better — threads, long-form posts, anything that shows how they actually write."></textarea>
           </div>
           <div>
             <label class="field-label">Reference material <span class="font-normal text-gray-400">(upload their book/manuscript as a PDF — content is grounded in it)</span></label>
@@ -415,22 +421,22 @@
           </summary>
           <div class="group-body">
           <div class="sub-section">
-            <h3 class="sub-h">Who are we writing for?</h3>
-            <p class="text-xs text-gray-500 mb-3">Pick the primary audience. We can layer nuance later.</p>
-          <div id="audience-opts" class="space-y-2">
-            <!-- rendered by JS -->
-          </div>
-          <div class="mt-4">
-            <label class="field-label">If mixed or nuanced — who must feel "this is for me"?</label>
-            <input type="text" id="audience_context" placeholder="e.g. Mid-level leaders preparing for their first C-suite role" />
-          </div>
-          </div>
-          <div class="sub-section">
-            <h3 class="sub-h">Where will this content live?</h3>
-            <p class="text-xs text-gray-500 mb-3">This affects length, structure, and how polished the writing feels.</p>
-          <div id="platform-opts" class="space-y-2">
-            <!-- rendered by JS -->
-          </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="field-label" for="sel-audience">Who are we writing for?</label>
+                <select id="sel-audience" data-select-group="audience"></select>
+                <p class="field-hint">The primary reader. Add nuance below.</p>
+              </div>
+              <div>
+                <label class="field-label" for="sel-platform">Where will this content live?</label>
+                <select id="sel-platform" data-select-group="platform"></select>
+                <p class="field-hint" id="platform-hint">Affects length, structure and polish.</p>
+              </div>
+            </div>
+            <div>
+              <label class="field-label" for="audience_context">If mixed or nuanced, who must feel "this is for me"? <span class="font-normal text-gray-400">(optional)</span></label>
+              <input type="text" id="audience_context" placeholder="e.g. Mid-level leaders preparing for their first C-suite role" />
+            </div>
           </div>
           </div>
         </details>
@@ -922,8 +928,9 @@ let currentTab = 'profile';
 
 // ── Init ─────────────────────────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", () => {
-  renderCardOpts("audience-opts", AUDIENCE_OPTS, "audience", false);
-  renderCardOpts("platform-opts", PLATFORM_OPTS, "platform", false, true);
+  renderSelectOpts("sel-audience", AUDIENCE_OPTS, "Choose an audience…");
+  renderSelectOpts("sel-platform", PLATFORM_OPTS, "Choose where it lives…");
+  document.getElementById("sel-platform").addEventListener("change", updatePlatformHint);
   renderCardOpts("tone-opts", TONE_OPTS, "tone", false, false, onToneChange);
   renderCardOpts("presence-opts", PRESENCE_OPTS, "presence", false, true);
   renderCardOpts("commercial-opts", COMMERCIAL_OPTS, "commercial", false, true);
@@ -949,6 +956,17 @@ function renderCardOpts(containerId, opts, name, multi, hasDesc, onChange) {
   `).join('');
 }
 
+function renderSelectOpts(selectId, opts, placeholder) {
+  const el = document.getElementById(selectId);
+  el.innerHTML = `<option value="">${placeholder}</option>` +
+    opts.map(o => `<option value="${o.value}">${o.label}</option>`).join('');
+}
+
+function updatePlatformHint() {
+  const o = PLATFORM_OPTS.find(o => o.value === document.getElementById("sel-platform").value);
+  document.getElementById("platform-hint").textContent = o ? o.desc : "Affects length, structure and polish.";
+}
+
 function selectCardOpt(el, group, multi, onChangeFn) {
   if (!multi) {
     document.querySelectorAll(`[data-group="${group}"]`).forEach(e => e.classList.remove('selected'));
@@ -958,6 +976,8 @@ function selectCardOpt(el, group, multi, onChangeFn) {
 }
 
 function getSelectedCardVal(group) {
+  const sel = document.querySelector(`select[data-select-group="${group}"]`);
+  if (sel) return sel.value || null;
   const el = document.querySelector(`[data-group="${group}"].selected`);
   return el ? el.dataset.val : null;
 }
@@ -1089,6 +1109,15 @@ function _setSummary(key, bits, fallback) {
   el.classList.toggle('empty', !parts.length);
 }
 
+function autogrow(el) {
+  if (!el.offsetParent) return;  // hidden (collapsed group): sized when it opens
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight + 2, 640) + 'px';
+}
+function autogrowAll(root) {
+  (root || document).querySelectorAll('textarea[data-autogrow]').forEach(autogrow);
+}
+
 function updateGroupSummaries() {
   const v = id => (document.getElementById(id)?.value || '').trim();
   const sel = id => { const e = document.getElementById(id); return e && e.selectedIndex >= 0 ? e.options[e.selectedIndex].text : ''; };
@@ -1135,6 +1164,8 @@ function updateGroupSummaries() {
 document.addEventListener('DOMContentLoaded', () => {
   const area = document.getElementById('form-area');
   ['input', 'change', 'click'].forEach(ev => area.addEventListener(ev, () => setTimeout(updateGroupSummaries, 0)));
+  area.addEventListener('input', e => { if (e.target.matches('textarea[data-autogrow]')) autogrow(e.target); });
+  area.querySelectorAll('details.group-card').forEach(d => d.addEventListener('toggle', () => { if (d.open) autogrowAll(d); }));
 });
 
 // ── Tab switching ─────────────────────────────────────────────────────────────
@@ -1500,6 +1531,7 @@ function populateForm(d) {
 
   setAllGroups(false);
   updateGroupSummaries();
+  autogrowAll();
 }
 
 function derivePlatform(policy) {
@@ -1536,6 +1568,8 @@ function resetForm() {
   document.getElementById("brand_archetype").value = "mentor_coach";
   updateRoleTip();
   document.querySelectorAll(".card-opt").forEach(el => el.classList.remove("selected"));
+  document.querySelectorAll("select[data-select-group]").forEach(el => { el.value = ""; });
+  updatePlatformHint();
   document.getElementById("disclaimer_required").checked = false;
   toggleDisclaimer();
   publishingRows = []; publishingEnv = {};
@@ -1790,6 +1824,13 @@ function setVal(id, val) {
 }
 
 function selectCardByVal(group, val) {
+  const sel = document.querySelector(`select[data-select-group="${group}"]`);
+  if (sel) {
+    sel.value = val || "";
+    if (sel.value !== (val || "")) sel.value = "";
+    if (group === "platform") updatePlatformHint();
+    return;
+  }
   document.querySelectorAll(`[data-group="${group}"]`).forEach(el => {
     el.classList.toggle('selected', el.dataset.val === val);
   });
