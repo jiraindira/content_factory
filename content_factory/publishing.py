@@ -170,6 +170,73 @@ def _mode(dest: dict) -> str:
     return mode
 
 
+_FIELDS = {
+    "github": {"repo", "branch", "path", "token_env", "post_url"},
+    "wordpress": {"site_url", "username", "secret_env"},
+    "webhook": {"url_env", "secret_env"},
+}
+_ENV_KEYS = {"token_env", "secret_env", "url_env"}
+_REQUIRED = {"github": {"repo", "token_env"}, "wordpress": {"site_url", "username", "secret_env"},
+             "webhook": {"url_env"}}
+
+
+def normalize_destinations(raw: Any) -> list[dict]:
+    """Validate and clean a ``publishing`` list submitted from the admin form.
+
+    Raises ValueError with an operator-readable message. Keeps only known
+    fields, so a pasted token can't sneak into the (GitHub-synced) brand YAML
+    through an unexpected key.
+    """
+    if raw in (None, ""):
+        return []
+    if not isinstance(raw, list):
+        raise ValueError("publishing must be a list of destinations")
+    out, seen = [], set()
+    for i, d in enumerate(raw, 1):
+        if not isinstance(d, dict):
+            raise ValueError(f"destination {i} is not an object")
+        kind = str(d.get("type") or "").strip()
+        if kind not in _FIELDS:
+            raise ValueError(f"destination {i}: type must be one of {', '.join(sorted(_FIELDS))}")
+        dest_id = slugify(str(d.get("id") or kind), 40)
+        if dest_id in seen:
+            raise ValueError(f"destination {i}: name '{dest_id}' is used twice")
+        seen.add(dest_id)
+        mode = str(d.get("mode") or "draft").lower()
+        if mode not in {"draft", "publish"}:
+            raise ValueError(f"{dest_id}: mode must be draft or publish")
+        clean: dict[str, Any] = {"id": dest_id, "type": kind, "enabled": d.get("enabled", True) is not False,
+                                 "mode": mode}
+        for key in sorted(_FIELDS[kind]):
+            val = str(d.get(key) or "").strip()
+            if not val:
+                continue
+            if key in _ENV_KEYS and not _ENV_NAME.match(val):
+                raise ValueError(
+                    f"{dest_id}: {key} must be the NAME of a Railway variable (like GITHUB_TOKEN_ACME), "
+                    "not the secret itself"
+                )
+            if key in {"site_url", "post_url"} and not val.startswith("https://"):
+                raise ValueError(f"{dest_id}: {key} must start with https://")
+            if key == "repo" and not re.match(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$", val):
+                raise ValueError(f"{dest_id}: repo must look like owner/name")
+            clean[key] = val
+        missing = _REQUIRED[kind] - clean.keys()
+        if missing:
+            raise ValueError(f"{dest_id}: missing {', '.join(sorted(missing))}")
+        slot_types = d.get("slot_types")
+        if slot_types:
+            clean["slot_types"] = [str(t) for t in slot_types if t in ("long_blog", "short_snippet")]
+        out.append(clean)
+    return out
+
+
+def env_status(dests: list[dict]) -> dict[str, bool]:
+    """Which referenced environment variables are actually set (never their values)."""
+    names = {str(d.get(k)) for d in dests for k in _ENV_KEYS if d.get(k)}
+    return {n: bool(os.environ.get(n, "").strip()) for n in sorted(names)}
+
+
 # ── Destinations ─────────────────────────────────────────────────────────────
 
 def publish_wordpress(*, dest: dict, title: str, body_html: str, client: httpx.Client) -> dict:

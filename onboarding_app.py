@@ -634,6 +634,17 @@ def get_brand(brand_id: str):
         return yaml.safe_load(f) or {}
 
 
+@app.get("/api/brands/{brand_id}/publishing/env", dependencies=[Depends(api_auth)])
+def publishing_env(brand_id: str):
+    """Report which Railway variables a brand's publishing config needs and whether each is set."""
+    from content_factory.publishing import env_status
+    path = BRANDS_DIR / f"{brand_id}.yaml"
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="Brand not found")
+    brand = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    return env_status(brand.get("publishing") or [])
+
+
 @app.delete("/api/brands/{brand_id}", dependencies=[Depends(api_auth)])
 def delete_brand(brand_id: str, bg: BackgroundTasks):
     path = BRANDS_DIR / f"{brand_id}.yaml"
@@ -650,10 +661,20 @@ async def save_brand(request: Request, bg: BackgroundTasks):
     brand_id = (data.get("brand_id") or "").strip()
     if not brand_id:
         raise HTTPException(status_code=400, detail="brand_id is required")
+    if "publishing" in data:
+        from content_factory.publishing import normalize_destinations
+        try:
+            data["publishing"] = normalize_destinations(data["publishing"])
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
     BRANDS_DIR.mkdir(parents=True, exist_ok=True)
     path = BRANDS_DIR / f"{brand_id}.yaml"
+    # Merge over the saved profile so fields the form doesn't edit
+    # (plan, plan_confirmed, welcome_email_sent, …) survive a save.
+    existing = (yaml.safe_load(path.read_text(encoding="utf-8")) or {}) if path.exists() else {}
+    merged = {**existing, **data}
     with open(path, "w", encoding="utf-8") as f:
-        yaml.dump(data, f, allow_unicode=True, sort_keys=False)
+        yaml.dump(merged, f, allow_unicode=True, sort_keys=False)
     bg.add_task(_sync, path, f"chore: update brand {brand_id}")
     return {"saved": str(path)}
 

@@ -238,3 +238,34 @@ def test_github_rejects_path_traversal(monkeypatch):
     bad = {**GH, "path": "../{slug}.md"}
     pubs = publishing.publish_article(brand={"publishing": [bad]}, article=_article(), run_id="r", client_factory=f)
     assert pubs["site"]["status"] == "failed" and calls == []
+
+
+# ── Admin form: validation + save merge ─────────────────────────────────────
+
+def test_normalize_rejects_pasted_secrets_and_drops_unknown_keys():
+    with pytest.raises(ValueError, match="NAME of a Railway variable"):
+        publishing.normalize_destinations([{**GH, "token_env": "ghp_abc123secret"}])
+    clean = publishing.normalize_destinations([{**GH, "token": "ghp_leak", "id": "My Site"}])
+    assert clean[0]["id"] == "my-site" and "token" not in clean[0]
+    assert clean[0]["mode"] == "draft" and clean[0]["enabled"] is True
+    with pytest.raises(ValueError, match="missing"):
+        publishing.normalize_destinations([{"type": "github", "repo": "a/b"}])
+    with pytest.raises(ValueError, match="used twice"):
+        publishing.normalize_destinations([GH, GH])
+
+
+def test_saving_profile_keeps_fields_the_form_does_not_send(app_env, monkeypatch):
+    client, dirs = app_env
+    path = dirs["brands"] / "ada.yaml"
+    _w(path, {**yaml.safe_load(path.read_text()), "plan_confirmed": True, "welcome_email_sent": True})
+    r = client.post("/api/brands", json={"brand_id": "ada", "client_name": "Ada L", "publishing": [GH]})
+    assert r.status_code == 200
+    saved = yaml.safe_load(path.read_text())
+    assert saved["plan_confirmed"] is True and saved["welcome_email_sent"] is True
+    assert saved["client_name"] == "Ada L" and saved["publishing"][0]["repo"] == "acme/acme-site"
+
+    r = client.post("/api/brands", json={"brand_id": "ada", "publishing": [{**GH, "token_env": "ghp_secret"}]})
+    assert r.status_code == 400 and "ghp_secret" not in path.read_text()
+
+    monkeypatch.setenv("GH_TEST_TOKEN", "x")
+    assert client.get("/api/brands/ada/publishing/env").json() == {"GH_TEST_TOKEN": True}
