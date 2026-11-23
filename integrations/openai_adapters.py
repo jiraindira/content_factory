@@ -25,6 +25,9 @@ def make_llm(brand: dict | None = None) -> "Union[OpenAIJsonLLM, ClaudeJsonLLM]"
     if provider == "openai":
         return OpenAIJsonLLM()
     from integrations.claude_adapters import ClaudeJsonLLM
+    if provider == "claude_opus":
+        from integrations.claude_adapters import OPUS_MODEL
+        return ClaudeJsonLLM(model=OPUS_MODEL, effort="high", max_tokens=16000, refusal_fallback=True)
     return ClaudeJsonLLM()
 
 try:

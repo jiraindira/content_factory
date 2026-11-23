@@ -326,6 +326,7 @@ class ContentSlot(SchemaBase):
 
 class LLMProvider(str, Enum):
     claude = "claude"
+    claude_opus = "claude_opus"
     openai = "openai"
 
 

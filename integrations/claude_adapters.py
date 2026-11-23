@@ -13,6 +13,9 @@ load_dotenv()
 # Override per-deployment with ANTHROPIC_MODEL (e.g. claude-opus-4-8 for a premium tier).
 DEFAULT_MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-6")
 
+# Premium option a brand can pick in admin ("claude_opus").
+OPUS_MODEL = os.environ.get("ANTHROPIC_OPUS_MODEL", "claude-opus-5-5")
+
 # Articles can run ~1,200 words; give comfortable headroom for the JSON wrapper too.
 MAX_TOKENS = int(os.environ.get("ANTHROPIC_MAX_TOKENS", "8192"))
 
@@ -43,8 +46,24 @@ class ClaudeJsonLLM:
     so repeated generations grounded in the same source only pay ~10% on cache reads.
     """
 
-    def __init__(self, *, model: str | None = None, api_key: str | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        model: str | None = None,
+        api_key: str | None = None,
+        effort: str | None = None,
+        max_tokens: int | None = None,
+        refusal_fallback: bool = False,
+    ) -> None:
         self.model = model or DEFAULT_MODEL
+        # effort: output_config.effort ("low".."max"). Opus 5.5 always thinks and
+        # defaults to "medium", so callers that want its full quality set it.
+        self.effort = effort
+        # Thinking tokens count toward max_tokens, so thinking models need more room.
+        self.max_tokens = max_tokens or MAX_TOKENS
+        # Server-side fallback: if the model declines on a safety classifier, the API
+        # reruns the same request on a fallback model inside the same call.
+        self.refusal_fallback = refusal_fallback
         # max_retries=4: the SDK auto-retries connection errors and 429/5xx with
         # exponential backoff. Bumped from the default of 2 because the GitHub
         # Actions scheduler occasionally hits transient connection blips to the API.
@@ -55,6 +74,28 @@ class ClaudeJsonLLM:
             api_key=(api_key or os.environ.get("ANTHROPIC_API_KEY") or "").strip(),
             max_retries=4,
         )
+
+    def _create(self, kwargs: dict[str, Any], output_config: dict[str, Any]):
+        output_config = dict(output_config)
+        if self.effort:
+            output_config["effort"] = self.effort
+        if output_config:
+            kwargs = {**kwargs, "output_config": output_config}
+        if self.refusal_fallback:
+            resp = self.client.beta.messages.create(
+                **kwargs,
+                betas=["server-side-fallback-2026-07-01"],
+                fallbacks="default",
+            )
+        else:
+            resp = self.client.messages.create(**kwargs)
+        if getattr(resp, "stop_reason", None) == "refusal":
+            details = getattr(resp, "stop_details", None)
+            raise RuntimeError(
+                f"{self.model} declined this request "
+                f"(category={getattr(details, 'category', None)!r})."
+            )
+        return resp
 
     def complete_json(
         self,
@@ -82,7 +123,7 @@ class ClaudeJsonLLM:
 
         base_kwargs: dict[str, Any] = {
             "model": self.model,
-            "max_tokens": MAX_TOKENS,
+            "max_tokens": self.max_tokens,
             "system": system_blocks,
             "messages": [{"role": "user", "content": user}],
         }
@@ -92,9 +133,9 @@ class ClaudeJsonLLM:
         # 1) Preferred: structured outputs (guaranteed valid JSON) when a schema is given.
         if schema is not None:
             try:
-                resp = self.client.messages.create(
-                    **base_kwargs,
-                    output_config={"format": {"type": "json_schema", "schema": schema}},
+                resp = self._create(
+                    base_kwargs,
+                    {"format": {"type": "json_schema", "schema": schema}},
                 )
                 text = _first_text(resp)
             except (TypeError, anthropic.BadRequestError):
@@ -109,9 +150,7 @@ class ClaudeJsonLLM:
                 "text": system_blocks[0]["text"]
                 + "\n\nRespond with valid JSON only. No prose, no markdown fences.",
             }
-            resp = self.client.messages.create(
-                **{**base_kwargs, "system": sys_with_json},
-            )
+            resp = self._create({**base_kwargs, "system": sys_with_json}, {})
             text = _strip_fences(_first_text(resp))
 
         if not text:
