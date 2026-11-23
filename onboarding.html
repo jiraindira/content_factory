@@ -79,6 +79,52 @@
     .field-hint { font-size: 0.75rem; color: #6b7280; margin-top: 0.35rem; }
     textarea[data-autogrow] { resize: vertical; max-height: 640px; line-height: 1.55; }
     #reader-body { max-width: 72ch; }
+
+    /* ── Profile form design system ─────────────────────────── */
+    .group-title { font-size: 1rem; font-weight: 700; color: #111827; }
+    .group-status { font-size: 0.7rem; font-weight: 600; border-radius: 9999px; padding: 0.15rem 0.55rem; flex-shrink: 0; margin-left: 0.75rem; }
+    .group-status:empty { display: none; }
+    .group-status.todo { background: #fef3c7; color: #92400e; }
+    .group-intro { font-size: 0.85rem; color: #6b7280; margin-bottom: 1.25rem; }
+    .form-grid { display: grid; grid-template-columns: 1fr; gap: 1.25rem 1.5rem; }
+    @media (min-width: 640px) { .form-grid { grid-template-columns: 1fr 1fr; } .form-grid .span-2 { grid-column: 1 / -1; } }
+    @media (min-width: 768px) { .form-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; } }
+    .stack { display: flex; flex-direction: column; gap: 1.5rem; }
+    .form-grid.hidden, .tone-example.hidden { display: none; }
+    .field-label { display: block; font-size: 0.8rem; font-weight: 600; color: #374151; margin-bottom: 0.35rem; }
+    .field-hint { font-size: 0.75rem; color: #6b7280; margin-top: 0.35rem; line-height: 1.4; }
+    .field-hint.above { margin-top: -0.15rem; margin-bottom: 0.45rem; }
+    .opt-tag { display: inline-block; font-size: 0.65rem; font-weight: 600; color: #6b7280; background: #f3f4f6; border-radius: 9999px; padding: 0.05rem 0.45rem; margin-left: 0.35rem; vertical-align: 1px; text-transform: uppercase; letter-spacing: 0.03em; }
+    input.locked { background: #f9fafb; color: #6b7280; cursor: not-allowed; }
+    .btn-secondary { display: inline-flex; align-items: center; cursor: pointer; padding: 0.4rem 0.8rem; border-radius: 0.375rem; border: 1px solid #d1d5db; background: white; color: #374151; font-size: 0.8rem; font-weight: 600; transition: all 0.15s; }
+    .btn-secondary:hover { border-color: #6366f1; color: #4338ca; background: #f5f3ff; }
+    .link-btn { color: #4f46e5; font-weight: 500; }
+    .link-btn:hover { text-decoration: underline; }
+    .ref-card { border: 1px dashed #d1d5db; border-radius: 0.5rem; padding: 0.9rem 1rem; background: #fafafa; }
+    .tone-example { margin: 0.6rem 0 0; padding: 0.6rem 0.9rem; border-left: 3px solid #c7d2fe; background: #f5f7ff; color: #4b5563; font-size: 0.85rem; font-style: italic; border-radius: 0 0.375rem 0.375rem 0; }
+    .seg { display: inline-flex; border: 1px solid #d1d5db; border-radius: 0.5rem; overflow: hidden; background: white; }
+    .seg .slot-type-btn { border: none; border-radius: 0; padding: 0.45rem 0.9rem; font-size: 0.85rem; color: #4b5563; }
+    .seg .slot-type-btn + .slot-type-btn { border-left: 1px solid #e5e7eb; }
+    .seg .slot-type-btn.active { background: #4f46e5; color: white; font-weight: 600; }
+    .slot-row { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
+    .duration-note { margin-top: 1rem; font-size: 0.85rem; color: #4338ca; }
+    .duration-note::before { content: "◷ "; }
+    .toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+    input.switch { appearance: none; -webkit-appearance: none; width: 2.5rem; height: 1.4rem; border-radius: 9999px; background: #d1d5db; position: relative; cursor: pointer; transition: background 0.15s; flex-shrink: 0; }
+    input.switch::after { content: ""; position: absolute; top: 0.15rem; left: 0.15rem; width: 1.1rem; height: 1.1rem; border-radius: 50%; background: white; box-shadow: 0 1px 2px rgba(0,0,0,0.2); transition: transform 0.15s; }
+    input.switch:checked { background: #4f46e5; }
+    input.switch:checked::after { transform: translateX(1.1rem); }
+    input.switch:focus-visible { outline: 2px solid #6366f1; outline-offset: 2px; }
+    .divider { border-top: 1px solid #f3f4f6; margin: 1.5rem 0; }
+    .info-note { margin-top: 1rem; font-size: 0.75rem; color: #6b7280; background: #f9fafb; border: 1px solid #f3f4f6; border-radius: 0.5rem; padding: 0.6rem 0.8rem; }
+    .save-inner { display: flex; align-items: center; justify-content: flex-end; gap: 1rem; background: white; border: 1px solid #e5e7eb; border-radius: 0.75rem; padding: 0.6rem 0.75rem; box-shadow: 0 4px 16px rgba(17,24,39,0.06); }
+    .save-inner #save-btn { width: auto; padding: 0.6rem 1.75rem; font-size: 0.9rem; }
+    .dirty-note { font-size: 0.8rem; color: #b45309; font-weight: 500; margin-right: auto; padding-left: 0.25rem; }
+    .dirty-note:not(:empty)::before { content: "● "; }
+    .dirty-note.clean { color: #9ca3af; font-weight: 400; }
+    .dirty-note.clean::before { content: "✓ " !important; }
+    #custom-tone-wrap.hidden { display: none; }
+    .section-num { width: 1.6rem; height: 1.6rem; margin-right: 0.75rem; }
     .save-bar { position: sticky; bottom: 0; z-index: 20; padding: 0.75rem 0 1rem; background: linear-gradient(to top, #f9fafb 75%, rgba(249,250,251,0)); }
     .section-card {
       background: white;
@@ -273,9 +319,9 @@
       <div id="form-area">
 
         <div class="flex items-center justify-end gap-3 mb-3 text-xs">
-          <button type="button" class="text-indigo-600 hover:underline" onclick="setAllGroups(true)">Expand all</button>
+          <button type="button" class="link-btn" onclick="setAllGroups(true)">Expand all</button>
           <span class="text-gray-300">|</span>
-          <button type="button" class="text-indigo-600 hover:underline" onclick="setAllGroups(false)">Collapse all</button>
+          <button type="button" class="link-btn" onclick="setAllGroups(false)">Collapse all</button>
         </div>
 
         <!-- ── 1. Client basics ─────────────────────────────── -->
@@ -283,66 +329,60 @@
           <summary>
             <span class="section-num">1</span>
             <div class="flex-1 min-w-0">
-              <h2 class="font-bold text-gray-900">Client basics</h2>
+              <h2 class="group-title">Client basics</h2>
               <p class="group-summary" id="summary-basics">Name, email, brand ID, style, sources</p>
             </div>
+            <span class="group-status" id="status-basics"></span>
             <span class="chev" aria-hidden="true"></span>
           </summary>
           <div class="group-body">
-          <div class="sub-section">
-            <h3 class="sub-h">Identity</h3>
-                      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-            <div>
-              <label class="field-label">Client name</label>
-              <input type="text" id="client_name" placeholder="e.g. Alisa Amouage" />
+            <div class="form-grid">
+              <div class="field">
+                <label class="field-label" for="client_name">Client name</label>
+                <input type="text" id="client_name" placeholder="e.g. Alisa Amouage" />
+              </div>
+              <div class="field">
+                <label class="field-label" for="client_email">Email</label>
+                <input type="email" id="client_email" placeholder="alisa@example.com" />
+                <p class="field-hint">Review and delivery emails go here.</p>
+              </div>
+              <div class="field">
+                <label class="field-label" for="brand_id">Brand ID</label>
+                <input type="text" id="brand_id" placeholder="e.g. alisa_amouage" />
+                <p class="field-hint" id="brand-id-hint">Lowercase, no spaces. Can't be changed later.</p>
+              </div>
+              <div class="field">
+                <label class="field-label" for="brand_archetype">Content style</label>
+                <select id="brand_archetype" onchange="updateRoleTip()">
+                  <option value="mentor_coach">Mentor / Coach</option>
+                  <option value="author">Author / Writer</option>
+                  <option value="industry_consultant">Industry Expert / Consultant</option>
+                  <option value="corporate_firm">Professional Services Firm</option>
+                  <option value="thought_leader">Thought Leader</option>
+                  <option value="reviewer">Reviewer / Critic</option>
+                  <option value="travel_lifestyle">Travel & Lifestyle</option>
+                </select>
+                <p id="role-tip" class="field-hint"></p>
+              </div>
+              <div class="field">
+                <label class="field-label" for="source_website">Website</label>
+                <input type="url" id="source_website" placeholder="https://example.com" />
+                <p class="field-hint">We read it to learn their existing voice.</p>
+              </div>
+              <div class="field">
+                <label class="field-label" for="source_linkedin">LinkedIn profile <span class="opt-tag">Optional</span></label>
+                <input type="url" id="source_linkedin" placeholder="https://linkedin.com/in/..." />
+              </div>
+              <div class="field">
+                <label class="field-label" for="llm_provider">AI model</label>
+                <select id="llm_provider" onchange="updateModelHint()">
+                  <option value="claude">Claude Sonnet (standard)</option>
+                  <option value="claude_opus">Claude Opus 5.5 (premium)</option>
+                  <option value="openai">OpenAI GPT</option>
+                </select>
+                <p class="field-hint" id="model-hint"></p>
+              </div>
             </div>
-            <div>
-              <label class="field-label">Email address</label>
-              <input type="email" id="client_email" placeholder="alisa@example.com" />
-            </div>
-          </div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-            <div>
-              <label class="field-label">Brand ID <span class="font-normal text-gray-400">(slug, no spaces)</span></label>
-              <input type="text" id="brand_id" placeholder="e.g. alisa_amouage" />
-            </div>
-            <div>
-              <label class="field-label">Content style</label>
-              <select id="brand_archetype" onchange="updateRoleTip()">
-                <option value="mentor_coach">Mentor / Coach</option>
-                <option value="author">Author / Writer</option>
-                <option value="industry_consultant">Industry Expert / Consultant</option>
-                <option value="corporate_firm">Professional Services Firm</option>
-                <option value="thought_leader">Thought Leader</option>
-                <option value="reviewer">Reviewer / Critic</option>
-                <option value="travel_lifestyle">Travel & Lifestyle</option>
-              </select>
-              <p id="role-tip" class="text-xs text-indigo-600 mt-1.5"></p>
-            </div>
-          </div>
-          <div>
-            <label class="field-label">AI model <span class="font-normal text-gray-400">(used to generate content for this client)</span></label>
-            <select id="llm_provider">
-              <option value="claude">Claude Sonnet — standard, recommended</option>
-              <option value="claude_opus">Claude Opus 5.5 — premium: best writing, slower, costs more</option>
-              <option value="openai">OpenAI GPT</option>
-            </select>
-          </div>
-          </div>
-          <div class="sub-section">
-            <h3 class="sub-h">Brand sources</h3>
-            <p class="text-xs text-gray-500 mb-3">Where we'll go to understand their existing voice and content.</p>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label class="field-label">Website / homepage URL</label>
-              <input type="url" id="source_website" placeholder="https://example.com" />
-            </div>
-            <div>
-              <label class="field-label">LinkedIn profile URL <span class="font-normal text-gray-400">(optional)</span></label>
-              <input type="url" id="source_linkedin" placeholder="https://linkedin.com/in/..." />
-            </div>
-          </div>
-          </div>
           </div>
         </details>
 
@@ -351,61 +391,63 @@
           <summary>
             <span class="section-num">2</span>
             <div class="flex-1 min-w-0">
-              <h2 class="font-bold text-gray-900">Voice material</h2>
+              <h2 class="group-title">Voice material</h2>
               <p class="group-summary" id="summary-substance">Topics, beliefs, stories, writing samples, book</p>
             </div>
+            <span class="group-status" id="status-substance"></span>
             <span class="chev" aria-hidden="true"></span>
           </summary>
           <div class="group-body">
-          <div class="sub-section">
-            <h3 class="sub-h">What they bring</h3>
-            <p class="text-xs text-gray-500 mb-3">The raw material every article is grounded in.</p>
-          <div>
-            <label class="field-label">What do they write about?</label>
-            <textarea id="topic_allowlist" rows="3" data-autogrow placeholder="e.g. Voice leadership and executive presence for senior leaders — how to communicate with authority, clarity, and confidence in high-stakes situations."></textarea>
-          </div>
-          <div class="flex flex-col gap-4">
-            <div>
-            <label class="field-label">Core beliefs <span class="font-normal text-gray-400">(the 3–5 ideas they want more people to understand — the backbone of topic generation)</span></label>
-            <textarea id="core_beliefs" rows="6" data-autogrow placeholder="The principles they repeat over and over. If their audience remembered only a handful of things, what would they be?"></textarea>
-          </div>
-            <div>
-            <label class="field-label">Formative experiences <span class="font-normal text-gray-400">(stories the writer can ground articles in)</span></label>
-            <textarea id="formative_experiences" rows="6" data-autogrow placeholder="Turning points, failures, surprising lessons, mentors, successes — moments that shaped how they think."></textarea>
-          </div>
-          </div>
-          <div>
-            <label class="field-label">Desired outcome <span class="font-normal text-gray-400">(the shift in thinking every piece should create — optional)</span></label>
-            <textarea id="desired_outcome" rows="3" data-autogrow placeholder="e.g. see public speaking as a trainable skill, not an innate gift."></textarea>
-          </div>
-          <div>
-            <label class="field-label">Writing samples <span class="font-normal text-gray-400">(paste LinkedIn posts or articles — used to calibrate their voice)</span></label>
-            <textarea id="writing_samples" rows="14" data-autogrow placeholder="Paste 2–4 of their best LinkedIn posts or articles here. The more authentic the better — threads, long-form posts, anything that shows how they actually write."></textarea>
-          </div>
-          <div>
-            <label class="field-label">Reference material <span class="font-normal text-gray-400">(upload their book/manuscript as a PDF — content is grounded in it)</span></label>
-            <div id="reference-card" class="border border-dashed border-gray-300 rounded-lg p-4">
-              <p id="reference-hint" class="text-sm text-gray-400">Save the client first, then you can attach a book.</p>
-
-              <div id="reference-status" class="hidden items-center justify-between gap-3">
-                <div class="text-sm text-gray-700">
-                  📖 <span id="reference-stats" class="font-medium"></span>
-                </div>
-                <button type="button" onclick="removeReference()" class="text-xs text-red-400 hover:text-red-600 underline">Remove</button>
+            <p class="group-intro">The raw material every topic and article is grounded in. The more specific, the better the writing.</p>
+            <div class="stack">
+              <div class="field">
+                <label class="field-label" for="topic_allowlist">What do they write about?</label>
+                <textarea id="topic_allowlist" rows="3" data-autogrow placeholder="e.g. Voice leadership and executive presence for senior leaders — how to communicate with authority, clarity, and confidence in high-stakes situations."></textarea>
               </div>
+              <div class="field">
+                <label class="field-label" for="core_beliefs">Core beliefs</label>
+                <p class="field-hint above">The 3–5 ideas they want more people to understand. This is the backbone of topic generation.</p>
+                <textarea id="core_beliefs" rows="6" data-autogrow placeholder="The principles they repeat over and over. If their audience remembered only a handful of things, what would they be?"></textarea>
+              </div>
+              <div class="field">
+                <label class="field-label" for="formative_experiences">Formative experiences</label>
+                <p class="field-hint above">Stories the writer can ground articles in.</p>
+                <textarea id="formative_experiences" rows="6" data-autogrow placeholder="Turning points, failures, surprising lessons, mentors, successes — moments that shaped how they think."></textarea>
+              </div>
+              <div class="field">
+                <label class="field-label" for="desired_outcome">Desired outcome <span class="opt-tag">Optional</span></label>
+                <p class="field-hint above">The shift in thinking every piece should create.</p>
+                <textarea id="desired_outcome" rows="3" data-autogrow placeholder="e.g. see public speaking as a trainable skill, not an innate gift."></textarea>
+              </div>
+              <div class="field">
+                <div class="flex items-baseline justify-between gap-3">
+                  <label class="field-label" for="writing_samples">Writing samples</label>
+                  <span class="field-hint" id="samples-count"></span>
+                </div>
+                <p class="field-hint above">Paste 2–4 LinkedIn posts or articles. Used to match their voice.</p>
+                <textarea id="writing_samples" rows="14" data-autogrow placeholder="Paste 2–4 of their best LinkedIn posts or articles here. The more authentic the better — threads, long-form posts, anything that shows how they actually write."></textarea>
+              </div>
+              <div class="field">
+                <label class="field-label">Reference book <span class="opt-tag">Optional</span></label>
+                <div id="reference-card" class="ref-card">
+                  <p id="reference-hint" class="text-sm text-gray-500">Save the client first, then you can attach their book as a PDF.</p>
 
-              <div id="reference-upload" class="hidden">
-                <input type="file" id="reference-file" accept="application/pdf"
-                  class="block w-full text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100" />
-                <button type="button" id="reference-upload-btn" onclick="uploadReference()"
-                  class="mt-3 py-1.5 px-4 rounded-md bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 transition">
-                  Upload PDF
-                </button>
-                <p class="text-xs text-gray-400 mt-2">Text-based PDFs only (not scanned images). Large books are capped at ~150K tokens.</p>
+                  <div id="reference-status" class="hidden items-center justify-between gap-3">
+                    <div class="text-sm text-gray-700">📖 <span id="reference-stats" class="font-medium"></span></div>
+                    <button type="button" onclick="removeReference()" class="text-xs text-red-500 hover:text-red-700 font-medium">Remove</button>
+                  </div>
+
+                  <div id="reference-upload" class="hidden">
+                    <div class="flex flex-wrap items-center gap-3">
+                      <input type="file" id="reference-file" accept="application/pdf" class="sr-only" onchange="uploadReference()" />
+                      <label for="reference-file" id="reference-upload-btn" class="btn-secondary">Upload PDF</label>
+                      <span class="text-sm text-gray-500">Their book or manuscript. Articles will be grounded in it.</span>
+                    </div>
+                    <p class="field-hint">Text-based PDFs only, not scans. Long books are capped at about 150K tokens.</p>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-          </div>
           </div>
         </details>
 
@@ -414,30 +456,29 @@
           <summary>
             <span class="section-num">3</span>
             <div class="flex-1 min-w-0">
-              <h2 class="font-bold text-gray-900">Audience & format</h2>
+              <h2 class="group-title">Audience & format</h2>
               <p class="group-summary" id="summary-audience">Who it is for and where it lives</p>
             </div>
+            <span class="group-status" id="status-audience"></span>
             <span class="chev" aria-hidden="true"></span>
           </summary>
           <div class="group-body">
-          <div class="sub-section">
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label class="field-label" for="sel-audience">Who are we writing for?</label>
+            <div class="form-grid">
+              <div class="field">
+                <label class="field-label" for="sel-audience">Primary audience</label>
                 <select id="sel-audience" data-select-group="audience"></select>
-                <p class="field-hint">The primary reader. Add nuance below.</p>
               </div>
-              <div>
-                <label class="field-label" for="sel-platform">Where will this content live?</label>
+              <div class="field">
+                <label class="field-label" for="sel-platform">Where the content lives</label>
                 <select id="sel-platform" data-select-group="platform"></select>
                 <p class="field-hint" id="platform-hint">Affects length, structure and polish.</p>
               </div>
+              <div class="field span-2">
+                <label class="field-label" for="audience_context">Who must feel "this is for me"? <span class="opt-tag">Optional</span></label>
+                <input type="text" id="audience_context" placeholder="e.g. Mid-level leaders preparing for their first C-suite role" />
+                <p class="field-hint">Use this when the audience is mixed or more specific than the list above.</p>
+              </div>
             </div>
-            <div>
-              <label class="field-label" for="audience_context">If mixed or nuanced, who must feel "this is for me"? <span class="font-normal text-gray-400">(optional)</span></label>
-              <input type="text" id="audience_context" placeholder="e.g. Mid-level leaders preparing for their first C-suite role" />
-            </div>
-          </div>
           </div>
         </details>
 
@@ -446,45 +487,44 @@
           <summary>
             <span class="section-num">4</span>
             <div class="flex-1 min-w-0">
-              <h2 class="font-bold text-gray-900">Tone & stance</h2>
+              <h2 class="group-title">Tone & stance</h2>
               <p class="group-summary" id="summary-voice">Tone, personal presence, relationship to selling</p>
             </div>
+            <span class="group-status" id="status-voice"></span>
             <span class="chev" aria-hidden="true"></span>
           </summary>
           <div class="group-body">
-          <div class="sub-section">
-            <h3 class="sub-h">Tone calibration</h3>
-            <p class="text-xs text-gray-500 mb-3">Which lane should the voice sit in?</p>
-          <div id="tone-opts" class="space-y-2 mb-4">
-            <!-- rendered by JS -->
-          </div>
-          <div id="custom-tone-wrap" class="hidden mt-2">
-            <label class="field-label">Describe the blend</label>
-            <textarea id="custom_tone" rows="2" placeholder="e.g. Calm but slightly playful, never corporate, always grounded in evidence…"></textarea>
-          </div>
-          <div class="mt-4 flex items-center gap-3">
-            <label class="field-label mb-0">Explicitly reference science / research in the writing?</label>
-            <div class="flex gap-2">
-              <button type="button" class="slot-type-btn" id="sci-yes" onclick="setSci('explicit_when_credibility_helpful')">Yes, when it helps</button>
-              <button type="button" class="slot-type-btn" id="sci-often" onclick="setSci('explicit_often')">Yes, often</button>
-              <button type="button" class="slot-type-btn active" id="sci-no" onclick="setSci('implied')">Keep it implied</button>
+            <div class="form-grid">
+              <div class="field">
+                <label class="field-label" for="sel-tone">Tone</label>
+                <select id="sel-tone" data-select-group="tone" onchange="onToneChange()"></select>
+                <blockquote id="tone-example" class="tone-example hidden"></blockquote>
+              </div>
+              <div class="field">
+                <label class="field-label" for="sel-sci">References to research</label>
+                <select id="sel-sci" onchange="setSci(this.value)">
+                  <option value="implied">Keep it implied</option>
+                  <option value="explicit_when_credibility_helpful">Cite it when it helps</option>
+                  <option value="explicit_often">Cite it often</option>
+                </select>
+              </div>
+              <div id="custom-tone-wrap" class="field span-2 hidden">
+                <div>
+                  <label class="field-label" for="custom_tone">Describe the blend</label>
+                  <textarea id="custom_tone" rows="2" placeholder="e.g. Calm but slightly playful, never corporate, always grounded in evidence…"></textarea>
+                </div>
+              </div>
+              <div class="field">
+                <label class="field-label" for="sel-presence">Personal presence</label>
+                <select id="sel-presence" data-select-group="presence" onchange="updateOptHint('presence')"></select>
+                <p class="field-hint" id="presence-hint">How visible the person behind the brand is.</p>
+              </div>
+              <div class="field">
+                <label class="field-label" for="sel-commercial">Relationship to selling</label>
+                <select id="sel-commercial" data-select-group="commercial" onchange="updateOptHint('commercial')"></select>
+                <p class="field-hint" id="commercial-hint">How overt the commercial angle is.</p>
+              </div>
             </div>
-          </div>
-          </div>
-          <div class="sub-section">
-            <h3 class="sub-h">Personal presence</h3>
-            <p class="text-xs text-gray-500 mb-3">How visible is the person behind the brand in the writing?</p>
-          <div id="presence-opts" class="space-y-2">
-            <!-- rendered by JS -->
-          </div>
-          </div>
-          <div class="sub-section">
-            <h3 class="sub-h">Relationship to selling</h3>
-            <p class="text-xs text-gray-500 mb-3">How overt should the commercial angle be?</p>
-          <div id="commercial-opts" class="space-y-2">
-            <!-- rendered by JS -->
-          </div>
-          </div>
           </div>
         </details>
 
@@ -493,48 +533,48 @@
           <summary>
             <span class="section-num">5</span>
             <div class="flex-1 min-w-0">
-              <h2 class="font-bold text-gray-900">Content schedule</h2>
+              <h2 class="group-title">Content schedule</h2>
               <p class="group-summary" id="summary-schedule">Package, cadence and publish days</p>
             </div>
+            <span class="group-status" id="status-schedule"></span>
             <span class="chev" aria-hidden="true"></span>
           </summary>
           <div class="group-body">
-
-          <div class="mb-5">
-            <label class="field-label">Package</label>
-            <div class="flex gap-3" id="package-btns">
-              <button type="button" class="slot-type-btn" id="pkg-8"  onclick="setPackage(8)">8 articles</button>
-              <button type="button" class="slot-type-btn" id="pkg-16" onclick="setPackage(16)">16 articles</button>
-              <button type="button" class="slot-type-btn" id="pkg-24" onclick="setPackage(24)">24 articles</button>
+            <div class="form-grid cols-3">
+              <div class="field">
+                <span class="field-label">Package</span>
+                <div class="seg" id="package-btns" role="group" aria-label="Package">
+                  <button type="button" class="slot-type-btn" id="pkg-8"  onclick="setPackage(8)">8</button>
+                  <button type="button" class="slot-type-btn" id="pkg-16" onclick="setPackage(16)">16</button>
+                  <button type="button" class="slot-type-btn" id="pkg-24" onclick="setPackage(24)">24</button>
+                </div>
+                <p class="field-hint">Articles in the plan.</p>
+              </div>
+              <div class="field">
+                <span class="field-label">Cadence</span>
+                <div class="seg" role="group" aria-label="Cadence">
+                  <button type="button" class="slot-type-btn active" id="cadence-1x" onclick="setCadence(1)">1× a week</button>
+                  <button type="button" class="slot-type-btn" id="cadence-2x" onclick="setCadence(2)">2× a week</button>
+                </div>
+              </div>
+              <div class="field">
+                <label class="field-label" for="time_zone">Time zone</label>
+                <select id="time_zone">
+                  <option value="UTC">UTC</option>
+                  <option value="America/New_York">Eastern (US)</option>
+                  <option value="America/Chicago">Central (US)</option>
+                  <option value="America/Los_Angeles">Pacific (US)</option>
+                  <option value="Europe/London">London</option>
+                  <option value="Europe/Paris">Paris / CET</option>
+                  <option value="Asia/Dubai">Dubai</option>
+                </select>
+              </div>
             </div>
-          </div>
-
-          <div class="mb-5">
-            <label class="field-label">Publication cadence</label>
-            <div class="flex gap-3">
-              <button type="button" class="slot-type-btn active" id="cadence-1x" onclick="setCadence(1)">1× per week</button>
-              <button type="button" class="slot-type-btn" id="cadence-2x" onclick="setCadence(2)">2× per week</button>
+            <div class="field mt-5">
+              <span class="field-label">Publish days</span>
+              <div id="slots-builder" class="space-y-2"></div>
             </div>
-          </div>
-
-          <div id="slots-builder" class="space-y-2 mb-5"></div>
-
-          <div id="duration-banner" class="hidden text-sm text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-md px-4 py-2.5 mb-5"></div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label class="field-label">Time zone</label>
-              <select id="time_zone">
-                <option value="UTC">UTC</option>
-                <option value="America/New_York">Eastern (US)</option>
-                <option value="America/Chicago">Central (US)</option>
-                <option value="America/Los_Angeles">Pacific (US)</option>
-                <option value="Europe/London">London</option>
-                <option value="Europe/Paris">Paris / CET</option>
-                <option value="Asia/Dubai">Dubai</option>
-              </select>
-            </div>
-          </div>
+            <p id="duration-banner" class="hidden duration-note"></p>
           </div>
         </details>
 
@@ -543,59 +583,62 @@
           <summary>
             <span class="section-num">6</span>
             <div class="flex-1 min-w-0">
-              <h2 class="font-bold text-gray-900">Disclaimer & publishing</h2>
+              <h2 class="group-title">Disclaimer & publishing</h2>
               <p class="group-summary" id="summary-publishing">Affiliate disclaimer and client site publishing</p>
             </div>
+            <span class="group-status" id="status-publishing"></span>
             <span class="chev" aria-hidden="true"></span>
           </summary>
           <div class="group-body">
-          <div class="sub-section">
-            <h3 class="sub-h">Disclaimer & affiliate</h3>
-            <p class="text-xs text-gray-500 mb-3">Required for affiliate content; optional for pure thought leadership.</p>
-          <div class="flex items-center gap-3 mb-4">
-            <input type="checkbox" id="disclaimer_required" onchange="toggleDisclaimer()" class="w-4 h-4 accent-indigo-600" />
-            <label for="disclaimer_required" class="text-sm font-medium text-gray-700">This client uses affiliate links / requires a disclaimer</label>
-          </div>
-          <div id="disclaimer-fields" class="hidden space-y-3">
-            <div>
-              <label class="field-label">Disclaimer text</label>
-              <textarea id="disclaimer_text" rows="2" placeholder="This post may contain affiliate links. If you buy through our links, we may earn a commission at no extra cost to you."></textarea>
+            <div class="toggle-row">
+              <div>
+                <label for="disclaimer_required" class="text-sm font-semibold text-gray-800">Affiliate disclaimer</label>
+                <p class="field-hint">Turn on if this client uses affiliate links.</p>
+              </div>
+              <input type="checkbox" id="disclaimer_required" class="switch" role="switch" onchange="toggleDisclaimer()" />
             </div>
-            <div>
-              <label class="field-label">Placement</label>
-              <div class="flex gap-2" id="disclaimer-loc-chips">
-                <span class="chip" data-val="header" onclick="toggleChipSingle(this, 'disclaimer-loc-chips')">Header</span>
-                <span class="chip selected" data-val="footer" onclick="toggleChipSingle(this, 'disclaimer-loc-chips')">Footer</span>
-                <span class="chip" data-val="before_products" onclick="toggleChipSingle(this, 'disclaimer-loc-chips')">Before products</span>
+            <div id="disclaimer-fields" class="hidden form-grid mt-4">
+              <div class="field span-2">
+                <label class="field-label" for="disclaimer_text">Disclaimer text</label>
+                <textarea id="disclaimer_text" rows="2" placeholder="This post may contain affiliate links. If you buy through our links, we may earn a commission at no extra cost to you."></textarea>
+              </div>
+              <div class="field span-2">
+                <span class="field-label">Placement</span>
+                <div class="flex gap-2" id="disclaimer-loc-chips">
+                  <span class="chip" data-val="header" onclick="toggleChipSingle(this, 'disclaimer-loc-chips')">Header</span>
+                  <span class="chip selected" data-val="footer" onclick="toggleChipSingle(this, 'disclaimer-loc-chips')">Footer</span>
+                  <span class="chip" data-val="before_products" onclick="toggleChipSingle(this, 'disclaimer-loc-chips')">Before products</span>
+                </div>
               </div>
             </div>
-          </div>
-          </div>
-          <div class="sub-section">
-            <h3 class="sub-h">Publishing <span class="font-normal text-gray-400 text-sm">(optional)</span></h3>
-            <p class="text-xs text-gray-500 mb-3">After the delivery email, also send each approved article to the client's own site. Leave empty for email only.</p>
-          <div id="publishing-list" class="space-y-4 mb-3"></div>
-          <div class="flex flex-wrap gap-2">
-            <button type="button" onclick="addPublishing('github')" class="py-1.5 px-3 rounded-md border border-gray-200 text-gray-700 text-xs font-semibold hover:bg-gray-50">+ GitHub repo</button>
-            <button type="button" onclick="addPublishing('wordpress')" class="py-1.5 px-3 rounded-md border border-gray-200 text-gray-700 text-xs font-semibold hover:bg-gray-50">+ WordPress</button>
-            <button type="button" onclick="addPublishing('webhook')" class="py-1.5 px-3 rounded-md border border-gray-200 text-gray-700 text-xs font-semibold hover:bg-gray-50">+ Webhook (Zapier / Make)</button>
-          </div>
-          <p class="text-xs text-gray-400 mt-3">Never paste a token, password or webhook URL here. Enter the <strong>name</strong> of a Railway variable (e.g. <code>GITHUB_TOKEN_ACME</code>) and set its value in Railway → Variables.</p>
-          </div>
+
+            <div class="divider"></div>
+
+            <div class="mb-3">
+              <p class="text-sm font-semibold text-gray-800">Publish to the client's site <span class="opt-tag">Optional</span></p>
+              <p class="field-hint">After the delivery email, also send each approved article to their site. Leave empty for email only.</p>
+            </div>
+            <div id="publishing-list" class="space-y-4 mb-3"></div>
+            <div class="flex flex-wrap gap-2">
+              <button type="button" onclick="addPublishing('github')" class="btn-secondary">+ GitHub repo</button>
+              <button type="button" onclick="addPublishing('wordpress')" class="btn-secondary">+ WordPress</button>
+              <button type="button" onclick="addPublishing('webhook')" class="btn-secondary">+ Webhook (Zapier / Make)</button>
+            </div>
+            <p class="info-note">🔒 Never paste a token, password or webhook URL here. Enter the <strong>name</strong> of a Railway variable (e.g. <code>GITHUB_TOKEN_ACME</code>) and set its value in Railway → Variables.</p>
           </div>
         </details>
 
         <!-- Save -->
         <div class="save-bar">
-          <button id="save-btn" onclick="saveClient()">Save client profile</button>
+          <div class="save-inner">
+            <span id="dirty-note" class="dirty-note"></span>
+            <button id="save-btn" onclick="saveClient()">Save profile</button>
+          </div>
         </div>
 
         <!-- Danger zone — only shown for existing clients -->
-        <div id="delete-zone" class="hidden pb-16 pt-4 text-center">
-          <button onclick="deleteClient()"
-            class="text-sm text-red-400 hover:text-red-600 transition underline underline-offset-2">
-            Delete this client
-          </button>
+        <div id="delete-zone" class="hidden pb-16 pt-6 text-right">
+          <button onclick="deleteClient()" class="text-xs text-gray-400 hover:text-red-600 transition">Delete this client…</button>
         </div>
 
       </div><!-- /form-area -->
@@ -931,9 +974,10 @@ document.addEventListener("DOMContentLoaded", () => {
   renderSelectOpts("sel-audience", AUDIENCE_OPTS, "Choose an audience…");
   renderSelectOpts("sel-platform", PLATFORM_OPTS, "Choose where it lives…");
   document.getElementById("sel-platform").addEventListener("change", updatePlatformHint);
-  renderCardOpts("tone-opts", TONE_OPTS, "tone", false, false, onToneChange);
-  renderCardOpts("presence-opts", PRESENCE_OPTS, "presence", false, true);
-  renderCardOpts("commercial-opts", COMMERCIAL_OPTS, "commercial", false, true);
+  renderSelectOpts("sel-tone", TONE_OPTS, "Choose a tone…");
+  renderSelectOpts("sel-presence", PRESENCE_OPTS, "Choose…");
+  renderSelectOpts("sel-commercial", COMMERCIAL_OPTS, "Choose…");
+  updateModelHint();
   renderSlots();
   updateRoleTip();
   showDashboard();
@@ -1019,14 +1063,35 @@ function updateRoleTip() {
 function onToneChange() {
   const val = getSelectedCardVal("tone");
   document.getElementById("custom-tone-wrap").classList.toggle("hidden", val !== "custom");
+  const opt = TONE_OPTS.find(o => o.value === val);
+  const ex = document.getElementById("tone-example");
+  ex.textContent = opt && opt.example ? `“${opt.example}”` : "";
+  ex.classList.toggle("hidden", !(opt && opt.example));
+}
+
+const OPT_HINT_DEFAULT = {
+  presence: "How visible the person behind the brand is.",
+  commercial: "How overt the commercial angle is.",
+};
+const OPT_LISTS = () => ({ presence: PRESENCE_OPTS, commercial: COMMERCIAL_OPTS });
+function updateOptHint(group) {
+  const opt = OPT_LISTS()[group].find(o => o.value === getSelectedCardVal(group));
+  document.getElementById(`${group}-hint`).textContent = opt ? opt.desc : OPT_HINT_DEFAULT[group];
+}
+
+const MODEL_HINTS = {
+  claude: "Recommended. Strong long-form writing at a good price.",
+  claude_opus: "Best writing quality. Slower, and costs more per article.",
+  openai: "Alternative provider.",
+};
+function updateModelHint() {
+  document.getElementById("model-hint").textContent = MODEL_HINTS[document.getElementById("llm_provider").value] || "";
 }
 
 // ── Science ──────────────────────────────────────────────────────────────────
 function setSci(val) {
   sciExplicitness = val;
-  ["sci-yes","sci-often","sci-no"].forEach(id => document.getElementById(id).classList.remove("active"));
-  const map = { "explicit_when_credibility_helpful": "sci-yes", "explicit_often": "sci-often", "implied": "sci-no" };
-  document.getElementById(map[val]).classList.add("active");
+  document.getElementById("sel-sci").value = val;
 }
 
 // ── Package ───────────────────────────────────────────────────────────────────
@@ -1060,13 +1125,15 @@ function renderSlots() {
   const el = document.getElementById("slots-builder");
   el.innerHTML = slots.map((slot, i) => `
     <div class="slot-row">
-      <select style="width:160px" onchange="slots[${i}].day = this.value">
+      <select style="width:170px" aria-label="Publish day ${i + 1}" onchange="slots[${i}].day = this.value; updateGroupSummaries()">
         ${DAYS.map(d => `<option value="${d}" ${slot.day === d ? 'selected' : ''}>${DAY_LABELS[d]}</option>`).join('')}
       </select>
-      <button type="button" class="slot-type-btn ${slot.type === 'long_blog' ? 'active' : ''}"
-        onclick="setSlotType(${i}, 'long_blog', this)">Long blog</button>
-      <button type="button" class="slot-type-btn ${slot.type === 'short_snippet' ? 'active' : ''}"
-        onclick="setSlotType(${i}, 'short_snippet', this)">Short snippet</button>
+      <div class="seg">
+        <button type="button" class="slot-type-btn ${slot.type === 'long_blog' ? 'active' : ''}"
+          onclick="setSlotType(${i}, 'long_blog', this)">Long blog</button>
+        <button type="button" class="slot-type-btn ${slot.type === 'short_snippet' ? 'active' : ''}"
+          onclick="setSlotType(${i}, 'short_snippet', this)">Short snippet</button>
+      </div>
     </div>
   `).join('');
 }
@@ -1118,6 +1185,31 @@ function autogrowAll(root) {
   (root || document).querySelectorAll('textarea[data-autogrow]').forEach(autogrow);
 }
 
+function setBrandIdLocked(locked) {
+  const el = document.getElementById("brand_id");
+  el.readOnly = locked;
+  el.classList.toggle("locked", locked);
+  document.getElementById("brand-id-hint").textContent = locked
+    ? "Fixed once a client is created."
+    : "Lowercase, no spaces. Can't be changed later.";
+}
+
+let profileDirty = false;
+function setDirty(d) {
+  profileDirty = d;
+  const note = document.getElementById("dirty-note");
+  note.textContent = d ? "Unsaved changes" : (currentBrandId ? "All changes saved" : "");
+  note.classList.toggle("clean", !d);
+  document.getElementById("save-btn").classList.toggle("is-dirty", d);
+}
+
+function _setStatus(key, missing) {
+  const el = document.getElementById(`status-${key}`);
+  if (!el) return;
+  el.textContent = missing ? `${missing} to fill` : "";
+  el.className = "group-status" + (missing ? " todo" : "");
+}
+
 function updateGroupSummaries() {
   const v = id => (document.getElementById(id)?.value || '').trim();
   const sel = id => { const e = document.getElementById(id); return e && e.selectedIndex >= 0 ? e.options[e.selectedIndex].text : ''; };
@@ -1155,6 +1247,16 @@ function updateGroupSummaries() {
   ], '');
 
   const pubs = publishingRows.filter(r => r.enabled !== false).map(r => PUB_LABEL[r.type] || r.type);
+  const missing = (ids) => ids.filter(id => !v(id)).length;
+  _setStatus('basics', missing(['client_name', 'client_email', 'brand_id', 'source_website']));
+  _setStatus('substance', missing(['topic_allowlist', 'core_beliefs', 'writing_samples']));
+  _setStatus('audience', ['audience', 'platform'].filter(g => !getSelectedCardVal(g)).length);
+  _setStatus('voice', ['tone', 'presence', 'commercial'].filter(g => !getSelectedCardVal(g)).length);
+  _setStatus('schedule', currentPackage ? 0 : 1);
+
+  const words = v('writing_samples') ? v('writing_samples').split(/\s+/).length : 0;
+  document.getElementById('samples-count').textContent = words ? `${words.toLocaleString()} words` : '';
+
   _setSummary('publishing', [
     document.getElementById('disclaimer_required').checked ? 'Disclaimer on' : 'No disclaimer',
     pubs.length ? `Publishes to ${pubs.join(', ')}` : 'Email delivery only',
@@ -1165,6 +1267,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const area = document.getElementById('form-area');
   ['input', 'change', 'click'].forEach(ev => area.addEventListener(ev, () => setTimeout(updateGroupSummaries, 0)));
   area.addEventListener('input', e => { if (e.target.matches('textarea[data-autogrow]')) autogrow(e.target); });
+  // Anything the operator changes inside a group marks the profile as unsaved.
+  ['input', 'change'].forEach(ev => area.addEventListener(ev, e => { if (e.target.closest('.group-body') && e.target.id !== 'reference-file') setDirty(true); }));
+  area.addEventListener('click', e => { if (e.target.closest('.group-body button, .group-body .chip') && !e.target.closest('#reference-card')) setDirty(true); });
+  window.addEventListener('beforeunload', e => { if (profileDirty) { e.preventDefault(); e.returnValue = ''; } });
   area.querySelectorAll('details.group-card').forEach(d => d.addEventListener('toggle', () => { if (d.open) autogrowAll(d); }));
 });
 
@@ -1361,6 +1467,7 @@ async function loadClientList() {
 }
 
 async function loadClient(brandId) {
+  if (profileDirty && !confirm('You have unsaved profile changes. Discard them?')) return;
   closeSidebar();
   const res = await fetch(`/api/brands/${brandId}`);
   if (!res.ok) return;
@@ -1437,6 +1544,7 @@ async function removeReference() {
 }
 
 function newClient() {
+  if (profileDirty && !confirm('You have unsaved profile changes. Discard them?')) return;
   closeSidebar();
   currentBrandId = null;
   resetForm();
@@ -1452,6 +1560,7 @@ function newClient() {
   loadReference(null);
   setAllGroups(true);
   updateGroupSummaries();
+  setDirty(false);
   currentTab = 'profile';
 }
 
@@ -1529,9 +1638,12 @@ function populateForm(d) {
   setVal("disclaimer_text", disc.disclaimer_text || "");
   setChips("disclaimer-loc-chips", disc.locations || ["footer"]);
 
+  setBrandIdLocked(true);
+  updateModelHint();
   setAllGroups(false);
   updateGroupSummaries();
   autogrowAll();
+  setDirty(false);
 }
 
 function derivePlatform(policy) {
@@ -1569,7 +1681,8 @@ function resetForm() {
   updateRoleTip();
   document.querySelectorAll(".card-opt").forEach(el => el.classList.remove("selected"));
   document.querySelectorAll("select[data-select-group]").forEach(el => { el.value = ""; });
-  updatePlatformHint();
+  updatePlatformHint(); updateOptHint("presence"); updateOptHint("commercial"); onToneChange();
+  setBrandIdLocked(false);
   document.getElementById("disclaimer_required").checked = false;
   toggleDisclaimer();
   publishingRows = []; publishingEnv = {};
@@ -1711,6 +1824,8 @@ async function saveClient() {
       throw new Error(detail || `HTTP ${res.status}`);
     }
     currentBrandId = brand_id;
+    setBrandIdLocked(true);
+    setDirty(false);
     showToast("toast");
     loadPublishingEnv(brand_id);
     // Show tab bar now that we have a brand_id
@@ -1829,6 +1944,8 @@ function selectCardByVal(group, val) {
     sel.value = val || "";
     if (sel.value !== (val || "")) sel.value = "";
     if (group === "platform") updatePlatformHint();
+    if (group === "presence" || group === "commercial") updateOptHint(group);
+    if (group === "tone") onToneChange();
     return;
   }
   document.querySelectorAll(`[data-group="${group}"]`).forEach(el => {
