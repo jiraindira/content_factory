@@ -37,6 +37,46 @@
     }
     .chip:hover { border-color: #6366f1; }
     .chip.selected { border-color: #6366f1; background: #eef2ff; color: #4338ca; font-weight: 500; }
+    .group-card {
+      background: white;
+      border-radius: 0.75rem;
+      border: 1px solid #e5e7eb;
+      margin-bottom: 0.75rem;
+    }
+    .group-card > summary {
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 1rem 1.25rem;
+      cursor: pointer;
+      user-select: none;
+      border-radius: 0.75rem;
+    }
+    .group-card > summary::-webkit-details-marker { display: none; }
+    .group-card > summary:hover { background: #fafafa; }
+    .group-card > summary:focus-visible { outline: 2px solid #6366f1; outline-offset: 2px; }
+    .group-card[open] > summary { border-bottom: 1px solid #f3f4f6; border-radius: 0.75rem 0.75rem 0 0; }
+    .group-summary { font-size: 0.8rem; color: #6b7280; margin-top: 0.1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .group-summary.empty { color: #9ca3af; font-style: italic; }
+    .chev { width: 0.6rem; height: 0.6rem; border-right: 2px solid #9ca3af; border-bottom: 2px solid #9ca3af; transform: rotate(45deg); margin: 0 0.4rem 0.25rem 0.75rem; transition: transform 0.15s; flex-shrink: 0; }
+    .group-card[open] .chev { transform: rotate(-135deg); margin-bottom: -0.25rem; }
+    .group-body { padding: 1.25rem 1.5rem 1.5rem; }
+    .sub-section { display: flex; flex-direction: column; gap: 1rem; }
+    .sub-section > .mb-4, .sub-section > .mb-3 { margin-bottom: 0; }
+    .sub-section + .sub-section { margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid #f3f4f6; }
+    .sub-h { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #4338ca; margin-bottom: -0.5rem; }
+    .sub-h + p { margin-bottom: -0.25rem; }
+    .sub-h span { text-transform: none; letter-spacing: 0; font-weight: 400; }
+    /* Tone examples take a lot of room: show only for the picked or hovered option */
+    #tone-opts .card-opt .opt-example { display: none; }
+    #tone-opts .card-opt.selected .opt-example, #tone-opts .card-opt:hover .opt-example { display: block; }
+    /* Short option lists sit two per row on wider screens */
+    @media (min-width: 640px) {
+      #audience-opts, #presence-opts, #commercial-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+      #audience-opts > *, #presence-opts > *, #commercial-opts > * { margin-top: 0 !important; }
+    }
+    .save-bar { position: sticky; bottom: 0; z-index: 20; padding: 0.75rem 0 1rem; background: linear-gradient(to top, #f9fafb 75%, rgba(249,250,251,0)); }
     .section-card {
       background: white;
       border-radius: 0.75rem;
@@ -229,16 +269,26 @@
 
       <div id="form-area">
 
-        <!-- ── 1. Client basics ─────────────────────────────────────────── -->
-        <div class="section-card">
-          <div class="flex items-start mb-4">
+        <div class="flex items-center justify-end gap-3 mb-3 text-xs">
+          <button type="button" class="text-indigo-600 hover:underline" onclick="setAllGroups(true)">Expand all</button>
+          <span class="text-gray-300">|</span>
+          <button type="button" class="text-indigo-600 hover:underline" onclick="setAllGroups(false)">Collapse all</button>
+        </div>
+
+        <!-- ── 1. Client basics ─────────────────────────────── -->
+        <details class="group-card" data-group="basics">
+          <summary>
             <span class="section-num">1</span>
-            <div>
+            <div class="flex-1 min-w-0">
               <h2 class="font-bold text-gray-900">Client basics</h2>
-              <p class="text-sm text-gray-500 mt-0.5">Core identity for this client profile.</p>
+              <p class="group-summary" id="summary-basics">Name, email, brand ID, style, sources</p>
             </div>
-          </div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+            <span class="chev" aria-hidden="true"></span>
+          </summary>
+          <div class="group-body">
+          <div class="sub-section">
+            <h3 class="sub-h">Identity</h3>
+                      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
             <div>
               <label class="field-label">Client name</label>
               <input type="text" id="client_name" placeholder="e.g. Alisa Amouage" />
@@ -267,6 +317,45 @@
               <p id="role-tip" class="text-xs text-indigo-600 mt-1.5"></p>
             </div>
           </div>
+          <div>
+            <label class="field-label">AI model <span class="font-normal text-gray-400">(used to generate content for this client)</span></label>
+            <select id="llm_provider">
+              <option value="claude">Claude Sonnet — recommended</option>
+              <option value="openai">OpenAI GPT</option>
+            </select>
+          </div>
+          </div>
+          <div class="sub-section">
+            <h3 class="sub-h">Brand sources</h3>
+            <p class="text-xs text-gray-500 mb-3">Where we'll go to understand their existing voice and content.</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="field-label">Website / homepage URL</label>
+              <input type="url" id="source_website" placeholder="https://example.com" />
+            </div>
+            <div>
+              <label class="field-label">LinkedIn profile URL <span class="font-normal text-gray-400">(optional)</span></label>
+              <input type="url" id="source_linkedin" placeholder="https://linkedin.com/in/..." />
+            </div>
+          </div>
+          </div>
+          </div>
+        </details>
+
+        <!-- ── 2. Voice material ─────────────────────────────── -->
+        <details class="group-card" data-group="substance">
+          <summary>
+            <span class="section-num">2</span>
+            <div class="flex-1 min-w-0">
+              <h2 class="font-bold text-gray-900">Voice material</h2>
+              <p class="group-summary" id="summary-substance">Topics, beliefs, stories, writing samples, book</p>
+            </div>
+            <span class="chev" aria-hidden="true"></span>
+          </summary>
+          <div class="group-body">
+          <div class="sub-section">
+            <h3 class="sub-h">What they bring</h3>
+            <p class="text-xs text-gray-500 mb-3">The raw material every article is grounded in.</p>
           <div>
             <label class="field-label">What do they write about?</label>
             <textarea id="topic_allowlist" rows="3" placeholder="e.g. Voice leadership and executive presence for senior leaders — how to communicate with authority, clarity, and confidence in high-stakes situations."></textarea>
@@ -310,45 +399,24 @@
               </div>
             </div>
           </div>
-          <div>
-            <label class="field-label">AI model <span class="font-normal text-gray-400">(used to generate content for this client)</span></label>
-            <select id="llm_provider">
-              <option value="claude">Claude Sonnet — recommended</option>
-              <option value="openai">OpenAI GPT</option>
-            </select>
           </div>
-        </div>
+          </div>
+        </details>
 
-        <!-- ── 2. Brand sources ────────────────────────────────────────── -->
-        <div class="section-card">
-          <div class="flex items-start mb-4">
-            <span class="section-num">2</span>
-            <div>
-              <h2 class="font-bold text-gray-900">Brand sources</h2>
-              <p class="text-sm text-gray-500 mt-0.5">Where we'll go to understand their existing voice and content.</p>
-            </div>
-          </div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label class="field-label">Website / homepage URL</label>
-              <input type="url" id="source_website" placeholder="https://example.com" />
-            </div>
-            <div>
-              <label class="field-label">LinkedIn profile URL <span class="font-normal text-gray-400">(optional)</span></label>
-              <input type="url" id="source_linkedin" placeholder="https://linkedin.com/in/..." />
-            </div>
-          </div>
-        </div>
-
-        <!-- ── 3. Primary audience ─────────────────────────────────────── -->
-        <div class="section-card">
-          <div class="flex items-start mb-4">
+        <!-- ── 3. Audience & format ─────────────────────────────── -->
+        <details class="group-card" data-group="audience">
+          <summary>
             <span class="section-num">3</span>
-            <div>
-              <h2 class="font-bold text-gray-900">Who are we writing for?</h2>
-              <p class="text-sm text-gray-500 mt-0.5">Pick the primary audience. We can layer nuance later.</p>
+            <div class="flex-1 min-w-0">
+              <h2 class="font-bold text-gray-900">Audience & format</h2>
+              <p class="group-summary" id="summary-audience">Who it is for and where it lives</p>
             </div>
-          </div>
+            <span class="chev" aria-hidden="true"></span>
+          </summary>
+          <div class="group-body">
+          <div class="sub-section">
+            <h3 class="sub-h">Who are we writing for?</h3>
+            <p class="text-xs text-gray-500 mb-3">Pick the primary audience. We can layer nuance later.</p>
           <div id="audience-opts" class="space-y-2">
             <!-- rendered by JS -->
           </div>
@@ -356,31 +424,75 @@
             <label class="field-label">If mixed or nuanced — who must feel "this is for me"?</label>
             <input type="text" id="audience_context" placeholder="e.g. Mid-level leaders preparing for their first C-suite role" />
           </div>
-        </div>
-
-        <!-- ── 4. Platform priority ────────────────────────────────────── -->
-        <div class="section-card">
-          <div class="flex items-start mb-4">
-            <span class="section-num">4</span>
-            <div>
-              <h2 class="font-bold text-gray-900">Where will this content live?</h2>
-              <p class="text-sm text-gray-500 mt-0.5">This affects length, structure, and how polished the writing feels.</p>
-            </div>
           </div>
+          <div class="sub-section">
+            <h3 class="sub-h">Where will this content live?</h3>
+            <p class="text-xs text-gray-500 mb-3">This affects length, structure, and how polished the writing feels.</p>
           <div id="platform-opts" class="space-y-2">
             <!-- rendered by JS -->
           </div>
-        </div>
+          </div>
+          </div>
+        </details>
 
-        <!-- ── 5. Content schedule ─────────────────────────────────────── -->
-        <div class="section-card">
-          <div class="flex items-start mb-4">
-            <span class="section-num">5</span>
-            <div>
-              <h2 class="font-bold text-gray-900">Content schedule</h2>
-              <p class="text-sm text-gray-500 mt-0.5">Package size, cadence, and which days to publish.</p>
+        <!-- ── 4. Tone & stance ─────────────────────────────── -->
+        <details class="group-card" data-group="voice">
+          <summary>
+            <span class="section-num">4</span>
+            <div class="flex-1 min-w-0">
+              <h2 class="font-bold text-gray-900">Tone & stance</h2>
+              <p class="group-summary" id="summary-voice">Tone, personal presence, relationship to selling</p>
+            </div>
+            <span class="chev" aria-hidden="true"></span>
+          </summary>
+          <div class="group-body">
+          <div class="sub-section">
+            <h3 class="sub-h">Tone calibration</h3>
+            <p class="text-xs text-gray-500 mb-3">Which lane should the voice sit in?</p>
+          <div id="tone-opts" class="space-y-2 mb-4">
+            <!-- rendered by JS -->
+          </div>
+          <div id="custom-tone-wrap" class="hidden mt-2">
+            <label class="field-label">Describe the blend</label>
+            <textarea id="custom_tone" rows="2" placeholder="e.g. Calm but slightly playful, never corporate, always grounded in evidence…"></textarea>
+          </div>
+          <div class="mt-4 flex items-center gap-3">
+            <label class="field-label mb-0">Explicitly reference science / research in the writing?</label>
+            <div class="flex gap-2">
+              <button type="button" class="slot-type-btn" id="sci-yes" onclick="setSci('explicit_when_credibility_helpful')">Yes, when it helps</button>
+              <button type="button" class="slot-type-btn" id="sci-often" onclick="setSci('explicit_often')">Yes, often</button>
+              <button type="button" class="slot-type-btn active" id="sci-no" onclick="setSci('implied')">Keep it implied</button>
             </div>
           </div>
+          </div>
+          <div class="sub-section">
+            <h3 class="sub-h">Personal presence</h3>
+            <p class="text-xs text-gray-500 mb-3">How visible is the person behind the brand in the writing?</p>
+          <div id="presence-opts" class="space-y-2">
+            <!-- rendered by JS -->
+          </div>
+          </div>
+          <div class="sub-section">
+            <h3 class="sub-h">Relationship to selling</h3>
+            <p class="text-xs text-gray-500 mb-3">How overt should the commercial angle be?</p>
+          <div id="commercial-opts" class="space-y-2">
+            <!-- rendered by JS -->
+          </div>
+          </div>
+          </div>
+        </details>
+
+        <!-- ── 5. Content schedule ─────────────────────────────── -->
+        <details class="group-card" data-group="schedule">
+          <summary>
+            <span class="section-num">5</span>
+            <div class="flex-1 min-w-0">
+              <h2 class="font-bold text-gray-900">Content schedule</h2>
+              <p class="group-summary" id="summary-schedule">Package, cadence and publish days</p>
+            </div>
+            <span class="chev" aria-hidden="true"></span>
+          </summary>
+          <div class="group-body">
 
           <div class="mb-5">
             <label class="field-label">Package</label>
@@ -417,71 +529,23 @@
               </select>
             </div>
           </div>
-        </div>
+          </div>
+        </details>
 
-        <!-- ── 6. Tone & voice ─────────────────────────────────────────── -->
-        <div class="section-card">
-          <div class="flex items-start mb-4">
+        <!-- ── 6. Disclaimer & publishing ─────────────────────────────── -->
+        <details class="group-card" data-group="publishing">
+          <summary>
             <span class="section-num">6</span>
-            <div>
-              <h2 class="font-bold text-gray-900">Tone calibration</h2>
-              <p class="text-sm text-gray-500 mt-0.5">Which lane should the voice sit in?</p>
+            <div class="flex-1 min-w-0">
+              <h2 class="font-bold text-gray-900">Disclaimer & publishing</h2>
+              <p class="group-summary" id="summary-publishing">Affiliate disclaimer and client site publishing</p>
             </div>
-          </div>
-          <div id="tone-opts" class="space-y-2 mb-4">
-            <!-- rendered by JS -->
-          </div>
-          <div id="custom-tone-wrap" class="hidden mt-2">
-            <label class="field-label">Describe the blend</label>
-            <textarea id="custom_tone" rows="2" placeholder="e.g. Calm but slightly playful, never corporate, always grounded in evidence…"></textarea>
-          </div>
-          <div class="mt-4 flex items-center gap-3">
-            <label class="field-label mb-0">Explicitly reference science / research in the writing?</label>
-            <div class="flex gap-2">
-              <button type="button" class="slot-type-btn" id="sci-yes" onclick="setSci('explicit_when_credibility_helpful')">Yes, when it helps</button>
-              <button type="button" class="slot-type-btn" id="sci-often" onclick="setSci('explicit_often')">Yes, often</button>
-              <button type="button" class="slot-type-btn active" id="sci-no" onclick="setSci('implied')">Keep it implied</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- ── 7. Personal presence ────────────────────────────────────── -->
-        <div class="section-card">
-          <div class="flex items-start mb-4">
-            <span class="section-num">7</span>
-            <div>
-              <h2 class="font-bold text-gray-900">Personal presence</h2>
-              <p class="text-sm text-gray-500 mt-0.5">How visible is the person behind the brand in the writing?</p>
-            </div>
-          </div>
-          <div id="presence-opts" class="space-y-2">
-            <!-- rendered by JS -->
-          </div>
-        </div>
-
-        <!-- ── 8. Commercial stance ────────────────────────────────────── -->
-        <div class="section-card">
-          <div class="flex items-start mb-4">
-            <span class="section-num">8</span>
-            <div>
-              <h2 class="font-bold text-gray-900">Relationship to selling</h2>
-              <p class="text-sm text-gray-500 mt-0.5">How overt should the commercial angle be?</p>
-            </div>
-          </div>
-          <div id="commercial-opts" class="space-y-2">
-            <!-- rendered by JS -->
-          </div>
-        </div>
-
-        <!-- ── 9. Disclaimer ──────────────────────────────────────────── -->
-        <div class="section-card">
-          <div class="flex items-start mb-4">
-            <span class="section-num">9</span>
-            <div>
-              <h2 class="font-bold text-gray-900">Disclaimer & affiliate</h2>
-              <p class="text-sm text-gray-500 mt-0.5">Required for affiliate content; optional for pure thought leadership.</p>
-            </div>
-          </div>
+            <span class="chev" aria-hidden="true"></span>
+          </summary>
+          <div class="group-body">
+          <div class="sub-section">
+            <h3 class="sub-h">Disclaimer & affiliate</h3>
+            <p class="text-xs text-gray-500 mb-3">Required for affiliate content; optional for pure thought leadership.</p>
           <div class="flex items-center gap-3 mb-4">
             <input type="checkbox" id="disclaimer_required" onchange="toggleDisclaimer()" class="w-4 h-4 accent-indigo-600" />
             <label for="disclaimer_required" class="text-sm font-medium text-gray-700">This client uses affiliate links / requires a disclaimer</label>
@@ -500,17 +564,10 @@
               </div>
             </div>
           </div>
-        </div>
-
-        <!-- ── 10. Publishing ─────────────────────────────────────────── -->
-        <div class="section-card">
-          <div class="flex items-start mb-4">
-            <span class="section-num">10</span>
-            <div>
-              <h2 class="font-bold text-gray-900">Publishing <span class="font-normal text-gray-400 text-sm">(optional)</span></h2>
-              <p class="text-sm text-gray-500 mt-0.5">After the delivery email, also send each approved article to the client's own site. Leave empty for email only.</p>
-            </div>
           </div>
+          <div class="sub-section">
+            <h3 class="sub-h">Publishing <span class="font-normal text-gray-400 text-sm">(optional)</span></h3>
+            <p class="text-xs text-gray-500 mb-3">After the delivery email, also send each approved article to the client's own site. Leave empty for email only.</p>
           <div id="publishing-list" class="space-y-4 mb-3"></div>
           <div class="flex flex-wrap gap-2">
             <button type="button" onclick="addPublishing('github')" class="py-1.5 px-3 rounded-md border border-gray-200 text-gray-700 text-xs font-semibold hover:bg-gray-50">+ GitHub repo</button>
@@ -518,10 +575,12 @@
             <button type="button" onclick="addPublishing('webhook')" class="py-1.5 px-3 rounded-md border border-gray-200 text-gray-700 text-xs font-semibold hover:bg-gray-50">+ Webhook (Zapier / Make)</button>
           </div>
           <p class="text-xs text-gray-400 mt-3">Never paste a token, password or webhook URL here. Enter the <strong>name</strong> of a Railway variable (e.g. <code>GITHUB_TOKEN_ACME</code>) and set its value in Railway → Variables.</p>
-        </div>
+          </div>
+          </div>
+        </details>
 
         <!-- Save -->
-        <div class="pb-4">
+        <div class="save-bar">
           <button id="save-btn" onclick="saveClient()">Save client profile</button>
         </div>
 
@@ -883,7 +942,7 @@ function renderCardOpts(containerId, opts, name, multi, hasDesc, onChange) {
         <div class="flex-1">
           <div class="text-sm font-semibold text-gray-800">${o.label}</div>
           ${o.desc ? `<div class="text-xs text-gray-500 mt-0.5">${o.desc}</div>` : ''}
-          ${o.example ? `<div class="text-xs text-gray-400 italic mt-1.5 border-l-2 border-gray-200 pl-2">"${o.example}"</div>` : ''}
+          ${o.example ? `<div class="opt-example text-xs text-gray-400 italic mt-1.5 border-l-2 border-gray-200 pl-2">"${o.example}"</div>` : ''}
         </div>
       </div>
     </div>
@@ -1004,6 +1063,79 @@ function toggleDisclaimer() {
   const checked = document.getElementById("disclaimer_required").checked;
   document.getElementById("disclaimer-fields").classList.toggle("hidden", !checked);
 }
+
+// ── Collapsible profile groups ───────────────────────────────────────────────
+function setAllGroups(open) {
+  document.querySelectorAll('#form-area details.group-card').forEach(d => { d.open = open; });
+}
+
+function openGroupFor(fieldId) {
+  const el = document.getElementById(fieldId);
+  const d = el && el.closest('details.group-card');
+  if (d) d.open = true;
+  if (el) { el.scrollIntoView({ block: 'center' }); el.focus(); }
+}
+
+function _optLabel(opts, val) {
+  const o = opts.find(o => o.value === val);
+  return o ? o.label : null;
+}
+
+function _setSummary(key, bits, fallback) {
+  const el = document.getElementById(`summary-${key}`);
+  if (!el) return;
+  const parts = bits.filter(Boolean);
+  el.textContent = parts.length ? parts.join(' · ') : fallback;
+  el.classList.toggle('empty', !parts.length);
+}
+
+function updateGroupSummaries() {
+  const v = id => (document.getElementById(id)?.value || '').trim();
+  const sel = id => { const e = document.getElementById(id); return e && e.selectedIndex >= 0 ? e.options[e.selectedIndex].text : ''; };
+
+  _setSummary('basics', [
+    v('client_name'), v('brand_id'), sel('brand_archetype'),
+    v('source_website') ? v('source_website').replace(/^https?:\/\//, '').replace(/\/$/, '') : '',
+  ], 'Not filled in yet');
+
+  const filled = [
+    ['topic_allowlist', 'topics'], ['core_beliefs', 'beliefs'], ['formative_experiences', 'stories'],
+    ['desired_outcome', 'outcome'], ['writing_samples', 'samples'],
+  ].filter(([id]) => v(id)).map(([, l]) => l);
+  const hasBook = !document.getElementById('reference-status').classList.contains('hidden');
+  if (hasBook) filled.push('book attached');
+  _setSummary('substance', filled.length ? ['Has ' + filled.join(', ')] : [], 'Nothing added yet');
+
+  _setSummary('audience', [
+    _optLabel(AUDIENCE_OPTS, getSelectedCardVal('audience')),
+    _optLabel(PLATFORM_OPTS, getSelectedCardVal('platform')),
+  ], 'Audience and format not picked');
+
+  const tone = getSelectedCardVal('tone');
+  _setSummary('voice', [
+    tone === 'custom' ? 'Custom tone' : _optLabel(TONE_OPTS, tone),
+    _optLabel(PRESENCE_OPTS, getSelectedCardVal('presence')),
+    _optLabel(COMMERCIAL_OPTS, getSelectedCardVal('commercial')),
+  ], 'Tone not picked');
+
+  const dayList = slots.map(s => DAY_LABELS[s.day].slice(0, 3)).join(' & ');
+  _setSummary('schedule', [
+    currentPackage ? `${currentPackage} articles` : 'No package',
+    currentCadence === 1 ? '1× per week' : '2× per week',
+    dayList, document.getElementById('time_zone').value,
+  ], '');
+
+  const pubs = publishingRows.filter(r => r.enabled !== false).map(r => PUB_LABEL[r.type] || r.type);
+  _setSummary('publishing', [
+    document.getElementById('disclaimer_required').checked ? 'Disclaimer on' : 'No disclaimer',
+    pubs.length ? `Publishes to ${pubs.join(', ')}` : 'Email delivery only',
+  ], '');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const area = document.getElementById('form-area');
+  ['input', 'change', 'click'].forEach(ev => area.addEventListener(ev, () => setTimeout(updateGroupSummaries, 0)));
+});
 
 // ── Tab switching ─────────────────────────────────────────────────────────────
 function switchTab(tab) {
@@ -1241,6 +1373,7 @@ async function loadReference(brandId) {
     upload.classList.remove('hidden');
     document.getElementById('reference-file').value = '';
   }
+  updateGroupSummaries();
 }
 
 async function uploadReference() {
@@ -1286,6 +1419,8 @@ function newClient() {
   document.getElementById('submissions-area').classList.add('hidden');
   document.getElementById('client-tab-bar').classList.add('hidden');
   loadReference(null);
+  setAllGroups(true);
+  updateGroupSummaries();
   currentTab = 'profile';
 }
 
@@ -1363,6 +1498,8 @@ function populateForm(d) {
   setVal("disclaimer_text", disc.disclaimer_text || "");
   setChips("disclaimer-loc-chips", disc.locations || ["footer"]);
 
+  setAllGroups(false);
+  updateGroupSummaries();
 }
 
 function derivePlatform(policy) {
@@ -1415,7 +1552,7 @@ function resetForm() {
 // ── Save ──────────────────────────────────────────────────────────────────────
 async function saveClient() {
   const brand_id = document.getElementById("brand_id").value.trim();
-  if (!brand_id) { alert("Brand ID is required."); return; }
+  if (!brand_id) { openGroupFor("brand_id"); alert("Brand ID is required."); return; }
 
   const platformVal = getSelectedCardVal("platform");
   const platformOpt = PLATFORM_OPTS.find(p => p.value === platformVal) || PLATFORM_OPTS[0];
