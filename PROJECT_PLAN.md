@@ -26,6 +26,8 @@ Public homepage (saidby.co) → /onboard intake form (public, 4-step wizard)
       → commits to repo + emails operator for review
   → Operator reviews in /admin
       → Approve → personalized delivery email to client (Resend)
+               → optional: publish to client's GitHub repo / WordPress / webhook
+                 (per-brand `publishing` config, see docs/publishing.md)
       → Reject → topic returns to queue for regeneration
 ```
 
@@ -49,6 +51,7 @@ survive Railway's ephemeral filesystem and the scheduler can read them.
 | `content_factory/references.py` | PDF book → text extraction + per-brand storage (grounding) |
 | `content_factory/emailer.py` | Resend emails (new-submission, welcome, review, delivery, upgrade) |
 | `content_factory/plans.py` | **Plan catalogue + prices** — single source of truth (form, checkout, activation) |
+| `content_factory/publishing.py` | Optional publishing of approved articles (GitHub repo, WordPress, webhook) — see `docs/publishing.md` |
 | `content_factory/billing.py` | Stripe Checkout session / webhook helpers |
 | `content_factory/github_sync.py` | Syncs runtime file writes back to GitHub |
 | `content_factory/models.py` | Pydantic schemas for brand profiles |

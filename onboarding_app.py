@@ -754,6 +754,9 @@ def list_generated(brand_id: str):
             "slot_type": data.get("slot_type", "long_blog"),
             "generated_at": data.get("generated_at", ""),
             "status": data.get("status", "pending_review"),
+            "publish_failed": any(
+                (v or {}).get("status") == "failed" for v in (data.get("publications") or {}).values()
+            ),
         })
     return items
 
@@ -814,6 +817,10 @@ def approve_generated(brand_id: str, run_id: str, bg: BackgroundTasks):
     with open(path, "w", encoding="utf-8") as f:
         yaml.dump(data, f, allow_unicode=True, sort_keys=False)
 
+    # Optional: push to the client's own blog / automation hook. Failures are
+    # recorded on the article and never undo the email delivery above.
+    publish = _publish_and_save(brand, data, path, run_id)
+
     topics_path = TOPICS_DIR / f"{brand_id}.yaml"
     if topics_path.exists():
         td = yaml.safe_load(topics_path.read_text(encoding="utf-8")) or {}
@@ -839,7 +846,36 @@ def approve_generated(brand_id: str, run_id: str, bg: BackgroundTasks):
             upgrade_sent = True
         except Exception as e:
             print(f"[approve] Upgrade email failed for {brand_id}: {e}")
-    return {"approved": True, "email_id": email_id, "upgrade_email_sent": upgrade_sent}
+    return {"approved": True, "email_id": email_id, "upgrade_email_sent": upgrade_sent, "publish": publish}
+
+
+def _publish_and_save(brand: dict, data: dict, path: Path, run_id: str) -> dict:
+    from content_factory.publishing import destinations_for, publish_article, summarize
+    if not destinations_for(brand, data.get("slot_type")):
+        return {"published": [], "failed": []}
+    try:
+        pubs = publish_article(brand=brand, article=data, run_id=run_id)
+    except Exception as e:  # never let publishing break approval
+        print(f"[publish] Unexpected error for {run_id}: {e}")
+        return {"published": [], "failed": ["unexpected_error"]}
+    _write_yaml(path, data)
+    return summarize(pubs)
+
+
+@app.post("/api/brands/{brand_id}/generated/{run_id}/publish", dependencies=[Depends(api_auth)])
+def retry_publish(brand_id: str, run_id: str, bg: BackgroundTasks):
+    """Re-send an approved article to destinations that haven't succeeded yet."""
+    path = GENERATED_DIR / brand_id / f"{run_id}.yaml"
+    brand_path = BRANDS_DIR / f"{brand_id}.yaml"
+    if not path.exists() or not brand_path.exists():
+        raise HTTPException(status_code=404, detail="Generated content not found")
+    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    if data.get("status") != "approved":
+        raise HTTPException(status_code=400, detail="Only approved articles can be published")
+    brand = yaml.safe_load(brand_path.read_text(encoding="utf-8")) or {}
+    result = _publish_and_save(brand, data, path, run_id)
+    bg.add_task(_sync, path, f"chore: publish content {run_id}")
+    return {**result, "publications": data.get("publications", {})}
 
 
 @app.post("/api/brands/{brand_id}/generated/{run_id}/reject", dependencies=[Depends(api_auth)])
