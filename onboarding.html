@@ -502,6 +502,24 @@
           </div>
         </div>
 
+        <!-- ── 10. Publishing ─────────────────────────────────────────── -->
+        <div class="section-card">
+          <div class="flex items-start mb-4">
+            <span class="section-num">10</span>
+            <div>
+              <h2 class="font-bold text-gray-900">Publishing <span class="font-normal text-gray-400 text-sm">(optional)</span></h2>
+              <p class="text-sm text-gray-500 mt-0.5">After the delivery email, also send each approved article to the client's own site. Leave empty for email only.</p>
+            </div>
+          </div>
+          <div id="publishing-list" class="space-y-4 mb-3"></div>
+          <div class="flex flex-wrap gap-2">
+            <button type="button" onclick="addPublishing('github')" class="py-1.5 px-3 rounded-md border border-gray-200 text-gray-700 text-xs font-semibold hover:bg-gray-50">+ GitHub repo</button>
+            <button type="button" onclick="addPublishing('wordpress')" class="py-1.5 px-3 rounded-md border border-gray-200 text-gray-700 text-xs font-semibold hover:bg-gray-50">+ WordPress</button>
+            <button type="button" onclick="addPublishing('webhook')" class="py-1.5 px-3 rounded-md border border-gray-200 text-gray-700 text-xs font-semibold hover:bg-gray-50">+ Webhook (Zapier / Make)</button>
+          </div>
+          <p class="text-xs text-gray-400 mt-3">Never paste a token, password or webhook URL here. Enter the <strong>name</strong> of a Railway variable (e.g. <code>GITHUB_TOKEN_ACME</code>) and set its value in Railway → Variables.</p>
+        </div>
+
         <!-- Save -->
         <div class="pb-4">
           <button id="save-btn" onclick="saveClient()">Save client profile</button>
@@ -610,6 +628,18 @@
               <button onclick="closeReader()" class="text-gray-300 hover:text-gray-500 text-2xl leading-none ml-4">×</button>
             </div>
             <div id="reader-body" class="prose text-sm text-gray-700 leading-relaxed"></div>
+          </div>
+
+          <!-- Publishing results (only for brands with a publishing destination) -->
+          <div id="publish-panel" class="hidden section-card mb-4">
+            <div class="flex items-center justify-between mb-3">
+              <h4 class="text-sm font-bold text-gray-900">Publishing</h4>
+              <button id="publish-retry-btn" onclick="retryPublish()"
+                class="hidden py-1.5 px-3 rounded-md border border-indigo-200 text-indigo-600 text-xs font-semibold hover:bg-indigo-50 transition">
+                Retry publish
+              </button>
+            </div>
+            <div id="publish-list" class="space-y-2 text-sm"></div>
           </div>
 
           <!-- Action bar -->
@@ -1273,6 +1303,9 @@ async function deleteClient() {
 
 // ── Populate form from loaded data ────────────────────────────────────────────
 function populateForm(d) {
+  publishingRows = (d.publishing || []).map(r => ({ ...r }));
+  renderPublishing();
+  loadPublishingEnv(d.brand_id);
   setVal("client_name", d.client_name || "");
   setVal("client_email", d.client_email || "");
   setVal("brand_id", d.brand_id || "");
@@ -1368,6 +1401,8 @@ function resetForm() {
   document.querySelectorAll(".card-opt").forEach(el => el.classList.remove("selected"));
   document.getElementById("disclaimer_required").checked = false;
   toggleDisclaimer();
+  publishingRows = []; publishingEnv = {};
+  renderPublishing();
   slots = [{ day: "mon", type: "long_blog" }];
   currentCadence = 1;
   currentPackage = null;
@@ -1489,6 +1524,7 @@ async function saveClient() {
     content_slots: slots,
     writing_samples: writingSamples || "",
     llm_provider: document.getElementById("llm_provider").value,
+    publishing: publishingRows,
   };
 
   try {
@@ -1497,9 +1533,15 @@ async function saveClient() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    if (!res.ok) throw new Error(await res.text());
+    if (!res.ok) {
+      let detail = "";
+      try { detail = (await res.json()).detail || ""; } catch (e) {}
+      if (res.status === 400 && detail) { alert(detail); return; }
+      throw new Error(detail || `HTTP ${res.status}`);
+    }
     currentBrandId = brand_id;
     showToast("toast");
+    loadPublishingEnv(brand_id);
     // Show tab bar now that we have a brand_id
     document.getElementById('tab-client-name').textContent = data.client_name || brand_id;
     document.getElementById('tab-client-email').textContent = data.client_email || '';
@@ -1512,6 +1554,96 @@ async function saveClient() {
     console.error(e);
     showToast("error-toast");
   }
+}
+
+// ── Publishing destinations ───────────────────────────────────────────────────
+let publishingRows = [];
+let publishingEnv = {};
+
+const PUB_FIELDS = {
+  github: [
+    ["repo", "Repository", "owner/site-repo"],
+    ["branch", "Branch", "main"],
+    ["path", "File path", "content/posts/{date}-{slug}.md"],
+    ["token_env", "Token variable name", "GITHUB_TOKEN_ACME"],
+    ["post_url", "Public post URL (optional)", "https://acme.com/blog/{slug}/"],
+  ],
+  wordpress: [
+    ["site_url", "Site URL", "https://example.com"],
+    ["username", "WordPress username", "jane"],
+    ["secret_env", "App password variable name", "WP_APP_PASSWORD_ACME"],
+  ],
+  webhook: [
+    ["url_env", "Webhook URL variable name", "PUBLISH_WEBHOOK_ACME"],
+    ["secret_env", "Signing secret variable name (optional)", "PUBLISH_WEBHOOK_SECRET_ACME"],
+  ],
+};
+const PUB_LABEL = { github: "GitHub repo", wordpress: "WordPress", webhook: "Webhook" };
+
+function addPublishing(type) {
+  const taken = new Set(publishingRows.map(r => r.id));
+  let id = type, n = 2;
+  while (taken.has(id)) id = `${type}-${n++}`;
+  publishingRows.push({ id, type, enabled: true, mode: "draft" });
+  renderPublishing();
+}
+
+function removePublishing(i) {
+  publishingRows.splice(i, 1);
+  renderPublishing();
+}
+
+function setPublishing(i, key, val) {
+  publishingRows[i][key] = val;
+}
+
+function renderPublishing() {
+  const el = document.getElementById("publishing-list");
+  if (!el) return;
+  el.innerHTML = publishingRows.map((r, i) => {
+    const fields = (PUB_FIELDS[r.type] || []).map(([key, label, ph]) => {
+      const isEnv = key.endsWith("_env");
+      const envName = r[key];
+      const envBadge = isEnv && envName && envName in publishingEnv
+        ? (publishingEnv[envName]
+            ? `<span class="text-emerald-600 font-normal"> · set in Railway</span>`
+            : `<span class="text-red-500 font-normal"> · not set in Railway yet</span>`)
+        : "";
+      return `<div>
+        <label class="field-label">${label}${envBadge}</label>
+        <input type="text" value="${escHtml(r[key] || "")}" placeholder="${escHtml(ph)}"
+          oninput="setPublishing(${i}, '${key}', this.value.trim())" />
+      </div>`;
+    }).join("");
+    return `<div class="border border-gray-200 rounded-lg p-4">
+      <div class="flex items-center justify-between mb-3 gap-3">
+        <div class="text-sm font-bold text-gray-900">${PUB_LABEL[r.type] || escHtml(r.type)}
+          <span class="font-normal text-gray-400">· ${escHtml(r.id)}</span></div>
+        <div class="flex items-center gap-3">
+          <label class="text-xs text-gray-600 flex items-center gap-1">
+            <input type="checkbox" ${r.enabled !== false ? "checked" : ""} class="accent-indigo-600"
+              onchange="setPublishing(${i}, 'enabled', this.checked)"/> On
+          </label>
+          <select class="text-xs" style="width:auto" onchange="setPublishing(${i}, 'mode', this.value)">
+            <option value="draft" ${r.mode !== "publish" ? "selected" : ""}>As draft</option>
+            <option value="publish" ${r.mode === "publish" ? "selected" : ""}>Publish live</option>
+          </select>
+          <button type="button" onclick="removePublishing(${i})" class="text-gray-300 hover:text-red-400 text-lg leading-none">×</button>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">${fields}</div>
+    </div>`;
+  }).join("");
+}
+
+async function loadPublishingEnv(brandId) {
+  publishingEnv = {};
+  if (!brandId || !publishingRows.length) return;
+  try {
+    const res = await fetch(`/api/brands/${brandId}/publishing/env`);
+    if (res.ok) publishingEnv = await res.json();
+  } catch (e) { /* badge is optional */ }
+  renderPublishing();
 }
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
@@ -1768,6 +1900,9 @@ function renderGeneratedList() {
     }[item.status] || { label: item.status, cls: "bg-gray-100 text-gray-500 border-gray-200" };
 
     const typeLabel = item.slot_type === "short_snippet" ? "Short snippet" : "Long blog";
+    const publishFlag = item.publish_failed
+      ? `<span class="text-xs font-semibold px-2.5 py-1 rounded-full border whitespace-nowrap bg-red-50 text-red-600 border-red-200">Publish failed</span>`
+      : "";
     return `
       <div class="section-card !py-3 !px-4 flex items-center gap-4 cursor-pointer hover:border-indigo-300 transition"
            onclick="openArticle('${item.run_id}')">
@@ -1775,6 +1910,7 @@ function renderGeneratedList() {
           <div class="text-sm font-semibold text-gray-900 truncate">${item.topic}</div>
           <div class="text-xs text-gray-400 mt-0.5">${typeLabel} · ${item.generated_at}</div>
         </div>
+        ${publishFlag}
         <span class="text-xs font-semibold px-2.5 py-1 rounded-full border whitespace-nowrap ${statusCfg.cls}">
           ${statusCfg.label}
         </span>
@@ -1802,8 +1938,47 @@ async function openArticle(runId) {
     data.slot_type === "short_snippet" ? "Short snippet" : "Long blog";
   document.getElementById("reader-body").innerHTML = mdToHtml(data.content || "");
   document.getElementById("rejection-note").value = "";
+  renderPublications(data.publications || {}, data.status);
   document.getElementById("article-reader").classList.remove("hidden");
   document.getElementById("article-reader").scrollIntoView({ behavior: "smooth" });
+}
+
+function escHtml(s) {
+  return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+function renderPublications(pubs, status) {
+  const panel = document.getElementById("publish-panel");
+  const entries = Object.entries(pubs);
+  panel.classList.toggle("hidden", entries.length === 0);
+  const label = { draft: "Draft created", published: "Published", sent: "Sent", failed: "Failed" };
+  const cls = { failed: "text-red-600", draft: "text-amber-700" };
+  document.getElementById("publish-list").innerHTML = entries.map(([id, p]) => {
+    const link = p.url && /^https:\/\//.test(p.url)
+      ? ` · <a href="${escHtml(p.url)}" target="_blank" rel="noopener" class="text-indigo-600 hover:underline">open</a>` : "";
+    const err = p.error ? `<div class="text-xs text-red-500 mt-0.5">${escHtml(p.error)}</div>` : "";
+    return `<div><span class="font-semibold">${escHtml(id)}</span> <span class="text-gray-400">(${escHtml(p.type)})</span>
+      · <span class="${cls[p.status] || "text-emerald-700"}">${label[p.status] || escHtml(p.status)}</span>${link}${err}</div>`;
+  }).join("");
+  const anyFailed = entries.some(([, p]) => p.status === "failed");
+  document.getElementById("publish-retry-btn").classList.toggle("hidden", !(anyFailed && status === "approved"));
+}
+
+async function retryPublish() {
+  if (!activeRunId) return;
+  const btn = document.getElementById("publish-retry-btn");
+  btn.disabled = true; btn.textContent = "Publishing…";
+  try {
+    const res = await fetch(`/api/brands/${currentBrandId}/generated/${activeRunId}/publish`, { method: "POST" });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "Publish failed");
+    renderPublications(data.publications || {}, "approved");
+    await loadGeneratedList();
+  } catch (e) {
+    alert(e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = "Retry publish";
+  }
 }
 
 function closeReader() {
@@ -1846,9 +2021,14 @@ async function approveArticle() {
   if (!activeRunId) return;
   const res = await fetch(`/api/brands/${currentBrandId}/generated/${activeRunId}/approve`, { method: "POST" });
   if (!res.ok) { showToast("error-toast"); return; }
+  const result = await res.json().catch(() => ({}));
   closeReader();
   await loadGeneratedList();
   showToast("approve-toast");
+  const failed = (result.publish && result.publish.failed) || [];
+  if (failed.length) {
+    alert(`Sent to the client by email, but publishing failed for: ${failed.join(", ")}. Open the article to see why and retry.`);
+  }
 }
 
 async function rejectArticle() {
@@ -1870,7 +2050,7 @@ function mdToHtml(md) {
     .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
     .replace(/^# (.+)$/gm, "<h1>$1</h1>")
     .replace(/^## (.+)$/gm, "<h2>$1</h2>")
-    .replace(/^### (.+)$/gm, "<h3>$3</h3>")
+    .replace(/^### (.+)$/gm, "<h3>$1</h3>")
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
     .replace(/\*(.+?)\*/g, "<em>$1</em>")
     .replace(/^---$/gm, "<hr/>")
